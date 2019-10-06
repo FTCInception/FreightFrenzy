@@ -13,13 +13,19 @@ $ cd /c/awork/ftc/
 $ mkdir skystone2
 
 $ cd skystone2
+
+
  
 $ git clone https://github.com/FIRST-Tech-Challenge/SkyStone
 
 $ cd SkyStone/TeamCode/src/main/java/
+
 $ mkdir Inception
+
 $ cd Inception
+
 $ git clone https://github.com/FTCInception/Skystone
+
 $ cd ../../../../..
 
 $  git filter-branch --prune-empty --subdirectory-filter TeamCode/src/main/java/Inception master
