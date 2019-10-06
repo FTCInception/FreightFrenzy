@@ -6,13 +6,15 @@ The code for the 2019-2020 season
 Instructions to create repo with separate TeamCode repo:
   open git bash shell
 
-  cd to any directory of your choice to place your code.  For example, I ran
+  cd to any directory of your choice to place your code.  For example, I ran the following commands.  These commands are optional:
 
-$ cd /c/awork/ftc/
+        $ cd /c/awork/ftc/
 
-$ mkdir skystone2
+        $ mkdir skystone2
 
-$ cd skystone2
+        $ cd skystone2
+
+
 
 
  
@@ -28,8 +30,10 @@ $ git clone https://github.com/FTCInception/Skystone
 
 $ cd ../../../../..
 
-$  git filter-branch --prune-empty --subdirectory-filter TeamCode/src/main/java/Inception master
+$ git filter-branch --prune-empty --subdirectory-filter TeamCode/src/main/java/Inception master
 
+
+After the above is run, your directory is setup and can be imported into Android Studio.  Import the top-level "SkyStone" directory. 
 
 
 References:
