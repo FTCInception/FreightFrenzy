@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.robotcontroller.external.samples;
+package Inception.Skystone;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -41,6 +41,7 @@ import com.qualcomm.robotcore.util.Range;
 /**
  * Made by DsChelling for testing 12533
  */
+
 
 @TeleOp(name="Testing OP Mode", group="Linear Opmode")
 public class BasicOpMode_Test extends LinearOpMode {
