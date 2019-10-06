@@ -9,7 +9,9 @@ Instructions to create repo with separate TeamCode repo:
   cd to any directory of your choice to place your code.  For example, I ran
 
 $ cd /c/awork/ftc/
+
 $ mkdir skystone2
+
 $ cd skystone2
  
 $ git clone https://github.com/FIRST-Tech-Challenge/SkyStone
