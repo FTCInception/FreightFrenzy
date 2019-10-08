@@ -26,7 +26,7 @@ Instructions to create repo with separate TeamCode repo:
 9) $ git filter-branch --prune-empty --subdirectory-filter TeamCode/src/main/java/Inception master
 
 
-After the above is run, your directory is setup and can be imported into Android Studio.  Import the top-level "SkyStone" directory. 
+After the above is run, your directory is setup and can be imported into Android Studio.  Import the top-level "SkyStone" directory. Once in Andriod Studio, you will be able to commit changes to either the FTC SkyStone repo or to the Inception Skystone (this) repo.
 
 
 
