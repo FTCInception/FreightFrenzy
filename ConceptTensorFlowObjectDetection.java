@@ -32,14 +32,18 @@ package Inception.Skystone;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.vuforia.Image;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CloseableFrame;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 
+import java.nio.ByteBuffer;
 import java.util.List;
+
 
 /**
  * This 2019-2020 OpMode illustrates the basics of using the TensorFlow Object Detection API to
@@ -120,14 +124,55 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
 
                       // step through the list of recognitions and display boundary info.
                       int i = 0;
+                      Recognition skystone_rec = null;
                       for (Recognition recognition : updatedRecognitions) {
                         telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
                         telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
                                           recognition.getLeft(), recognition.getTop());
                         telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
                                 recognition.getRight(), recognition.getBottom());
+
+                        if(recognition.getLabel().contentEquals("Skystome")) {
+                            skystone_rec = recognition;
+                        }
                       }
                       telemetry.update();
+
+                      // get Frame
+                        CloseableFrame myFrame = vuforia.getFrameQueue().poll();
+
+                       if ((myFrame != null) && (skystone_rec != null)) {
+                           Image myImage = myFrame.getImage(0);
+
+                           ByteBuffer myBuffer = myImage.getPixels();
+                           int bytes_per_pixel = myImage.getStride() / myImage.getBufferWidth();
+                           float row = (skystone_rec.getTop() + skystone_rec.getBottom()) / 2;
+                           float column = skystone_rec.getLeft();
+                           float threshold = 500;
+                           float center = myImage.getWidth() / 2;
+                           int step = 4;
+                           int windowwidth = 16;
+                           Boolean edgeFound = true;
+
+                           telemetry.addData("!", row * myImage.getWidth());
+                           telemetry.update();
+
+                           telemetry.addData("!", "(%bytes_per_pixel)");
+                           telemetry.update();
+
+                           while(!edgeFound) {
+                              float sum;
+
+                              for(int index=0; index < windowwidth; index++) {
+                                  //sum += myBuffer.getInt();
+                              }
+
+                           }
+
+                       }else {
+                           telemetry.addData("!", "No Frame Found");
+                           telemetry.update();
+                       }
                     }
                 }
             }
@@ -147,11 +192,16 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
          */
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
 
+
+
         parameters.vuforiaLicenseKey = VUFORIA_KEY;
         parameters.cameraDirection = CameraDirection.BACK;
 
         //  Instantiate the Vuforia engine
         vuforia = ClassFactory.getInstance().createVuforia(parameters);
+
+        //Get Frame
+        vuforia.setFrameQueueCapacity(1);
 
         // Loading trackables is not necessary for the TensorFlow Object Detection engine.
     }
