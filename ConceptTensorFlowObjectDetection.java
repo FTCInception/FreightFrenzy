@@ -127,16 +127,16 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
                       Recognition skystone_rec = null;
                       for (Recognition recognition : updatedRecognitions) {
                         telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
-                        telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
+                        //below will give the left, top, right, bottom but it is disabled because of unnesary feedback
+                        /*telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
                                           recognition.getLeft(), recognition.getTop());
                         telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
-                                recognition.getRight(), recognition.getBottom());
+                                recognition.getRight(), recognition.getBottom());*/
 
-                        if(recognition.getLabel().contentEquals("Skystome")) {
+                        if(recognition.getLabel().contentEquals("Skystone")) {
                             skystone_rec = recognition;
                         }
                       }
-                      telemetry.update();
 
                       // get Frame
                         CloseableFrame myFrame = vuforia.getFrameQueue().poll();
@@ -146,20 +146,24 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
 
                            ByteBuffer myBuffer = myImage.getPixels();
                            int bytes_per_pixel = myImage.getStride() / myImage.getBufferWidth();
-                           float row = (skystone_rec.getTop() + skystone_rec.getBottom()) / 2;
-                           float column = skystone_rec.getLeft();
+                           int row = ((int) (skystone_rec.getTop()) + (int) (skystone_rec.getBottom())) / 4;
+                           float column = skystone_rec.getLeft() / 2;
                            float threshold = 500;
-                           float center = myImage.getWidth() / 2;
+                           float center = myImage.getBufferWidth() / 2;
                            int step = 4;
                            int windowwidth = 16;
+                           int PixelIndex = row * (int) (myImage.getBufferWidth()) + (int) ((skystone_rec.getLeft() / 2));
                            Boolean edgeFound = true;
 
-                           telemetry.addData("!", row * myImage.getWidth());
-                           telemetry.update();
+                           telemetry.addData("Feedback", "Pixel index %d",PixelIndex);
 
-                           telemetry.addData("!", "(%bytes_per_pixel)");
-                           telemetry.update();
+                           telemetry.addData("Feedback", "Pixel color %x", myBuffer.getShort(PixelIndex));
 
+                           telemetry.addData("Feedback", "Row %d", row);
+
+                           telemetry.addData("Feedback", "Buffer height and width %d %d", myImage.getBufferHeight(), myImage.getBufferWidth());
+
+                           telemetry.addData("Feedback", "Pixel bytes %d", bytes_per_pixel);
                            while(!edgeFound) {
                               float sum;
 
@@ -169,10 +173,10 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
 
                            }
 
-                       }else {
-                           telemetry.addData("!", "No Frame Found");
-                           telemetry.update();
+                       }else if (myFrame == null) {
+                           telemetry.addData("Error", "No Frame");
                        }
+                       telemetry.update();
                     }
                 }
             }
