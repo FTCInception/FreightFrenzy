@@ -128,10 +128,10 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
                       for (Recognition recognition : updatedRecognitions) {
                         telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
                         //below will give the left, top, right, bottom but it is disabled because of unnesary feedback
-                        /*telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
+                        telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
                                           recognition.getLeft(), recognition.getTop());
                         telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
-                                recognition.getRight(), recognition.getBottom());*/
+                                recognition.getRight(), recognition.getBottom());
 
                         if(recognition.getLabel().contentEquals("Skystone")) {
                             skystone_rec = recognition;
@@ -147,6 +147,15 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
                            ByteBuffer myBuffer = myImage.getPixels();
                            int bytes_per_pixel = myImage.getStride() / myImage.getBufferWidth();
                            int row = ((int) (skystone_rec.getTop()) + (int) (skystone_rec.getBottom())) / 4;
+
+                           if (row < 0) {
+                               row = 0;
+                           }
+
+                           if (row > (myImage.getBufferHeight() - 1)) {
+                               row = myImage.getBufferHeight() - 1;
+                           }
+
                            float column = skystone_rec.getLeft() / 2;
                            float threshold = 500;
                            float center = myImage.getBufferWidth() / 2;
@@ -156,8 +165,9 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
                            Boolean edgeFound = true;
 
                            telemetry.addData("Feedback", "Pixel index %d",PixelIndex);
-
-                           telemetry.addData("Feedback", "Pixel color %x", myBuffer.getShort(PixelIndex));
+                           for (i=0; i < 5; i++) {
+                               telemetry.addData("Feedback", "Pixel color %x", (int) myBuffer.getChar(PixelIndex + i));
+                           }
 
                            telemetry.addData("Feedback", "Row %d", row);
 
