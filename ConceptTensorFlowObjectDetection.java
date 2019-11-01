@@ -126,12 +126,12 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
                       int i = 0;
                       Recognition skystone_rec = null;
                       for (Recognition recognition : updatedRecognitions) {
-                        telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
+                        /*telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
                         //below will give the left, top, right, bottom but it is disabled because of unnesary feedback
                         telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
                                           recognition.getLeft(), recognition.getTop());
                         telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
-                                recognition.getRight(), recognition.getBottom());
+                                recognition.getRight(), recognition.getBottom());*/
 
                         if(recognition.getLabel().contentEquals("Skystone")) {
                             skystone_rec = recognition;
@@ -156,37 +156,49 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
                                row = myImage.getBufferHeight() - 1;
                            }
 
-                           float column = skystone_rec.getLeft() / 2;
-                           float threshold = 500;
-                           float center = myImage.getBufferWidth() / 2;
+                           int column = (int) skystone_rec.getLeft() / 2;
+                           int boundry = (int) skystone_rec.getRight() / 2;
+                           int center = (int) myImage.getBufferWidth() / 2;
                            int step = 4;
                            int windowwidth = 16;
-                           int PixelIndex = row * (int) (myImage.getBufferWidth()) + (int) ((skystone_rec.getLeft() / 2));
-                           Boolean edgeFound = true;
-
-                           telemetry.addData("Feedback", "Pixel index %d",PixelIndex);
-                           for (i=0; i < 5; i++) {
-                               telemetry.addData("Feedback", "Pixel color %x", (int) myBuffer.getChar(PixelIndex + i));
-                           }
+                           float threshold = 0x50 * windowwidth;
+                           int PixelIndex = row * myImage.getBufferWidth() + column;
 
                            telemetry.addData("Feedback", "Row %d", row);
 
                            telemetry.addData("Feedback", "Buffer height and width %d %d", myImage.getBufferHeight(), myImage.getBufferWidth());
 
                            telemetry.addData("Feedback", "Pixel bytes %d", bytes_per_pixel);
+
+                           Boolean edgeFound = false;
                            while(!edgeFound) {
-                              float sum;
+                              int sum = 0;
 
                               for(int index=0; index < windowwidth; index++) {
-                                  //sum += myBuffer.getInt();
+                                      sum += myBuffer.getChar(PixelIndex + index) & 0x00ff;
+                              }
+                              PixelIndex += step;
+                              column += step;
+                              boolean beyondBoundry = false;
+                              if (column > boundry) {
+                                  edgeFound = true;
+                                  beyondBoundry = true;
+
+                                  telemetry.addData("Error", "code is looking for skystone past boundry");
+                              }
+                              if (sum <= threshold) {
+                                  edgeFound = true;
+                              }
+                              if (edgeFound == true && beyondBoundry == false) {
+                                  telemetry.addData("sum, Pixel Index, column, found edge, offset from center", "%d %d %d %b %d", sum, PixelIndex, column, edgeFound, column - center);
                               }
 
                            }
 
                        }else if (myFrame == null) {
-                           telemetry.addData("Error", "No Frame");
+                           telemetry.addData("Note", "No Frame");
                        }
-                       telemetry.update();
+                        telemetry.update();
                     }
                 }
             }
