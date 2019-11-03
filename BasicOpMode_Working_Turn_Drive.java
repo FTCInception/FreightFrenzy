@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package Inception.Skystone;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -54,7 +54,7 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
     private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
 
     // Declare other variables
-    double speedModifier = 1;
+    double speedModifier = 0.5;
 
     @Override
     public void runOpMode() {
@@ -99,8 +99,20 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
 
             // POV Mode uses left stick to go forward, and right stick to turn.
             // - This uses basic math to combine motions and is easier to drive straight.
-            double drive = gamepad1.left_stick_y;
-            double turn  =  gamepad1.right_stick_x;
+            double drive = Math.cbrt(gamepad1.left_stick_y);
+            double turn  =  Math.cbrt(gamepad1.right_stick_x);
+            /*
+            if (turn > 0) {
+                turn = Math.sqrt(turn);
+            } else {
+                turn = -1 * Math.sqrt(-turn);
+            }
+            if (drive > 0) {
+                drive = Math.sqrt(drive);
+            } else {
+                drive = -1 * Math.sqrt(-drive);
+            }
+            */
 
             if (gamepad1.a) {
                 speedModifier = 1;
@@ -109,10 +121,10 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
                 speedModifier = 0.5;
             }
 
-            l_f_motor_power    = Range.clip(drive * speedModifier - turn , -1.0, 1.0) ;
-            l_b_motor_power    = Range.clip(drive * speedModifier - turn, -1.0, 1.0) ;
-            r_f_motor_power   = Range.clip(drive * speedModifier + turn, -1.0, 1.0) ;
-            r_b_motor_power   = Range.clip(drive * speedModifier + turn, -1.0, 1.0) ;
+            l_f_motor_power   = Range.clip((drive - turn) * speedModifier, -1.0, 1.0) ;
+            l_b_motor_power   = Range.clip((drive - turn) * speedModifier, -1.0, 1.0) ;
+            r_f_motor_power   = Range.clip((drive + turn) * speedModifier, -1.0, 1.0) ;
+            r_b_motor_power   = Range.clip((drive + turn) * speedModifier, -1.0, 1.0) ;
 
             // Send calculated power to wheels
             l_f_motor.setPower(l_f_motor_power);
