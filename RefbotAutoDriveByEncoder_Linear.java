@@ -59,27 +59,75 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  *
  * Use Android Studios to Copy this Class, and Paste it into your team's code folder with a new name.
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
+ *
+ *         // This code implements a soft start and soft stop based on time/speed/distance
+ *         // It's likely mor ecomplicated than necessary.  A distance=only approach is
+ *         // better below.  Turns still seem to have some issue in the time/speed/distance.
+ *         static final double     SECONDS_TO_FULL_POWER   = 1.5;
+ *         static final double     SPEED_RAMP_PER_MS       = (1.0/1000.0) / SECONDS_TO_FULL_POWER;
+ *         static final double     SPEED_OFFS              = 0.05;
+ *         double lastPos=0;
+ *         double lt;
+ *         double rem;
+ *         double rate;
+ *         boolean decel = false;
+ *         ElapsedTime     looptime = new ElapsedTime();
+ *         looptime.reset()
+ *                 if(false) {
+ *                     // Record elapsed time
+ *                     lt = looptime.milliseconds();
+ *                     // Reset the timer for next loop
+ *                     looptime.reset();
+ *                     // Get current position
+ *                     curPos = Math.abs(robot.leftFDrive.getCurrentPosition());
+ *                     // How much farther?
+ *                     toGo = tgtPos - curPos;
+ *                     // Compute remaining time based on encoder rate from last loop
+ *                     rate = ((curPos - lastPos) / lt);
+ *                     rem = toGo / rate;
+ *                     // Save the new position
+ *                     lastPos = curPos;
+ *                     // If the delta to our target stop speed is > than our deceleration rate, start to slow down
+ *                     if ((actSpeed > 0.20) && ((actSpeed - 0.20) > (rem * SPEED_RAMP_PER_MS))) {
+ *                         actSpeed = Math.max(actSpeed - (lt * SPEED_RAMP_PER_MS), 0.20);
+ *                         robot.leftFDrive.setPower(actSpeed);
+ *                         robot.rightFDrive.setPower(actSpeed * (67 / 70.0));
+ *                         robot.leftBDrive.setPower(actSpeed);
+ *                         robot.rightBDrive.setPower(actSpeed * (67 / 70.0));
+ *                         decel = true;
+ *                     } else {
+ *                         if (!decel && (actSpeed < speed)) {
+ *                             // If our speed is below our target and we're not slowing down, speed up
+ *                             actSpeed = Math.min(actSpeed + (lt * SPEED_RAMP_PER_MS), speed);
+ *                             robot.leftFDrive.setPower(actSpeed);
+ *                             robot.rightFDrive.setPower(actSpeed * (67 / 70.0));
+ *                             robot.leftBDrive.setPower(actSpeed);
+ *                             robot.rightBDrive.setPower(actSpeed * (67 / 70.0));
+ *                         }
+ *                     }
+ *                 }
+ *                 //telemetry.addData("Path3",  "Running rate: %3.3f, rem: %7.0f, s: %1.3f", rate, rem, actSpeed);
  */
 
 @Autonomous(name="Refbot: Auto Drive By Encoder", group="Refbot")
 public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
 
     /* Declare OpMode members. */
-    Refbot robot   = new Refbot();   // Use a Pushbot's hardware
+    private Refbot          robot   = new Refbot();   // Use a Pushbot's hardware
     private ElapsedTime     runtime = new ElapsedTime();
 
-    static final double     COUNTS_PER_MOTOR_REV    = 537.6 ;         // eg: TETRIX Motor Encoder
-    static final double     DRIVE_GEAR_REDUCTION    = 10.0/11.0 ;     // This is < 1.0 if geared UP
-    static final double     WHEEL_DIAMETER_INCHES   = 3.54331 ;       // For figuring circumference
-    static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
-                                                      (WHEEL_DIAMETER_INCHES * 3.14159);
-    static final double     AXLE_LENGTH             = 13.15;        // Width of robot through the pivot point (center wheels)
-    static final double     INCHES_PER_DEGREE       = (AXLE_LENGTH * 3.14159) / 360.0;
-    static final double     DRIVE_SPEED             = 0.7;
-    static final double     TURN_SPEED              = 0.35;
-    static final double     SECONDS_TO_FULL_POWER   = 1.5;
-    static final double     SPEED_RAMP_PER_MS       = (1.0/1000.0) / SECONDS_TO_FULL_POWER;
-    static final double     SPEED_OFFS              = 0.05;
+    private static final double     COUNTS_PER_MOTOR_REV    = 537.6 ;         // eg: TETRIX Motor Encoder
+    private static final double     DRIVE_GEAR_REDUCTION    = 10.0/11.0 ;     // This is < 1.0 if geared UP
+    private static final double     WHEEL_DIAMETER_INCHES   = 3.54331 ;       // For figuring circumference
+    private static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
+                                                              (WHEEL_DIAMETER_INCHES * 3.14159);
+    private static final double     AXLE_LENGTH             = 13.2;        // Width of robot through the pivot point (center wheels)
+    private static final double     INCHES_PER_DEGREE       = (AXLE_LENGTH * 3.14159) / 360.0;
+    private static final double     DRIVE_SPEED             = 0.65;
+    private static final double     TURN_SPEED              = 0.30;
+    private static final double     SOFT_D                  = 50.0;
+    private static final double     KpL                     = 1.0;
+    private static final double     KpR                     = 67.0/70.0;
 
     @Override
     public void runOpMode() {
@@ -117,14 +165,10 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
 
         // Step through each leg of the path,
         // Note: Reverse movement is obtained by setting a negative distance (not speed)
-        encoderDrive(DRIVE_SPEED,  72,  72, 10.0);  // S1: Forward 47 Inches with 5 Sec timeout
-        encoderRotate(TURN_SPEED,  360*5, 30.0);  // S2: Turn Right 3 rotations
-        //encoderDrive(DRIVE_SPEED,  72,  72, 10.0);  // S1: Forward 47 Inches with 5 Sec timeout
-        encoderDrive(DRIVE_SPEED,  -48,  -48, 10.0);  // S1: Forward 47 Inches with 5 Sec timeout
-
-        //encoderDrive(TURN_SPEED,   123, -123, 30.0);  // S2: Turn Right 12 Inches with 4 Sec timeout
-
-        //encoderDrive(DRIVE_SPEED, -48, -48, 10.0);  // S3: Reverse 24 Inches with 4 Sec timeout
+        encoderDrive(DRIVE_SPEED,  72,  72, 10.0);    // S1: Forward 72 Inches
+        encoderRotate(TURN_SPEED,  360, 10.0);                    // S2: Turn Right 1 rotations
+        encoderRotate(TURN_SPEED,  -360, 10.0);                   // S3: Turn Left 1 rotations
+        encoderDrive(DRIVE_SPEED,  -48,  -48, 10.0);  // S4: Backwards 48 Inches
 
         //robot.leftClaw.setPosition(1.0);            // S4: Stop and close the claw.
         //robot.rightClaw.setPosition(0.0);
@@ -142,7 +186,7 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
     }
 
 
-        /*
+     /*
      *  Method to perfmorm a relative move, based on encoder counts.
      *  Encoders are not reset as the move is based on the current position.
      *  Move will stop if any of three conditions occur:
@@ -159,14 +203,11 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
         int newRightBTarget;
         double curPos;
         double tgtPos;
-        double lastPos=0;
         double toGo;
         double actSpeed=0.0;
-        double lt;
-        double rem;
-        double rate;
-        boolean decel = false;
-        ElapsedTime     looptime = new ElapsedTime();
+        double newSpeed=0.0;
+        double spdUp,spdDn;
+        double[] speedRamp = {0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
 
 
         // Ensure that the opmode is still active
@@ -197,12 +238,11 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
             // reset the timeout time and start motion at the minimum speed.
             runtime.reset();
             speed = Math.abs(speed);
-            actSpeed = Math.min(speed, SPEED_OFFS);
-            robot.leftFDrive.setPower(actSpeed);
-            robot.rightFDrive.setPower(actSpeed*(67.5/70.0));
-            robot.leftBDrive.setPower(actSpeed);
-            robot.rightBDrive.setPower(actSpeed*(67.5/70.0));
-            looptime.reset();
+            actSpeed = speedRamp[0];
+            robot.leftFDrive.setPower(actSpeed * KpL);
+            robot.rightFDrive.setPower(actSpeed * KpR);
+            robot.leftBDrive.setPower(actSpeed * KpL);
+            robot.rightBDrive.setPower(actSpeed * KpR);
 
             // keep looping while we are still active, and there is time left, and both motors are running.
             // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
@@ -214,49 +254,44 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
                    (runtime.seconds() < timeoutS) &&
                    (robot.leftFDrive.isBusy() && robot.rightFDrive.isBusy() && robot.leftBDrive.isBusy() && robot.rightBDrive.isBusy())) {
 
-                // This code implements a soft start and soft stop.  Turns still seem to have some issue.
-                // Record elapsed time
-                lt = looptime.milliseconds();
-                // Reset the timer for next loop
-                looptime.reset();
+
+                // This code implements a soft start and soft stop.
                 // Get current position
                 curPos = Math.abs(robot.leftFDrive.getCurrentPosition());
+
                 // How much farther?
-                toGo = tgtPos - curPos;
-                // Compute remaining time based on encoder rate from last loop
-                rate = ((curPos - lastPos ) / lt);
-                rem = toGo / rate;
-                // Save the new position
-                lastPos = curPos;
-                // If the delta to our target stop speed is > than our deceleration rate, start to slow down
-                if ( (actSpeed > 0.20) && (( actSpeed - 0.20) > (rem * SPEED_RAMP_PER_MS)) ) {
-                    actSpeed = Math.max(actSpeed - (lt * SPEED_RAMP_PER_MS), 0.20);
-                    robot.leftFDrive.setPower(actSpeed);
-                    robot.rightFDrive.setPower(actSpeed*(67.5/70.0));
-                    robot.leftBDrive.setPower(actSpeed);
-                    robot.rightBDrive.setPower(actSpeed*(67.5/70.0));
-                    decel = true;
-                } else {
-                    if (!decel && (actSpeed < speed)) {
-                        // If our speed is below our target and we're not slowing down, speed up
-                        actSpeed = Math.min(actSpeed + (lt * SPEED_RAMP_PER_MS), speed);
-                        robot.leftFDrive.setPower(actSpeed);
-                        robot.rightFDrive.setPower(actSpeed*(67.5/70.0));
-                        robot.leftBDrive.setPower(actSpeed);
-                        robot.rightBDrive.setPower(actSpeed*(67.5/70.0));
-                    }
+                toGo  = Math.max(0,(tgtPos - curPos));
+
+                // Compute speed on acceleration and deceleration legs
+                spdUp = Math.min(speedRamp[Math.min((int)(curPos/SOFT_D),speedRamp.length-1)],speed);
+                spdDn = Math.min(speedRamp[Math.min((int)(toGo/SOFT_D),speedRamp.length-1)],speed);
+
+                // Use the minimum speed
+                newSpeed = Math.min(spdUp, spdDn);
+
+                // Special case when we get really close, go back to full power and let the PID
+                // motor controller handle it
+                if (toGo < (SOFT_D - 5)) { newSpeed = speed; }
+
+                // Change power if necessary
+                if (newSpeed != actSpeed) {
+                    actSpeed = newSpeed;
+                    robot.leftFDrive.setPower(actSpeed * KpL);
+                    robot.rightFDrive.setPower(actSpeed * KpR);
+                    robot.leftBDrive.setPower(actSpeed * KpL);
+                    robot.rightBDrive.setPower(actSpeed * KpR);
                 }
 
                 // Display it for the driver.
-                telemetry.addData("Path1",  "Running to LF:%7d, RF: %7d, LB: %7d, RB: %7d", newLeftFTarget,  newRightFTarget, newLeftBTarget,  newRightBTarget);
-                telemetry.addData("Path2",  "Running at LF:%7d, RF: %7d, LB: %7d, RB: %7d",
-                                            robot.leftFDrive.getCurrentPosition(),
-                                            robot.rightFDrive.getCurrentPosition(),
-                                            robot.leftBDrive.getCurrentPosition(),
-                                            robot.rightBDrive.getCurrentPosition());
-                telemetry.addData("Path3",  "Running rate: %3.3f, rem: %7.0f, s: %1.3f", rate, rem, actSpeed);
+                //telemetry.addData("Path1",  "Running to LF:%7d, RF: %7d, LB: %7d, RB: %7d", newLeftFTarget,  newRightFTarget, newLeftBTarget,  newRightBTarget);
+                //telemetry.addData("Path2",  "Running at LF:%7d, RF: %7d, LB: %7d, RB: %7d",
+                //                            robot.leftFDrive.getCurrentPosition(),
+                //                            robot.rightFDrive.getCurrentPosition(),
+                //                            robot.leftBDrive.getCurrentPosition(),
+                //                            robot.rightBDrive.getCurrentPosition());
+                telemetry.addData("Path3",  "Running up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int)curPos, (int)toGo);
                 telemetry.update();
-                sleep(10);   // optional pause after each move
+                //sleep(10);   // optional pause after each move
             }
 
             // Stop all motion;
