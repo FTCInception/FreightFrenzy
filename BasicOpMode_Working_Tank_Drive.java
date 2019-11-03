@@ -54,7 +54,7 @@ public class BasicOpMode_Working_Tank_Drive extends LinearOpMode {
     private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
 
     // Declare other variables
-    double speedModifier = 1;
+    double speedModifier = 0.5;
 
     @Override
     public void runOpMode() {
@@ -66,13 +66,9 @@ public class BasicOpMode_Working_Tank_Drive extends LinearOpMode {
         // step (using the FTC Robot Controller app on the phone).
 
         l_f_motor = hardwareMap.dcMotor.get("left_front");
-
         l_b_motor = hardwareMap.dcMotor.get("left_back");
-
         r_f_motor = hardwareMap.dcMotor.get("right_front");
-
         r_b_motor = hardwareMap.dcMotor.get("right_back");
-
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
@@ -89,10 +85,8 @@ public class BasicOpMode_Working_Tank_Drive extends LinearOpMode {
         while (opModeIsActive()) {
 
             // Setup a variable for each drive wheel to save power level for telemetry
-            double l_f_motor_power;
-            double l_b_motor_power;
-            double r_f_motor_power;
-            double r_b_motor_power;
+            double l_motor_power;
+            double r_motor_power;
 
             if (gamepad1.a) {
                 speedModifier = 1;
@@ -103,20 +97,24 @@ public class BasicOpMode_Working_Tank_Drive extends LinearOpMode {
 
             // Tank Mode uses one stick to control each wheel.
             // - This requires no math, but it is hard to drive forward slowly and keep straight.
-            l_f_motor_power  = gamepad1.left_stick_y ;
-            l_b_motor_power  = gamepad1.left_stick_y ;
-            r_f_motor_power   = gamepad1.right_stick_y ;
-            r_b_motor_power   = gamepad1.right_stick_y ;
+            l_motor_power = Math.cbrt(gamepad1.left_stick_y) * speedModifier;
+            r_motor_power = Math.cbrt(gamepad1.right_stick_y) * speedModifier;
+
+            // If the values are close to each other, we're probably trying to drive straight, help it out.
+            if (Math.abs(1-(l_motor_power/r_motor_power)) < .3) {
+                // Take the average of the power
+                l_motor_power = r_motor_power = ((l_motor_power + r_motor_power) / 2);
+            }
 
             // Send calculated power to wheels
-            l_f_motor.setPower(l_f_motor_power * speedModifier);
-            l_b_motor.setPower(l_b_motor_power * speedModifier);
-            r_f_motor.setPower(r_f_motor_power * speedModifier);
-            r_b_motor.setPower(r_b_motor_power * speedModifier);
+            l_f_motor.setPower(l_motor_power);
+            l_b_motor.setPower(l_motor_power);
+            r_f_motor.setPower(r_motor_power);
+            r_b_motor.setPower(r_motor_power);
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
-            telemetry.addData("Motors", "left (%.2f), right (%.2f)", l_f_motor_power, l_b_motor_power, r_f_motor_power, r_b_motor_power);
+            telemetry.addData("Motors", "left (%.2f), right (%.2f)", l_motor_power, r_motor_power);
             telemetry.addData("Speed Modifier", "Speed Modifier:" , speedModifier);
             telemetry.update();
         }
