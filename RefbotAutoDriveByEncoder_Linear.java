@@ -121,7 +121,7 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
     private static final double     WHEEL_DIAMETER_INCHES   = 3.54331 ;       // For figuring circumference
     private static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
                                                               (WHEEL_DIAMETER_INCHES * 3.14159);
-    private static final double     AXLE_LENGTH             = 13.2;        // Width of robot through the pivot point (center wheels)
+    private static final double     AXLE_LENGTH             = 13.25;        // Width of robot through the pivot point (center wheels)
     private static final double     INCHES_PER_DEGREE       = (AXLE_LENGTH * 3.14159) / 360.0;
     private static final double     DRIVE_SPEED             = 0.65;
     private static final double     TURN_SPEED              = 0.30;
@@ -167,8 +167,14 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
         // Note: Reverse movement is obtained by setting a negative distance (not speed)
         encoderDrive(DRIVE_SPEED,  72,  72, 10.0);    // S1: Forward 72 Inches
         encoderRotate(TURN_SPEED,  360, 10.0);                    // S2: Turn Right 1 rotations
-        encoderRotate(TURN_SPEED,  -360, 10.0);                   // S3: Turn Left 1 rotations
-        encoderDrive(DRIVE_SPEED,  -48,  -48, 10.0);  // S4: Backwards 48 Inches
+        sleep(500);     // pause for servos to move
+        encoderRotate(TURN_SPEED,  360, 10.0);                    // S3: Turn Right 1 rotations
+        sleep(500);     // pause for servos to move
+        encoderRotate(TURN_SPEED,  360, 10.0);                    // S4: Turn Right 1 rotations
+        sleep(500);     // pause for servos to move
+        encoderRotate(TURN_SPEED,  360, 10.0);                    // S5: Turn Right 1 rotations
+        sleep(500);     // pause for servos to move
+        encoderDrive(DRIVE_SPEED,  -48,  -48, 10.0);  // S6: Backwards 48 Inches
 
         //robot.leftClaw.setPosition(1.0);            // S4: Stop and close the claw.
         //robot.rightClaw.setPosition(0.0);
