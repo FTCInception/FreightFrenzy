@@ -130,7 +130,7 @@ public class BasicOpMode_Working_Tank_Drive extends LinearOpMode {
             r_motor_power = Math.cbrt(gamepad1.right_stick_y) * speedModifier;
 
             // If the values are close to each other, we're probably trying to drive straight, help it out.
-            if (Math.abs(1-(l_motor_power/r_motor_power)) < .3) {
+            if (Math.abs(1-(l_motor_power/r_motor_power)) < .2) {
                 // Take the average of the power
                 l_motor_power = r_motor_power = ((l_motor_power + r_motor_power) / 2);
             }
