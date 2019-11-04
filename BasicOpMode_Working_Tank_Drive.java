@@ -35,6 +35,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.hardware.Servo;
+
 
 
 /**
@@ -52,9 +54,10 @@ public class BasicOpMode_Working_Tank_Drive extends LinearOpMode {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
     private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
+    private static Servo foundation, claw;
 
     // Declare other variables
-    double speedModifier = 0.5;
+    double speedModifier = 0.75;
 
     @Override
     public void runOpMode() {
@@ -69,6 +72,9 @@ public class BasicOpMode_Working_Tank_Drive extends LinearOpMode {
         l_b_motor = hardwareMap.dcMotor.get("left_back");
         r_f_motor = hardwareMap.dcMotor.get("right_front");
         r_b_motor = hardwareMap.dcMotor.get("right_back");
+
+        foundation = hardwareMap.servo.get("foundation");
+        claw = hardwareMap.servo.get("claw");
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
@@ -88,11 +94,34 @@ public class BasicOpMode_Working_Tank_Drive extends LinearOpMode {
             double l_motor_power;
             double r_motor_power;
 
-            if (gamepad1.a) {
+            //speed control
+            if (gamepad1.x) {
                 speedModifier = 1;
             }
             else if (gamepad1.y) {
-                speedModifier = 0.5;
+                speedModifier = 0.75;
+            }
+            else if (gamepad1.b) {
+                speedModifier = .5;
+            }
+            else if (gamepad1.a) {
+                speedModifier = 0.25;
+            }
+
+            //foundation servo control
+            if(gamepad1.right_trigger > .5){
+                foundation.setPosition(1.0);
+            }
+            else if(gamepad1.right_trigger < .5){
+                foundation.setPosition(0);
+            }
+
+            //claw servo control
+            if(gamepad1.left_trigger > .5){
+                claw.setPosition(1.0);
+            }
+            else if(gamepad1.left_trigger < .5){
+                claw.setPosition(0);
             }
 
             // Tank Mode uses one stick to control each wheel.

@@ -121,13 +121,16 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
     private static final double     WHEEL_DIAMETER_INCHES   = 3.54331 ;       // For figuring circumference
     private static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
                                                               (WHEEL_DIAMETER_INCHES * 3.14159);
-    private static final double     AXLE_LENGTH             = 13.25;        // Width of robot through the pivot point (center wheels)
+    private static final double     AXLE_LENGTH             = 13.33;        // Width of robot through the pivot point (center wheels)
     private static final double     INCHES_PER_DEGREE       = (AXLE_LENGTH * 3.14159) / 360.0;
-    private static final double     DRIVE_SPEED             = 0.65;
-    private static final double     TURN_SPEED              = 0.30;
-    private static final double     SOFT_D                  = 50.0;
+    private static final double     DRIVE_SPEED             = 0.55;
+    private static final double     TURN_SPEED              = 0.25;
+    private static final double     PIVOT_SPEED             = 0.40;
+    private static final double     SOFT_D                  = 60.0;
     private static final double     KpL                     = 1.0;
-    private static final double     KpR                     = 67.0/70.0;
+    private static final double     KpR                     = 68.5/70.0;
+    private static final double     SQ                      = 70/3.0;
+    private static final double     PIVOT_FACTOR            = 2.05;
 
     @Override
     public void runOpMode() {
@@ -165,7 +168,8 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
 
         // Step through each leg of the path,
         // Note: Reverse movement is obtained by setting a negative distance (not speed)
-        encoderDrive(DRIVE_SPEED,  72,  72, 10.0);    // S1: Forward 72 Inches
+        /*
+        encoderDrive(DRIVE_SPEED,  24*4,  24*4, 10.0);    // S1: Forward 72 Inches
         encoderRotate(TURN_SPEED,  360, 10.0);                    // S2: Turn Right 1 rotations
         sleep(500);     // pause for servos to move
         encoderRotate(TURN_SPEED,  360, 10.0);                    // S3: Turn Right 1 rotations
@@ -174,7 +178,22 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
         sleep(500);     // pause for servos to move
         encoderRotate(TURN_SPEED,  360, 10.0);                    // S5: Turn Right 1 rotations
         sleep(500);     // pause for servos to move
-        encoderDrive(DRIVE_SPEED,  -48,  -48, 10.0);  // S6: Backwards 48 Inches
+        encoderDrive(DRIVE_SPEED,  -24*3.5,  -24*3.5, 10.0);  // S6: Backwards 48 Inches
+        */
+
+        encoderStraight(37.0,3);
+        encoderPivot(180,4);
+        encoderStraight(20,2);
+        encoderPivot(-90,2);
+        encoderStraight(24,2);
+        encoderStraight(-70,3);
+        encoderRotate(-90,2);
+        encoderStraight(24,2);
+        encoderPivot(180,3);
+        encoderStraight(20,2);
+        encoderPivot(-90,2);
+        encoderStraight(70,3);
+
 
         //robot.leftClaw.setPosition(1.0);            // S4: Stop and close the claw.
         //robot.rightClaw.setPosition(0.0);
@@ -184,15 +203,24 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
         telemetry.update();
     }
 
-    public void encoderRotate(double speed,
-                              double degrees,
-                              double timeoutS) {
-        encoderDrive( speed, degrees * INCHES_PER_DEGREE, -degrees * INCHES_PER_DEGREE, timeoutS);
-
+    public void encoderStraight(double distance, double timeoutS) {
+        encoderDrive( DRIVE_SPEED, distance, distance, timeoutS);
     }
 
+    public void encoderRotate(double degrees, double timeoutS) {
+        encoderDrive( TURN_SPEED, degrees * INCHES_PER_DEGREE, -degrees * INCHES_PER_DEGREE, timeoutS);
+    }
 
-     /*
+    public void encoderPivot(double degrees, double timeoutS) {
+        if (degrees > 0) {
+            encoderDrive(PIVOT_SPEED, degrees * PIVOT_FACTOR * INCHES_PER_DEGREE, 0, timeoutS);
+        } else {
+            // We use -degrees, since to cancel out the negative degrees (we want positive right wheel rotation
+            encoderDrive(PIVOT_SPEED, 0, -degrees * PIVOT_FACTOR * INCHES_PER_DEGREE, timeoutS);
+        }
+    }
+
+    /*
      *  Method to perfmorm a relative move, based on encoder counts.
      *  Encoders are not reset as the move is based on the current position.
      *  Move will stop if any of three conditions occur:
@@ -213,7 +241,7 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
         double actSpeed=0.0;
         double newSpeed=0.0;
         double spdUp,spdDn;
-        double[] speedRamp = {0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRamp = {0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
 
 
         // Ensure that the opmode is still active
@@ -258,7 +286,7 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
             // onto the next step, use (isBusy() || isBusy()) in the loop test.
             while (opModeIsActive() &&
                    (runtime.seconds() < timeoutS) &&
-                   (robot.leftFDrive.isBusy() && robot.rightFDrive.isBusy() && robot.leftBDrive.isBusy() && robot.rightBDrive.isBusy())) {
+                   (robot.leftFDrive.isBusy() || robot.rightFDrive.isBusy() || robot.leftBDrive.isBusy() || robot.rightBDrive.isBusy())) {
 
 
                 // This code implements a soft start and soft stop.

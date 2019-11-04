@@ -33,6 +33,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
@@ -52,6 +53,8 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
     private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
+    private static Servo foundation, claw;
+
 
     // Declare other variables
     double speedModifier = 0.5;
@@ -66,11 +69,8 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
         // step (using the FTC Robot Controller app on the phone).
 
         l_f_motor = hardwareMap.dcMotor.get("left_front");
-
         l_b_motor = hardwareMap.dcMotor.get("left_back");
-
         r_f_motor = hardwareMap.dcMotor.get("right_front");
-
         r_b_motor = hardwareMap.dcMotor.get("right_back");
 
 
@@ -80,6 +80,9 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
         l_b_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         r_f_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         r_b_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+
+        foundation = hardwareMap.servo.get("foundation");
+        claw = hardwareMap.servo.get("claw");
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
@@ -114,11 +117,34 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
             }
             */
 
-            if (gamepad1.a) {
+            //speed control
+            if (gamepad1.x) {
                 speedModifier = 1;
             }
             else if (gamepad1.y) {
-                speedModifier = 0.5;
+                speedModifier = 0.75;
+            }
+            else if (gamepad1.b) {
+                speedModifier = .5;
+            }
+            else if (gamepad1.a) {
+                speedModifier = 0.25;
+            }
+
+            //foundation servo control
+            if(gamepad1.right_trigger > .5){
+                foundation.setPosition(1.0);
+            }
+            else if(gamepad1.right_trigger < .5){
+                foundation.setPosition(0);
+            }
+
+            //claw servo control
+            if(gamepad1.left_trigger > .5){
+                claw.setPosition(1.0);
+            }
+            else if(gamepad1.left_trigger < .5){
+                claw.setPosition(0);
             }
 
             l_f_motor_power   = Range.clip((drive - turn) * speedModifier, -1.0, 1.0) ;
