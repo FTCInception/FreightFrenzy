@@ -33,13 +33,12 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 /**
  * This is NOT an opmode.
  *
  * This class can be used to define all the specific hardware for a single robot.
- * In this case that robot is a Pushbot.
- * See PushbotTeleopTank_Iterative and others classes starting with "Pushbot" for usage examples.
  *
  * This hardware class assumes the following device names have been configured on the robot:
  * Note:  All names are lower case and some have single spaces between words.
@@ -48,9 +47,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Motor channel:  Right drive motor:        "right_front"
  * Motor channel:  Left  drive motor:        "left_back"
  * Motor channel:  Right drive motor:        "right_back"
- * //Motor channel:  Manipulator drive motor:  "left_arm"
- * //Servo channel:  Servo to open left claw:  "left_hand"
- * //Servo channel:  Servo to open right claw: "right_hand"
+ * Servo channel:  Servo to grab foundation: "foundation"
+ * Servo channel:  Servo to grab blocks:     "claw"
  */
 public class Refbot
 {
@@ -59,13 +57,22 @@ public class Refbot
     public DcMotor  rightFDrive  = null;
     public DcMotor  leftBDrive   = null;
     public DcMotor  rightBDrive  = null;
-    //public DcMotor  leftArm     = null;
-    //public Servo    leftClaw    = null;
-    //public Servo    rightClaw   = null;
+    public Servo    foundation    = null;
+    public Servo    claw   = null;
 
-    //public static final double MID_SERVO       =  0.5 ;
-    //public static final double ARM_UP_POWER    =  0.45 ;
-    //public static final double ARM_DOWN_POWER  = -0.45 ;
+    private static final double     COUNTS_PER_MOTOR_REV    = 537.6 ;         // eg: TETRIX Motor Encoder
+    private static final double     DRIVE_GEAR_REDUCTION    = 10.0/11.0 ;     // This is < 1.0 if geared UP
+    private static final double     WHEEL_DIAMETER_INCHES   = 3.54331 ;       // For figuring circumference
+    private static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
+                                                              (WHEEL_DIAMETER_INCHES * 3.14159);
+    private static final double     AXLE_LENGTH             = 13.25;          // Width of robot through the pivot point (center wheels)
+    private static final double     INCHES_PER_DEGREE       = (AXLE_LENGTH * 3.14159) / 360.0;
+    private static final double     SOFT_D_UP               = 50.0;
+    private static final double     SOFT_D_DOWN             = 70.0;
+    private static final double     KpL                     = 1.0;
+    private static final double     KpR                     = 67.5/70.0;
+    private static final double     PIVOT_FACTOR            = 2.05;
+    private static final double     CLOSE_ENOUGH            = 15.0;
 
     /* local OpMode members. */
     HardwareMap hwMap           =  null;
@@ -74,6 +81,30 @@ public class Refbot
     /* Constructor */
     public Refbot(){
 
+    }
+
+    public void initAutonomous(LinearOpMode lOpMode) {
+        // Send telemetry message to signify robot waiting;
+        lOpMode.telemetry.addData("Status", "Resetting Encoders");    //
+        lOpMode.telemetry.update();
+
+        leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        // Send telemetry message to indicate successful Encoder reset
+        lOpMode.telemetry.addData("Path0", "Starting at LF:%7d, RF:%7d, LB:%7d, RB:%7d",
+                leftFDrive.getCurrentPosition(),
+                rightFDrive.getCurrentPosition(),
+                leftBDrive.getCurrentPosition(),
+                rightBDrive.getCurrentPosition());
+        lOpMode.telemetry.update();
     }
 
     /* Initialize standard Hardware interfaces */
@@ -111,10 +142,186 @@ public class Refbot
         //leftArm.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Define and initialize ALL installed servos.
-        //leftClaw  = hwMap.get(Servo.class, "left_hand");
-        //rightClaw = hwMap.get(Servo.class, "right_hand");
-        //leftClaw.setPosition(MID_SERVO);
-        //rightClaw.setPosition(MID_SERVO);
+        foundation  = hwMap.get(Servo.class, "foundation");
+        claw = hwMap.get(Servo.class, "claw");
+        foundation.setPosition(0);
+        claw.setPosition(0);
     }
- }
+
+    public void grabFoundation(LinearOpMode lOpMode) {
+        claw.setPosition(0);
+        lOpMode.sleep(400);
+    }
+
+    public void releaseFoundation(LinearOpMode lOpMode) {
+        claw.setPosition(1);
+        lOpMode.sleep(250);
+    }
+
+    public void grabBlock(LinearOpMode lOpMode) {
+        claw.setPosition(1);
+        lOpMode.sleep(400);
+    }
+
+    public void dropBlock(LinearOpMode lOpMode) {
+        claw.setPosition(0);
+        lOpMode.sleep(250);
+    }
+
+    public void encoderStraight(double speed, double distance, double timeoutS, LinearOpMode lOpMode) {
+        encoderDrive( speed, distance, distance, timeoutS, lOpMode);
+    }
+
+    public void encoderRotate(double speed, double degrees, double timeoutS, LinearOpMode lOpMode) {
+        encoderDrive( speed, degrees * INCHES_PER_DEGREE, -degrees * INCHES_PER_DEGREE, timeoutS,  lOpMode);
+    }
+
+    public void encoderPivot(double speed, double degrees, double timeoutS, LinearOpMode lOpMode) {
+        if (degrees > 0) {
+            encoderDrive(speed, degrees * PIVOT_FACTOR * INCHES_PER_DEGREE, 0, timeoutS,  lOpMode);
+        } else {
+            // We use -degrees, since to cancel out the negative degrees (we want positive right wheel rotation
+            encoderDrive(speed, 0, -degrees * PIVOT_FACTOR * INCHES_PER_DEGREE, timeoutS,  lOpMode);
+        }
+    }
+
+    /*
+     *  Method to perfmorm a relative move, based on encoder counts.
+     *  Encoders are not reset as the move is based on the current position.
+     *  Move will stop if any of three conditions occur:
+     *  1) Move gets to the desired position
+     *  2) Move runs out of time
+     *  3) Driver stops the opmode running.
+     */
+    public void encoderDrive(double speed,
+                             double leftInches, double rightInches,
+                             double timeoutS,
+                             LinearOpMode lOpMode) {
+        int newLeftFTarget;
+        int newRightFTarget;
+        int newLeftBTarget;
+        int newRightBTarget;
+        double curPos;
+        double tgtPos;
+        double toGo;
+        double actSpeed=0.0;
+        double newSpeed=0.0;
+        double spdUp,spdDn;
+        double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        ElapsedTime     runtime = new ElapsedTime();
+
+
+        // Ensure that the opmode is still active
+        if (lOpMode.opModeIsActive()) {
+
+            leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            rightFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            leftBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            rightBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+            // Determine new target position, and pass to motor controller
+            newLeftFTarget = (int)(leftInches * COUNTS_PER_INCH);
+            newRightFTarget = (int)(rightInches * COUNTS_PER_INCH);
+            newLeftBTarget = (int)(leftInches * COUNTS_PER_INCH);
+            newRightBTarget = (int)(rightInches * COUNTS_PER_INCH);
+            tgtPos = Math.abs(newLeftFTarget);
+            leftFDrive.setTargetPosition(newLeftFTarget);
+            rightFDrive.setTargetPosition(newRightFTarget);
+            leftBDrive.setTargetPosition(newLeftBTarget);
+            rightBDrive.setTargetPosition(newRightBTarget);
+
+            // Turn On RUN_TO_POSITION
+            leftFDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            rightFDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            leftBDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            rightBDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            // The front wheels are slipping so they stop and fight the back.  Set them
+            // to FLOAT here to try to avoid that.  Not sure if this actually works
+            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
+
+            // reset the timeout time and start motion at the minimum speed.
+            runtime.reset();
+            speed = Math.abs(speed);
+            actSpeed = speedRampUp[0];
+            leftFDrive.setPower(actSpeed * KpL);
+            rightFDrive.setPower(actSpeed * KpR);
+            leftBDrive.setPower(actSpeed * KpL);
+            rightBDrive.setPower(actSpeed * KpR);
+
+            // keep looping while we are still active, and there is time left, and both motors are running.
+            // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
+            // its target position, the motion will stop.  This is "safer" in the event that the robot will
+            // always end the motion as soon as possible.
+            // However, if you require that BOTH motors have finished their moves before the robot continues
+            // onto the next step, use (isBusy() || isBusy()) in the loop test.
+            while (lOpMode.opModeIsActive() &&
+                    (runtime.seconds() < timeoutS) &&
+                    (leftBDrive.isBusy() && rightBDrive.isBusy() &&
+                            ((Math.abs(newLeftBTarget  -  leftBDrive.getCurrentPosition()) > CLOSE_ENOUGH) ||
+                             (Math.abs(newRightBTarget - rightBDrive.getCurrentPosition()) > CLOSE_ENOUGH)))) {
+
+                // This code implements a soft start and soft stop.
+                // Get current position
+                curPos = Math.abs(leftFDrive.getCurrentPosition());
+
+                // How much farther?
+                toGo  = Math.max(0,(tgtPos - curPos));
+
+                // Compute speed on acceleration and deceleration legs
+                spdUp = Math.min(speedRampUp[Math.min((int)(curPos/SOFT_D_UP),speedRampUp.length-1)],speed);
+                spdDn = Math.min(speedRampDown[Math.min((int)(toGo/SOFT_D_DOWN),speedRampDown.length-1)],speed);
+
+                // Use the minimum speed
+                newSpeed = Math.min(spdUp, spdDn);
+
+                // Special case when we get really close, go back to full power and let the PID
+                // motor controller handle it
+                if (toGo < (SOFT_D_DOWN - 5)) { newSpeed = speed; }
+
+                // Change power if necessary
+                if (newSpeed != actSpeed) {
+                    actSpeed = newSpeed;
+                    leftFDrive.setPower(actSpeed * KpL);
+                    rightFDrive.setPower(actSpeed * KpR);
+                    leftBDrive.setPower(actSpeed * KpL);
+                    rightBDrive.setPower(actSpeed * KpR);
+                }
+
+                // Display it for the driver.
+                //telemetry.addData("Path1",  "Running to LF:%7d, RF: %7d, LB: %7d, RB: %7d", newLeftFTarget,  newRightFTarget, newLeftBTarget,  newRightBTarget);
+                //telemetry.addData("Path2",  "Running at LF:%7d, RF: %7d, LB: %7d, RB: %7d",
+                //                            leftFDrive.getCurrentPosition(),
+                //                            rightFDrive.getCurrentPosition(),
+                //                            leftBDrive.getCurrentPosition(),
+                //                            rightBDrive.getCurrentPosition());
+                lOpMode.telemetry.addData("Path3",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int)curPos, (int)toGo);
+                lOpMode.telemetry.update();
+                //sleep(10);   // optional pause after each move
+            }
+
+            // The front wheels are slipping so they stop and fight the back.  Set them
+            // to FLOAT earlier, so reset to BRAKE here.
+            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+            // Stop all motion;
+            leftFDrive.setPower(0);
+            rightFDrive.setPower(0);
+            leftBDrive.setPower(0);
+            rightBDrive.setPower(0);
+
+            // Turn off RUN_TO_POSITION
+            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            //sleep(500);   // optional pause after each move
+        }
+    }
+}
 
