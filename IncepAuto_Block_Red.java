@@ -47,14 +47,14 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *
  */
 
-@Autonomous(name="Refbot: Arc Demo", group="Refbot")
-public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
+@Autonomous(name="Incep: Auto Block Red", group="Incepbot")
+public class IncepAuto_Block_Red extends LinearOpMode {
 
     /* Declare OpMode members. */
-    private Refbot          robot   = new Refbot();   // Use a Pushbot's hardware
+    private IncepBot          robot   = new IncepBot();   // Use a Pushbot's hardware
 
     private static final double     DRIVE_SPEED             = 0.9;
-    private static final double     TURN_SPEED              = 0.6;
+    private static final double     TURN_SPEED              = 0.65;
     private static final double     PIVOT_SPEED             = 0.40;
     private static final double     SQ                      = 70/3.0;        // Length of 3 squares / 3 in case we want to think that way
 
@@ -80,64 +80,27 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
         encoderStraight(DRIVE_SPEEC,-25,4);
 */
 
-        robot.encoderArc( 0.6,  90,  robot.RIGHT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.RIGHT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.RIGHT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.RIGHT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.RIGHT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.RIGHT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.RIGHT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.RIGHT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderRotate(TURN_SPEED,180, 5);
-        sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.LEFT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.LEFT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.LEFT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.LEFT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.LEFT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.LEFT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.LEFT,  15.0, 20.0) ;
-        sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.LEFT,  15.0, 20.0) ;
-        sleep(250);
-
-
-        /*
         robot.encoderStraight(DRIVE_SPEED,-32,3);
 
         robot.grabBlock();
 
         //go to other side
         robot.encoderStraight(DRIVE_SPEED,10,2);
-        robot.encoderRotate(TURN_SPEED,-90, 2);
+        robot.encoderRotate(TURN_SPEED,90, 2.5);
         robot.encoderStraight(DRIVE_SPEED,-38, 3);
 
         robot.dropBlock();
 
         //come back and go for next one
         robot.encoderStraight(DRIVE_SPEED,46, 3);
-        robot.encoderRotate(TURN_SPEED,90, 2);
-        robot.encoderStraight(DRIVE_SPEED,-10,2);
+        robot.encoderRotate(TURN_SPEED,-90, 2.5);
+        robot.encoderStraight(DRIVE_SPEED,-12,3);
 
         robot.grabBlock();
 
         //go to other side
-        robot.encoderStraight(DRIVE_SPEED,8,2);
-        robot.encoderRotate(TURN_SPEED,-90, 2);
+        robot.encoderStraight(DRIVE_SPEED,10,2);
+        robot.encoderRotate(TURN_SPEED,90, 2.5);
         robot.encoderStraight(DRIVE_SPEED,-48, 3);
 
         //drop block
@@ -148,7 +111,6 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
 
         // Extend for parking reach
         robot.grabBlock();
-        */
 
         telemetry.addData("Path", "Complete");
         telemetry.update();

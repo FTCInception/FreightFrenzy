@@ -73,10 +73,16 @@ public class Refbot
     private static final double     KpR                     = 67.5/70.0;
     private static final double     PIVOT_FACTOR            = 2.05;
     private static final double     CLOSE_ENOUGH            = 15.0;
+    private static final double     RIGHT_ARC_COEFFICENT    = 1.00;
+    private static final double     LEFT_ARC_COEFFICENT     = 1.25;
+    static final double             RIGHT                   = 1;
+    static final double             LEFT                    = 0;
+
 
     /* local OpMode members. */
     HardwareMap hwMap           =  null;
     private ElapsedTime period  = new ElapsedTime();
+    private static LinearOpMode myLOpMode = null;
 
     /* Constructor */
     public Refbot(){
@@ -84,9 +90,10 @@ public class Refbot
     }
 
     public void initAutonomous(LinearOpMode lOpMode) {
+        myLOpMode = lOpMode;
         // Send telemetry message to signify robot waiting;
-        lOpMode.telemetry.addData("Status", "Resetting Encoders");    //
-        lOpMode.telemetry.update();
+        myLOpMode.telemetry.addData("Status", "Resetting Encoders");    //
+        myLOpMode.telemetry.update();
 
         leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -99,12 +106,12 @@ public class Refbot
         rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         // Send telemetry message to indicate successful Encoder reset
-        lOpMode.telemetry.addData("Path0", "Starting at LF:%7d, RF:%7d, LB:%7d, RB:%7d",
+        myLOpMode.telemetry.addData("Path0", "Starting at LF:%7d, RF:%7d, LB:%7d, RB:%7d",
                 leftFDrive.getCurrentPosition(),
                 rightFDrive.getCurrentPosition(),
                 leftBDrive.getCurrentPosition(),
                 rightBDrive.getCurrentPosition());
-        lOpMode.telemetry.update();
+        myLOpMode.telemetry.update();
     }
 
     /* Initialize standard Hardware interfaces */
@@ -148,40 +155,165 @@ public class Refbot
         claw.setPosition(0);
     }
 
-    public void grabFoundation(LinearOpMode lOpMode) {
+    public void grabFoundation() {
         claw.setPosition(0);
-        lOpMode.sleep(400);
+        myLOpMode.sleep(400);
     }
 
-    public void releaseFoundation(LinearOpMode lOpMode) {
+    public void releaseFoundation() {
         claw.setPosition(1);
-        lOpMode.sleep(250);
+        myLOpMode.sleep(250);
     }
 
-    public void grabBlock(LinearOpMode lOpMode) {
+    public void grabBlock() {
         claw.setPosition(1);
-        lOpMode.sleep(400);
+        myLOpMode.sleep(400);
     }
 
-    public void dropBlock(LinearOpMode lOpMode) {
+    public void dropBlock() {
         claw.setPosition(0);
-        lOpMode.sleep(250);
+        myLOpMode.sleep(250);
     }
 
-    public void encoderStraight(double speed, double distance, double timeoutS, LinearOpMode lOpMode) {
-        encoderDrive( speed, distance, distance, timeoutS, lOpMode);
+    public void encoderStraight(double speed, double distance, double timeoutS) {
+        encoderDrive( speed, distance, distance, timeoutS );
     }
 
-    public void encoderRotate(double speed, double degrees, double timeoutS, LinearOpMode lOpMode) {
-        encoderDrive( speed, degrees * INCHES_PER_DEGREE, -degrees * INCHES_PER_DEGREE, timeoutS,  lOpMode);
+    public void encoderRotate(double speed, double degrees, double timeoutS) {
+        encoderDrive( speed, degrees * INCHES_PER_DEGREE, -degrees * INCHES_PER_DEGREE, timeoutS );
     }
 
-    public void encoderPivot(double speed, double degrees, double timeoutS, LinearOpMode lOpMode) {
+    public void encoderPivot(double speed, double degrees, double timeoutS) {
         if (degrees > 0) {
-            encoderDrive(speed, degrees * PIVOT_FACTOR * INCHES_PER_DEGREE, 0, timeoutS,  lOpMode);
+            encoderDrive(speed, degrees * PIVOT_FACTOR * INCHES_PER_DEGREE, 0, timeoutS);
         } else {
             // We use -degrees, since to cancel out the negative degrees (we want positive right wheel rotation
-            encoderDrive(speed, 0, -degrees * PIVOT_FACTOR * INCHES_PER_DEGREE, timeoutS,  lOpMode);
+            encoderDrive(speed, 0, -degrees * PIVOT_FACTOR * INCHES_PER_DEGREE, timeoutS);
+        }
+    }
+
+    public void encoderArc(double speed, double degrees, double LorR, double radius, double timeoutS) {
+
+        // ARC_COEFFICENT to overcome friction/slide/etc?
+        double InnerDist = 3.14159*(radius*2) * (degrees / 360.0) ;
+        double OuterDist = 3.14159*((radius+AXLE_LENGTH)*2) * (degrees / 360.0) ;
+        double ratio = InnerDist/OuterDist;
+        //int newInnerTarget = (int) (InnerDist * COUNTS_PER_INCH);
+        //int newOuterTarget = (int) (OuterDist * COUNTS_PER_INCH);
+        double tgtPos = Math.abs(OuterDist * COUNTS_PER_INCH);
+        double KpI;
+        double KpO;
+        double curPos;
+        double toGo;
+        double actSpeed ;
+        double newSpeed ;
+        double spdUp,spdDn;
+        double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        ElapsedTime     runtime = new ElapsedTime();
+        DcMotor  OFDrive ;
+        DcMotor  OBDrive ;
+        DcMotor  IFDrive ;
+        DcMotor  IBDrive ;
+
+        // Define inner and outer motors
+        if (LorR == RIGHT) {
+            OFDrive = leftFDrive ;
+            OBDrive = leftBDrive ;
+            IFDrive = rightFDrive ;
+            IBDrive = rightBDrive ;
+            KpO = KpL ;
+            KpI = KpR ;
+            InnerDist *= RIGHT_ARC_COEFFICENT ;
+            OuterDist *= RIGHT_ARC_COEFFICENT ;
+            tgtPos *= RIGHT_ARC_COEFFICENT ;
+        } else {
+            OFDrive = rightFDrive ;
+            OBDrive = rightBDrive ;
+            IFDrive = leftFDrive ;
+            IBDrive = leftBDrive ;
+            //KpO = KpR ;
+            //KpI = KpL ;
+            KpO = 1.0 ;
+            KpI = 1.0 ;
+            InnerDist *= LEFT_ARC_COEFFICENT ;
+            OuterDist *= LEFT_ARC_COEFFICENT ;
+            tgtPos *= LEFT_ARC_COEFFICENT ;
+        }
+
+        // Ensure that the opmode is still active
+        if (myLOpMode.opModeIsActive()) {
+
+            OFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            OBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            IFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            IBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+            // Turn On RUN_TO_POSITION
+            OFDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            OBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            IFDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            IBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+            // reset the timeout time and start motion at the minimum speed.
+            runtime.reset();
+            speed = Math.abs(speed);
+            actSpeed = Math.min(speedRampUp[0],speed);
+            if ( OuterDist < 0 ) {
+                actSpeed *= -1.0;
+            }
+            OFDrive.setPower(actSpeed * KpO );
+            OBDrive.setPower(actSpeed * KpO );
+            IFDrive.setPower(actSpeed * KpI * ratio );
+            IBDrive.setPower(actSpeed * KpI * ratio );
+
+            // keep looping while we are still active, and there is time left, and the motors haven't reached end point
+            while (myLOpMode.opModeIsActive() &&
+                    (runtime.seconds() < timeoutS) &&
+                    (Math.max(0,(tgtPos - (curPos = Math.abs(OFDrive.getCurrentPosition())))) > CLOSE_ENOUGH)) {
+
+                // This code implements a soft start and soft stop.
+                // Use current position from loop abpvr
+                // How much farther?
+                toGo  = Math.max(0,tgtPos - curPos);
+
+                // Compute speed on acceleration and deceleration legs
+                spdUp = Math.min(speedRampUp[Math.min((int)(curPos/SOFT_D_UP),speedRampUp.length-1)],speed);
+                spdDn = Math.min(speedRampDown[Math.min((int)(toGo/SOFT_D_DOWN),speedRampDown.length-1)],speed);
+
+                // Use the minimum speed
+                newSpeed = Math.min(spdUp, spdDn);
+
+                // Change power if necessary
+                if ( OuterDist < 0 ) {
+                    newSpeed *= -1.0;
+                }
+                if (newSpeed != actSpeed) {
+                    actSpeed = newSpeed;
+                    OFDrive.setPower(actSpeed * KpO );
+                    OBDrive.setPower(actSpeed * KpO );
+                    IFDrive.setPower(actSpeed * KpI * ratio );
+                    IBDrive.setPower(actSpeed * KpI * ratio );
+                }
+
+                myLOpMode.telemetry.addData("Path3",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int)curPos, (int)toGo);
+                myLOpMode.telemetry.update();
+                //sleep(10);   // optional pause after each move
+            }
+
+            // Stop all motion;
+            leftFDrive.setPower(0);
+            rightFDrive.setPower(0);
+            leftBDrive.setPower(0);
+            rightBDrive.setPower(0);
+
+            // Turn off RUN_WITHOUT_ENCODERS
+            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            //sleep(500);   // optional pause after each move
         }
     }
 
@@ -195,8 +327,7 @@ public class Refbot
      */
     public void encoderDrive(double speed,
                              double leftInches, double rightInches,
-                             double timeoutS,
-                             LinearOpMode lOpMode) {
+                             double timeoutS) {
         int newLeftFTarget;
         int newRightFTarget;
         int newLeftBTarget;
@@ -213,7 +344,7 @@ public class Refbot
 
 
         // Ensure that the opmode is still active
-        if (lOpMode.opModeIsActive()) {
+        if (myLOpMode.opModeIsActive()) {
 
             leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             rightFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -246,7 +377,7 @@ public class Refbot
             // reset the timeout time and start motion at the minimum speed.
             runtime.reset();
             speed = Math.abs(speed);
-            actSpeed = speedRampUp[0];
+            actSpeed = Math.min(speedRampUp[0],speed);
             leftFDrive.setPower(actSpeed * KpL);
             rightFDrive.setPower(actSpeed * KpR);
             leftBDrive.setPower(actSpeed * KpL);
@@ -258,7 +389,7 @@ public class Refbot
             // always end the motion as soon as possible.
             // However, if you require that BOTH motors have finished their moves before the robot continues
             // onto the next step, use (isBusy() || isBusy()) in the loop test.
-            while (lOpMode.opModeIsActive() &&
+            while (myLOpMode.opModeIsActive() &&
                     (runtime.seconds() < timeoutS) &&
                     (leftBDrive.isBusy() && rightBDrive.isBusy() &&
                             ((Math.abs(newLeftBTarget  -  leftBDrive.getCurrentPosition()) > CLOSE_ENOUGH) ||
@@ -298,8 +429,8 @@ public class Refbot
                 //                            rightFDrive.getCurrentPosition(),
                 //                            leftBDrive.getCurrentPosition(),
                 //                            rightBDrive.getCurrentPosition());
-                lOpMode.telemetry.addData("Path3",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int)curPos, (int)toGo);
-                lOpMode.telemetry.update();
+                myLOpMode.telemetry.addData("Path3",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int)curPos, (int)toGo);
+                myLOpMode.telemetry.update();
                 //sleep(10);   // optional pause after each move
             }
 

@@ -31,6 +31,7 @@ package Inception.Skystone;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 
 /**
@@ -48,6 +49,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *
  */
 @Autonomous(name="Refbot: Auto Foundation", group="Refbot")
+@Disabled
 public class RefbotAutoDriveByEncoder_Linear_Foundation extends LinearOpMode {
 
     /* Declare OpMode members. */
@@ -71,19 +73,19 @@ public class RefbotAutoDriveByEncoder_Linear_Foundation extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        robot.releaseFoundation(this);
+        robot.releaseFoundation();
 
-        robot.encoderStraight(DRIVE_SPEED,-34,4, this);
+        robot.encoderStraight(DRIVE_SPEED,-34,4);
 
-        robot.grabFoundation(this);
+        robot.grabFoundation();
 
-        robot.encoderDrive(.4, 10,20,4, this);
-        robot.encoderStraight(DRIVE_SPEED,20,4,this);
+        robot.encoderDrive(.4, 10,20,4);
+        robot.encoderStraight(DRIVE_SPEED,20,4);
 
-        robot.releaseFoundation(this);
+        robot.releaseFoundation();
 
-        robot.encoderRotate(TURN_SPEED,-70,4, this);
-        robot.encoderStraight(DRIVE_SPEED,30,4, this);
+        robot.encoderRotate(TURN_SPEED,-70,4);
+        robot.encoderStraight(DRIVE_SPEED,30,4);
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
