@@ -80,39 +80,39 @@ public class RefbotAutoDriveByEncoder_Linear extends LinearOpMode {
         encoderStraight(DRIVE_SPEEC,-25,4);
 */
 
-        robot.encoderArc( 0.6,  90,  robot.RIGHT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  90, Refbot.RIGHT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.RIGHT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  90, Refbot.RIGHT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.RIGHT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  90, Refbot.RIGHT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.RIGHT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  90, Refbot.RIGHT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.RIGHT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  -90, Refbot.RIGHT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.RIGHT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  -90, Refbot.RIGHT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.RIGHT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  -90, Refbot.RIGHT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.RIGHT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  -90, Refbot.RIGHT,  15.0, 20.0) ;
         sleep(250);
         robot.encoderRotate(TURN_SPEED,180, 5);
         sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.LEFT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  90, Refbot.LEFT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.LEFT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  90, Refbot.LEFT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.LEFT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  90, Refbot.LEFT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  90,  robot.LEFT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  90, Refbot.LEFT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.LEFT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  -90, Refbot.LEFT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.LEFT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  -90, Refbot.LEFT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.LEFT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  -90, Refbot.LEFT,  15.0, 20.0) ;
         sleep(250);
-        robot.encoderArc( 0.6,  -90,  robot.LEFT,  15.0, 20.0) ;
+        robot.encoderArc( 0.6,  -90, Refbot.LEFT,  15.0, 20.0) ;
         sleep(250);
 
 
