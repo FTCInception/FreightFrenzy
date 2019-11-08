@@ -53,7 +53,7 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
     private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
-    private static Servo foundation, claw;
+    private static Servo foundation1, foundation2, claw;
 
 
     // Declare other variables
@@ -81,7 +81,8 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
         r_f_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         r_b_motor.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        foundation = hardwareMap.servo.get("foundation");
+        foundation1 = hardwareMap.servo.get("foundation1");
+        foundation2 = hardwareMap.servo.get("foundation2");
         claw = hardwareMap.servo.get("claw");
 
         // Wait for the game to start (driver presses PLAY)
@@ -133,10 +134,12 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
 
             //foundation servo control
             if(gamepad1.right_trigger > .5){
-                foundation.setPosition(1.0);
+                foundation1.setPosition(1);
+                foundation2.setPosition(1);
             }
             else if(gamepad1.right_trigger < .5){
-                foundation.setPosition(0);
+                foundation1.setPosition(0);
+                foundation2.setPosition(0);
             }
 
             //claw servo control

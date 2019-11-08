@@ -57,7 +57,8 @@ public class IncepBot
     public DcMotor  rightFDrive  = null;
     public DcMotor  leftBDrive   = null;
     public DcMotor  rightBDrive  = null;
-    public Servo    foundation    = null;
+    public Servo    foundation1    = null;
+    public Servo    foundation2    = null;
     public Servo    claw   = null;
 
     private static final double     COUNTS_PER_MOTOR_REV    = 537.6 ;         // eg: TETRIX Motor Encoder
@@ -149,20 +150,24 @@ public class IncepBot
         //leftArm.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Define and initialize ALL installed servos.
-        foundation  = hwMap.get(Servo.class, "foundation");
+        foundation1  = hwMap.get(Servo.class, "foundation1");
+        foundation2  = hwMap.get(Servo.class, "foundation2");
         claw = hwMap.get(Servo.class, "claw");
-        foundation.setPosition(0);
+        foundation1.setPosition(0);
+        foundation2.setPosition(0);
         claw.setPosition(0);
     }
 
     public void grabFoundation() {
-        claw.setPosition(0);
-        myLOpMode.sleep(400);
+        foundation1.setPosition(0);
+        foundation2.setPosition(0);
+        myLOpMode.sleep(750);
     }
 
     public void releaseFoundation() {
-        claw.setPosition(1);
-        myLOpMode.sleep(250);
+        foundation1.setPosition(1);
+        foundation2.setPosition(1);
+        myLOpMode.sleep(750);
     }
 
     public void grabBlock() {
