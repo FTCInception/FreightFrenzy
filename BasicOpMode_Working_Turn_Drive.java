@@ -58,6 +58,7 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
 
     // Declare other variables
     double speedModifier = 0.5;
+    int dirInvert = 1;
 
     @Override
     public void runOpMode() {
@@ -132,6 +133,13 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
                 speedModifier = 0.25;
             }
 
+            if (gamepad1.dpad_up) {
+                dirInvert = 1;
+            }
+            else if (gamepad1.dpad_down) {
+                dirInvert = -1;
+            }
+
             //foundation servo control
             if(gamepad1.right_trigger > .5){
                 foundation1.setPosition(1);
@@ -150,10 +158,13 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
                 claw.setPosition(0);
             }
 
-            l_f_motor_power   = Range.clip((drive - turn) * speedModifier, -1.0, 1.0) ;
-            l_b_motor_power   = Range.clip((drive - turn) * speedModifier, -1.0, 1.0) ;
-            r_f_motor_power   = Range.clip((drive + turn) * speedModifier, -1.0, 1.0) ;
-            r_b_motor_power   = Range.clip((drive + turn) * speedModifier, -1.0, 1.0) ;
+
+
+
+            l_f_motor_power   = Range.clip(((drive* dirInvert) - turn) * speedModifier, -1.0, 1.0) ;
+            l_b_motor_power   = Range.clip(((drive* dirInvert) - turn) * speedModifier, -1.0, 1.0) ;
+            r_f_motor_power   = Range.clip(((drive* dirInvert) + turn) * speedModifier, -1.0, 1.0) ;
+            r_b_motor_power   = Range.clip(((drive* dirInvert) + turn) * speedModifier, -1.0, 1.0) ;
 
             // Send calculated power to wheels
             l_f_motor.setPower(l_f_motor_power);
