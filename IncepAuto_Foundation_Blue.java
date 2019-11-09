@@ -83,9 +83,11 @@ public class IncepAuto_Foundation_Blue extends LinearOpMode {
         robot.encoderStraight(DRIVE_SPEED,18,4);
         robot.encoderArc(PIVOT_SPEED, 90*FDC, IncepBot.LEFT, 0, 5);
 
-        robot.encoderStraight(DRIVE_SPEED,-8,4);
+        //robot.encoderStraight(DRIVE_SPEED,-8,4);
+        robot.encoderStraight(DRIVE_SPEED,-16,6);
+        robot.encoderRotate(TURN_SPEED, 10, 2);
         robot.releaseFoundation();
-        robot.encoderStraight(DRIVE_SPEED,40,4);
+        robot.encoderStraight(DRIVE_SPEED,42,15);
 
         telemetry.addData("Path", "Complete");
         telemetry.update();

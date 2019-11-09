@@ -161,7 +161,7 @@ public class IncepBot
     public void grabFoundation() {
         foundation1.setPosition(0);
         foundation2.setPosition(0);
-        myLOpMode.sleep(750);
+        myLOpMode.sleep(1000);
     }
 
     public void releaseFoundation() {
