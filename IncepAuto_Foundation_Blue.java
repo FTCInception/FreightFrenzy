@@ -76,7 +76,11 @@ public class IncepAuto_Foundation_Blue extends LinearOpMode {
 
         robot.releaseFoundation();
 
-        robot.encoderStraight(DRIVE_SPEED,-34,4);
+        robot.encoderStraight(DRIVE_SPEED,-17,2);
+        robot.encoderRotate(TURN_SPEED,-90,3);
+        robot.encoderStraight(DRIVE_SPEED,-18,2);
+        robot.encoderRotate(TURN_SPEED,90,3);
+        robot.encoderStraight(DRIVE_SPEED,-17,4);
 
         robot.grabFoundation();
 
