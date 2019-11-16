@@ -29,6 +29,7 @@
 
 package Inception.Skystone;
 
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -55,7 +56,7 @@ import java.util.List;
  * IMPORTANT: In order to use this OpMode, you need to obtain your own Vuforia license key as
  * is explained below.
  */
-@TeleOp(name = "Concept: TensorFlow Object Detection", group = "Concept")
+@Autonomous(name = "Incep: Skystone detect", group = "Incepbot")
 //@Disabled
 public class ConceptTensorFlowObjectDetection extends LinearOpMode {
     private static final String TFOD_MODEL_ASSET = "Skystone.tflite";
@@ -192,7 +193,6 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
                               if (edgeFound == true && beyondBoundry == false) {
                                   telemetry.addData("sum, Pixel Index, column, found edge, offset from center", "%d %d %d %b %d", sum, PixelIndex, column, edgeFound, column - center);
                               }
-
                            }
 
                        }else if (myFrame == null) {
