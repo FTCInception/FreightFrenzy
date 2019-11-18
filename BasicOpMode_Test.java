@@ -44,6 +44,7 @@ import com.qualcomm.robotcore.util.Range;
 
 
 @TeleOp(name="Testing OP Mode", group="Linear Opmode")
+@Disabled
 public class BasicOpMode_Test extends LinearOpMode {
 
     // Declare OpMode members.
