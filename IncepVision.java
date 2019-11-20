@@ -60,8 +60,23 @@ public class IncepVision {
     private static final String TFOD_MODEL_ASSET = "Skystone.tflite";
     private static final String LABEL_FIRST_ELEMENT = "Stone";
     private static final String LABEL_SECOND_ELEMENT = "Skystone";
+
     private static LinearOpMode myLOpMode;
     private int BlockNumber;
+    private int bytes_per_pixel;
+    private int row;
+    private int column;
+    private int bufWidth;
+    private int bufHeight;
+    private int step;
+    private int windowwidth;
+    private int threshold;
+    private int left, boundary, top, bottom;
+    private Boolean edgeFound;
+    private int sum;
+    private int pixelArray[];
+    private double BoundOffset;
+    private int vScale;
 
     /*
      * IMPORTANT: You need to obtain your own license key to use Vuforia. The string below with which
@@ -94,8 +109,32 @@ public class IncepVision {
      */
     public void initAutonomous(LinearOpMode lOpMode) {
         myLOpMode = lOpMode;
-        BlockNumber = 0;
 
+        // constants
+        step = 4;
+        windowwidth = 16;
+        threshold = 0x50 * windowwidth;
+
+        BlockNumber = 0;
+        bytes_per_pixel = -1;
+        row = -1;
+        column = -1;
+        bufWidth = -1;
+        bufHeight = -1;
+        left = -1;
+        boundary = -1;
+        top = -1;
+        bottom = -1;
+        sum = 0;
+        edgeFound = false;
+        pixelArray = new int[windowwidth];
+        BoundOffset = 0;
+        vScale = 1;
+
+        for(int i = 0; i<windowwidth; i++)
+        {
+            pixelArray[i] = 0;
+        }
         // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
         // first.
         initVuforia();
@@ -124,22 +163,13 @@ public class IncepVision {
 
     //below function returns skystone blocks
     public int getBlockNumber() {
-        int column;
-        int left;
-        int boundary;
         int center;
-        int step = 4;
-        int windowwidth = 16;
-        float threshold = 0x50 * windowwidth;
-        int PixelIndex;
-        int Thirds;
 
-        int bytes_per_pixel = -1;
-        int row = -1;
+        int PixelIndex;
+        int Third;
 
                 if (tfod != null) {
                     // getUpdatedRecognitions() will return null if no new information is available since
-                    myLOpMode.telemetry.addData("Here 1", "");
                     // the last time that call was made.
                     List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
                     if (updatedRecognitions != null) {
@@ -148,11 +178,11 @@ public class IncepVision {
                         int i = 0;
                         Recognition skystone_rec = null;
                         for (Recognition recognition : updatedRecognitions) {
-                        /*myLOpMode.telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
-                        //below will give the left, top, right, bottom but it is disabled because of unnecessary feedback
-                        myLOpMode.telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
+                            /*myLOpMode.telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
+                            //below will give the left, top, right, bottom but it is disabled because of unnecessary feedback
+                            myLOpMode.telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
                                           recognition.getLeft(), recognition.getTop());
-                        myLOpMode.telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
+                            myLOpMode.telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
                                 recognition.getRight(), recognition.getBottom());*/
 
                             if(recognition.getLabel().contentEquals("Skystone")) {
@@ -164,83 +194,99 @@ public class IncepVision {
                         CloseableFrame myFrame = vuforia.getFrameQueue().poll();
 
                         if ((myFrame != null) && (skystone_rec != null)) {
-                            myLOpMode.telemetry.addData("Here 2", "");
+
+                            // Image stats
                             Image myImage = myFrame.getImage(0);
-                            myLOpMode.telemetry.addData("Feedback", "Buffer height and width %d %d", myImage.getBufferHeight(), myImage.getBufferWidth());
+                            bufWidth = myImage.getBufferWidth();
+                            bufHeight = myImage.getBufferHeight();
+                            //center = (int) myImage.getBufferWidth() / 2;
 
                             ByteBuffer myBuffer = myImage.getPixels();
                             bytes_per_pixel = myImage.getStride() / myImage.getBufferWidth();
-                            row = ((int) (skystone_rec.getTop()) + (int) (skystone_rec.getBottom())) / 4;
+                            BoundOffset = bufWidth * 0.25;
+
+                            // object stats.
+                            //int hScale = skystone_rec.getImageWidth() / bufWidth;
+                            vScale = skystone_rec.getImageHeight() / bufHeight;
+
+                            /*column   = (int) skystone_rec.getLeft() / hScale; //starts at left edge
+                            left     = (int) skystone_rec.getLeft() / hScale; // left edge
+                            boundary = (int) skystone_rec.getRight() / hScale; // right edge*/
+                            left = (int) BoundOffset;
+                            column = left;
+                            boundary = (int) (bufWidth - BoundOffset);
+                            top      = (int) skystone_rec.getTop() / vScale; // top of detected skystone
+                            bottom   = (int) skystone_rec.getBottom() / vScale; // bottom of detected skystone
+
+                            Third    = (boundary - left) / 3;
+
+                            row = ((int)(top) + (int)(bottom)) / 2; // halfway between the top and the bottom of the detected block object
 
                             if (row < 0) {
                                 row = 0;
                             }
 
-                            if (row > (myImage.getBufferHeight() - 1)) {
-                                row = myImage.getBufferHeight() - 1;
+                            if (row > (bufHeight - 1)) {
+                                row = bufHeight - 1;
                             }
 
-                            column = (int) skystone_rec.getLeft() / 2;
-                            left = (int) skystone_rec.getLeft() / 2;
-                            boundary = (int) skystone_rec.getRight() / 2;
-                            center = (int) myImage.getBufferWidth() / 2;
-                            PixelIndex = row * myImage.getBufferWidth() + column;
-                            Thirds = skystone_rec.getImageWidth() / 2 / 3;
 
 
-                            Boolean edgeFound = false;
-                            while(!edgeFound) {
-                                myLOpMode.telemetry.addData("Here 3", "");
-                                int sum = 0;
+                            // debug: grab first few pixels on left edge
+                            PixelIndex = (row * bufWidth) + column;
+                            for(int index=0; index < windowwidth; index++) {
+                                pixelArray[index] = myBuffer.getChar(PixelIndex + index); // & 0x00ff; // debug
+                            }
 
+                            // Find the skystone black edge from left to right
+                            edgeFound = false;
+                            Boolean done = false;
+                            while(!done) {
+                                sum = 0;
+                                PixelIndex = (row * bufWidth) + column; // column updates every loop - must update pixelIndex
                                 for(int index=0; index < windowwidth; index++) {
                                     sum += myBuffer.getChar(PixelIndex + index) & 0x00ff;
                                 }
-                                PixelIndex += step;
+                                //PixelIndex += step;
                                 column += step;
-                                boolean beyondBoundary = false;
-                                if (column > boundary) {
-                                    edgeFound = true;
-                                    beyondBoundary = true;
 
-                                    myLOpMode.telemetry.addData("Warning: ", "code is looking for skystone past boundary");
+                                // if column is more than the right edge of the object
+                                if (column > boundary) {
+                                    done = true;
                                 }
+
                                 if (sum <= threshold) {
                                     edgeFound = true;
+                                    done = true;
                                 }
-                                if (edgeFound == true && beyondBoundary == false) {
-                                    myLOpMode.telemetry.addData("sum, Pixel Index, column, found edge, offset from center", "%d %d %d %b %d %d", sum, PixelIndex, column, edgeFound, column - center, column - left);
-                                }
-                            }
-                            int dist = column - left;
 
-                            if (dist >= (2 * Thirds)) {
-                                BlockNumber = 1;
-                            }else if (dist >= Thirds) {
-                                BlockNumber = 2;
-                            }else {
-                                BlockNumber = 3;
                             }
 
-                            // DEBUG Output
+                            // If edge is found, calc the block number
+                            if(edgeFound) {
+                                int dist = column - left;
 
-                            myLOpMode.telemetry.addData("Feedback", "Row %d", row);
-                            myLOpMode.telemetry.addData("Feedback", "Pixel bytes %d", bytes_per_pixel);
-                            myLOpMode.telemetry.addData("Block Number: ", "%d", BlockNumber);
-                            myLOpMode.telemetry.update();
-
-                        }else if (myFrame == null) {
-                            myLOpMode.telemetry.addData("Note: ", "No Frame");
-                            myLOpMode.telemetry.update();
-                        } else {
-                            myLOpMode.telemetry.update();
+                                if (dist >= (2 * Third)) {
+                                    BlockNumber = 1;
+                                } else if (dist >= (Third / 2)) {
+                                    BlockNumber = 2;
+                                } else {
+                                    BlockNumber = 3;
+                                }
+                            }
                         }
                     }
                 }
 
-        //myLOpMode.telemetry.addData("Feedback", "Row %d", row);
-        //myLOpMode.telemetry.addData("Block Number: ", "%d", BlockNumber);
-        //myLOpMode.telemetry.update();
+        myLOpMode.telemetry.addData(">", "Buffer(WxH): (%d x %d)", bufWidth, bufHeight);
+        myLOpMode.telemetry.addData(">", "BPP: %d Edge Found: %b %x %x %x %x", bytes_per_pixel, edgeFound, pixelArray[0], pixelArray[1], pixelArray[2], pixelArray[3]);
+        myLOpMode.telemetry.addData("Top Bottom Left Right ", "%d %d %d %d", top, bottom, left, boundary);
+        myLOpMode.telemetry.addData(">", "Row, vScale: %d, %d", row, vScale);
+        myLOpMode.telemetry.addData(">", "Col: %d", column);
+        myLOpMode.telemetry.addData(">", "Threshold: %d  sum: %d", threshold, sum);
+        myLOpMode.telemetry.addData(">", "Block Number: %d", BlockNumber);
+        myLOpMode.telemetry.update();
+
         //will the return the block number
         return BlockNumber;
     }
@@ -280,8 +326,36 @@ public class IncepVision {
         int tfodMonitorViewId = myLOpMode.hardwareMap.appContext.getResources().getIdentifier(
                 "tfodMonitorViewId", "id", myLOpMode.hardwareMap.appContext.getPackageName());
         TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
-        tfodParameters.minimumConfidence = 0.8;
+        tfodParameters.minimumConfidence = 0.6;
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
         tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
     }
 }
+/*
+example code on how to use:
+package Inception.Skystone;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+
+@Autonomous(name="Incep: Vision Test 2", group="Incepbot")
+public class (class goes here) extends LinearOpMode {
+
+    private IncepVision        vision   = new IncepVision();
+
+
+    @Override
+    public void runOpMode() {
+    //starts the code only needs to be run once
+        vision.initAutonomous(this);
+
+        //runs during init
+        while(!isStopRequested())
+        {
+            vision.getBlockNumber();
+        }
+        //stops vision code fully
+        vision.shutdown();
+    }
+}
+
+ */
