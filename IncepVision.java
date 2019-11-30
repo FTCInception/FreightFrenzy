@@ -183,7 +183,9 @@ public class IncepVision {
         if (tfod != null) {
             // getUpdatedRecognitions() will return null if no new information is available since
             // the last time that call was made.
-            List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+            //List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+            List<Recognition> updatedRecognitions = tfod.getRecognitions();
+
             if (updatedRecognitions != null) {
                 myLOpMode.telemetry.addData("# Object Detected", updatedRecognitions.size());
                 // step through the list of recognitions and display boundary info.
@@ -197,9 +199,9 @@ public class IncepVision {
                             myLOpMode.telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
                                 recognition.getRight(), recognition.getBottom());*/
 
-                    if (recognition.getLabel().contentEquals("Skystone") || recognition.getLabel().contentEquals("Stone")) {
+                    //if (recognition.getLabel().contentEquals("Skystone") || recognition.getLabel().contentEquals("Stone")) {
                         skystone_rec = recognition;
-                    }
+                    //}
                 }
 
                 // get Frame
@@ -359,14 +361,13 @@ public class IncepVision {
 
         parameters.vuforiaLicenseKey = VUFORIA_KEY;
 
-        CameraName savedName = parameters.cameraName;
-        try {
+        //CameraName savedName = parameters.cameraName;
+        //try {
             parameters.cameraName = myLOpMode.hardwareMap.get(WebcamName.class, "Webcam 1");
-
-        } catch (Exception e) {
-            parameters.cameraName = savedName;
-            parameters.cameraDirection = CameraDirection.BACK;
-        }
+        //} catch (Exception e) {
+        //    parameters.cameraName = savedName;
+        //    parameters.cameraDirection = CameraDirection.BACK;
+        //}
 
         //  Instantiate the Vuforia engine
         vuforia = ClassFactory.getInstance().createVuforia(parameters);
