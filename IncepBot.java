@@ -81,6 +81,7 @@ public class IncepBot
     private static final double     INCHES_PER_DEGREE       = (AXLE_LENGTH * 3.14159) / 360.0;
     private static final double     SOFT_D_UP               = 50.0;
     private static final double     SOFT_D_DOWN             = 70.0;
+    private static final double     SOFT_D_DOWN2            = 80.0;
     private static final double     KpL                     = 1.0;
     private static final double     KpR                     = 67.5/70.0;
     private static final double     PIVOT_FACTOR            = 2.05;
@@ -149,6 +150,7 @@ public class IncepBot
         }
 
         colorSensor = hwMap.colorSensor.get("color");
+        colorSensor.enableLed(false);
 
         myLOpMode.telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
         composeTelemetry();
@@ -284,7 +286,7 @@ public class IncepBot
     }
 
     public void encoderStraight(double speed, double distance, double timeoutS) {
-        encoderDrive( speed, distance, distance, timeoutS );
+        encoderMyDrive( speed, distance, distance, timeoutS );
     }
 
     public void encoderRotate(double speed, double degrees, double timeoutS) {
@@ -561,6 +563,151 @@ public class IncepBot
             rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
             //sleep(500);   // optional pause after each move
+        }
+    }
+
+    public double getHeading()
+    {
+        Orientation     gyroOrien;
+
+        gyroOrien = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        return( AngleUnit.DEGREES.normalize(AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle)));
+    }
+
+    /*
+     *  Method to perfmorm a relative move, based on encoder counts.
+     *  IMU gyro is used to help steer.
+     *  Move will stop if any of three conditions occur:
+     *  1) Move gets to the desired position
+     *  2) Move runs out of time
+     *  3) Driver stops the opmode running.
+     */
+    public void encoderMyDrive(double speed,
+                               double leftInches, double rightInches,
+                               double timeoutS) {
+        int newLeftFTarget;
+        int newRightFTarget;
+        int newLeftBTarget;
+        int newRightBTarget;
+        double curPos;
+        double tgtPos;
+        double toGo;
+        double actSpeed;
+        double newSpeed;
+        double spdUp,spdDn;
+        double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        ElapsedTime     runtime = new ElapsedTime();
+        double tgtHeading, curHeading, deltaHeading;
+        double KhL = 1.0;
+        double KhR = 1.0;
+
+        tgtHeading = getHeading();
+
+        // Ensure that the opmode is still active
+        if (myLOpMode.opModeIsActive()) {
+
+            leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            rightFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            leftBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            rightBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+            // We'll handle the power/speed/encoders
+            leftFDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            rightFDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            leftBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            rightBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+            // The front wheels are slipping so they stop and fight the back.  Set them
+            // to FLOAT here to try to avoid that.  Not sure if this actually works
+            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
+            // Determine new target position, and pass to motor controller
+            newLeftFTarget = (int)(leftInches * COUNTS_PER_INCH);
+            newRightFTarget = (int)(rightInches * COUNTS_PER_INCH);
+            newLeftBTarget = (int)(leftInches * COUNTS_PER_INCH);
+            newRightBTarget = (int)(rightInches * COUNTS_PER_INCH);
+            tgtPos = newLeftFTarget;
+
+            // reset the timeout time and start motion at the minimum speed.
+            runtime.reset();
+            speed = Math.abs(speed);
+            actSpeed = speedRampUp[0];
+            if ( tgtPos < 0 ) {
+                actSpeed *= -1.0;
+            }
+            leftFDrive.setPower(actSpeed * KpL);
+            rightFDrive.setPower(actSpeed * KpR);
+            leftBDrive.setPower(actSpeed * KpL);
+            rightBDrive.setPower(actSpeed * KpR);
+
+            // keep looping while we are still active, and there is time left, and both motors are running.
+            // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
+            // its target position, the motion will stop.  This is "safer" in the event that the robot will
+            // always end the motion as soon as possible.
+            // However, if you require that BOTH motors have finished their moves before the robot continues
+            // onto the next step, use (isBusy() || isBusy()) in the loop test.
+            while (myLOpMode.opModeIsActive() &&
+                    //(runtime.seconds() < timeoutS) &&
+                    ((Math.abs(newLeftBTarget  -  (curPos = leftBDrive.getCurrentPosition())) > CLOSE_ENOUGH) ||
+                     (Math.abs(newRightBTarget -            rightBDrive.getCurrentPosition()) > CLOSE_ENOUGH))) {
+
+                // This code implements a soft start and soft stop.
+                // How much farther?
+                toGo  = Math.max(0,Math.abs(tgtPos - curPos));
+
+                // Compute speed on acceleration and deceleration legs
+                spdUp = Math.min(speedRampUp[Math.min((int)(Math.abs(curPos)/SOFT_D_UP),speedRampUp.length-1)],speed);
+                spdDn = Math.min(speedRampDown[Math.min((int)(Math.abs(toGo)/SOFT_D_DOWN2),speedRampDown.length-1)],speed);
+
+                // Use the minimum speed
+                newSpeed = Math.min(spdUp, spdDn);
+
+                // Compute drif, negate for correction
+                curHeading = getHeading();
+                deltaHeading = -1.0 * AngleUnit.DEGREES.normalize(tgtHeading - curHeading);
+
+                // Reverse stuff if driving backwards
+                if ( tgtPos < 0 ) {
+                    newSpeed *= -1.0;
+                    deltaHeading *= -1.0;
+                }
+
+                // Steering proportional constant
+                double P = 0.1;
+                // Change power and steer
+                actSpeed = newSpeed;
+
+                // Never change the sign. Make the change proportional to the error
+                KhL = Math.max(0.0, (1.0 + (deltaHeading * P)));
+                KhR = Math.max(0.0, (1.0 - (deltaHeading * P)));
+                leftFDrive.setPower (Math.max(-1.0, Math.min(1.0, actSpeed * KpL * KhL )));
+                rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeed * KpR * KhR )));
+                leftBDrive.setPower (Math.max(-1.0, Math.min(1.0, actSpeed * KpL * KhL )));
+                rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeed * KpR * KhR )));
+
+                myLOpMode.telemetry.addData("Path3",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int)curPos, (int)toGo);
+                myLOpMode.telemetry.update();
+            }
+
+            // The front wheels are slipping so they stop and fight the back.  Set them
+            // to FLOAT earlier, so reset to BRAKE here.
+            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+            // Stop all motion;
+            leftFDrive.setPower(0);
+            rightFDrive.setPower(0);
+            leftBDrive.setPower(0);
+            rightBDrive.setPower(0);
+
+            // Reset run mode
+            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
         }
     }
 }

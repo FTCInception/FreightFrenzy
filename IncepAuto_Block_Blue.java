@@ -77,7 +77,7 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
         // Wait until we're told to go
         while (!isStarted()) {
             block = vision.getBlockNumber();
-            sleep(500);
+            sleep(100);
         }
         vision.shutdown();
 
@@ -92,6 +92,12 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
 */
 
         robot.encoderStraight(DRIVE_SPEED,-32,3);
+
+        // Enable the LED, sample the color sensor automatically via telemetery update, turn off LED
+        robot.colorSensor.enableLed(true);
+        sleep(100);
+        telemetry.update();
+        robot.colorSensor.enableLed(false);
 
         robot.grabBlock();
 
