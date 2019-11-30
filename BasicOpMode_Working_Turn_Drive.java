@@ -29,13 +29,24 @@
 
 package Inception.Skystone;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.IntegratingGyroscope;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+
+import org.firstinspires.ftc.robotcore.external.Func;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+
+import java.util.Locale;
 
 
 /**
@@ -54,6 +65,10 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
     private ElapsedTime runtime = new ElapsedTime();
     private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
     private static Servo foundation1, foundation2, claw;
+    BNO055IMU imu;
+    Orientation angles;
+    IntegratingGyroscope gyro;
+    private ColorSensor colorSensor;
 
 
     // Declare other variables
@@ -86,8 +101,40 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
         foundation2 = hardwareMap.servo.get("foundation2");
         claw = hardwareMap.servo.get("claw");
 
+        // We are expecting the IMU to be attached to an I2C port on a Core Device Interface Module and named "imu".
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.loggingEnabled = true;
+        parameters.loggingTag     = "IMU";
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
+
+        telemetry.addData("Mode", "calibrating...");
+        telemetry.update();
+
+        // make sure the imu gyro is calibrated before continuing.
+        while (!isStopRequested() && !imu.isGyroCalibrated())
+        {
+            sleep(50);
+            idle();
+        }
+
+        gyro = (IntegratingGyroscope)imu;
+
+        colorSensor = hardwareMap.colorSensor.get("color");
+        colorSensor.enableLed(true);
+        colorSensor.enableLed(false);
+
+        composeTelemetry();
+        telemetry.log().add("Waiting for start...");
+
+        // Wait until we're told to go
+        while (!isStarted()) {
+            telemetry.update();
+            idle();
+        }
+
         // Wait for the game to start (driver presses PLAY)
-        waitForStart();
+        //waitForStart();
         runtime.reset();
 
         // run until the end of the match (driver presses STOP)
@@ -158,9 +205,6 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
                 claw.setPosition(0);
             }
 
-
-
-
             l_f_motor_power   = Range.clip(((drive* dirInvert) - turn) * speedModifier, -1.0, 1.0) ;
             l_b_motor_power   = Range.clip(((drive* dirInvert) - turn) * speedModifier, -1.0, 1.0) ;
             r_f_motor_power   = Range.clip(((drive* dirInvert) + turn) * speedModifier, -1.0, 1.0) ;
@@ -178,5 +222,69 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
             telemetry.addData("Speed Modifier", "Speed Modifier:" , speedModifier);
             telemetry.update();
         }
+        colorSensor.enableLed(false);
+    }
+
+    void composeTelemetry() {
+
+        // At the beginning of each telemetry update, grab a bunch of data
+        // from the IMU that we will then display in separate lines.
+        telemetry.addAction(new Runnable() { @Override public void run()
+        {
+            // Acquiring the angles is relatively expensive; we don't want
+            // to do that in each of the three items that need that info, as that's
+            // three times the necessary expense.
+            angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        }
+        });
+        
+        telemetry.addLine()
+                .addData("Z", new Func<String>() {
+                    @Override public String value() {
+                        return formatAngle(angles.angleUnit, angles.firstAngle);
+                    }
+                })
+                .addData("Y", new Func<String>() {
+                    @Override public String value() {
+                        return formatAngle(angles.angleUnit, angles.secondAngle);
+                    }
+                })
+                .addData("X", new Func<String>() {
+                    @Override public String value() {
+                        return formatAngle(angles.angleUnit, angles.thirdAngle);
+                    }
+                })
+                .addData("argb", new Func<String>() {
+                    @Override public String value() {
+                        return formatColor(colorSensor.argb());
+                    }
+                })
+        ;
+    }
+
+    //----------------------------------------------------------------------------------------------
+    // Formatting
+    //----------------------------------------------------------------------------------------------
+    String formatColor(int argb){
+        int a = argb >> 24 & 0xFF;
+        int r = argb >> 16 & 0xFF;
+        int g = argb >> 8 & 0xFF;
+        int b = argb >> 0 & 0xFF;
+
+        if ( a < 0x5 ) {
+            return String.format(Locale.getDefault(), "Unknown (0x%08x)", argb);
+        } else if ((r>>1 > b ) && (g<<1 > b)) {
+            return String.format(Locale.getDefault(), "Yellow (0x%08x)", argb);
+        } else {
+            return String.format(Locale.getDefault(), "Black (0x%08x)", argb);
+        }
+    }
+
+    String formatAngle(AngleUnit angleUnit, double angle) {
+        return formatDegrees(AngleUnit.DEGREES.fromUnit(angleUnit, angle));
+    }
+
+    String formatDegrees(double degrees){
+        return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
 }

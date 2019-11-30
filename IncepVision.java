@@ -179,6 +179,7 @@ public class IncepVision {
 
         int PixelIndex;
         int Third;
+        edgeFound = false;
 
         if (tfod != null) {
             // getUpdatedRecognitions() will return null if no new information is available since
@@ -187,7 +188,6 @@ public class IncepVision {
             List<Recognition> updatedRecognitions = tfod.getRecognitions();
 
             if (updatedRecognitions != null) {
-                myLOpMode.telemetry.addData("# Object Detected", updatedRecognitions.size());
                 // step through the list of recognitions and display boundary info.
                 int i = 0;
                 skystone_rec = null;
@@ -199,9 +199,15 @@ public class IncepVision {
                             myLOpMode.telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
                                 recognition.getRight(), recognition.getBottom());*/
 
-                    //if (recognition.getLabel().contentEquals("Skystone") || recognition.getLabel().contentEquals("Stone")) {
+                    // Choose highest confidence
+                    if ((skystone_rec == null) || (recognition.getConfidence() > skystone_rec.getConfidence())) {
                         skystone_rec = recognition;
-                    //}
+                    }
+                }
+                if (updatedRecognitions.size() > 0) {
+                    myLOpMode.telemetry.addData("# Object Detected", "%d (%.2f)", updatedRecognitions.size(), skystone_rec.getConfidence());
+                } else {
+                    myLOpMode.telemetry.addData("# Object Detected", "%d", updatedRecognitions.size());
                 }
 
                 // get Frame
@@ -223,7 +229,6 @@ public class IncepVision {
 
                     // discover how the pixels are stored
                     pixelFormat = myImage.getFormat();
-
 
                     BoundOffset = bufWidth * 0.25;
 
@@ -253,7 +258,6 @@ public class IncepVision {
                         row = bufHeight - 1;
                     }
 
-
                     // debug: grab first few pixels on left edge
                     PixelIndex = (row * bufWidth * bytes_per_pixel) + column * bytes_per_pixel;
                     for (int index = 0; index < windowwidth; index++) {
@@ -272,7 +276,6 @@ public class IncepVision {
                             sum += (int) (gray) & 0xff;
                         }
                     }
-
 
                     // Find the skystone black edge from left to right
                     edgeFound = false;
@@ -326,6 +329,7 @@ public class IncepVision {
                             BlockNumber = 3;
                         }
                     }
+                    myFrame.close();
                 }
             }
         }
@@ -361,13 +365,13 @@ public class IncepVision {
 
         parameters.vuforiaLicenseKey = VUFORIA_KEY;
 
-        //CameraName savedName = parameters.cameraName;
-        //try {
+        CameraName savedName = parameters.cameraName;
+        try {
             parameters.cameraName = myLOpMode.hardwareMap.get(WebcamName.class, "Webcam 1");
-        //} catch (Exception e) {
-        //    parameters.cameraName = savedName;
-        //    parameters.cameraDirection = CameraDirection.BACK;
-        //}
+        } catch (Exception e) {
+            parameters.cameraName = savedName;
+            parameters.cameraDirection = CameraDirection.BACK;
+        }
 
         //  Instantiate the Vuforia engine
         vuforia = ClassFactory.getInstance().createVuforia(parameters);
@@ -382,13 +386,14 @@ public class IncepVision {
     /**
      * Initialize the TensorFlow Object Detection engine.
      */
-    private void initTfod() {
+    public void initTfod() {
         int tfodMonitorViewId = myLOpMode.hardwareMap.appContext.getResources().getIdentifier(
                 "tfodMonitorViewId", "id", myLOpMode.hardwareMap.appContext.getPackageName());
         TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
         tfodParameters.minimumConfidence = 0.6;
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
         tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
+        tfod.setClippingMargins(320,250,0,150);
     }
 }
 /*

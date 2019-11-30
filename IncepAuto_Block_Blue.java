@@ -57,6 +57,9 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
     private static final double     TURN_SPEED              = 0.65;
     private static final double     PIVOT_SPEED             = 0.40;
     private static final double     SQ                      = 70/3.0;        // Length of 3 squares / 3 in case we want to think that way
+    private IncepVision        vision   = new IncepVision();
+    private int block;
+
 
     @Override
     public void runOpMode() {
@@ -69,9 +72,17 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
 
         // Init the robot setting for Autonomous play
         robot.initAutonomous(this);
+        vision.initAutonomous(this);
+
+        // Wait until we're told to go
+        while (!isStarted()) {
+            block = vision.getBlockNumber();
+            sleep(500);
+        }
+        vision.shutdown();
 
         // Wait for the game to start (driver presses PLAY)
-        waitForStart();
+        //waitForStart();
  /*
         // Calibration code
         encoderStraight(DRIVE_SPEED,50,13);

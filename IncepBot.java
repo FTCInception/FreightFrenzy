@@ -34,6 +34,17 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+
+import org.firstinspires.ftc.robotcore.external.Func;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+
+import java.util.Locale;
+
 
 /**
  * This is NOT an opmode.
@@ -78,7 +89,9 @@ public class IncepBot
     private static final double     LEFT_ARC_COEFFICENT     = 1.25;
     static final double             RIGHT                   = 1;
     static final double             LEFT                    = 0;
-
+    BNO055IMU               imu;
+    private Orientation             angles;
+    ColorSensor             colorSensor;
 
     /* local OpMode members. */
     HardwareMap hwMap           =  null;
@@ -87,7 +100,6 @@ public class IncepBot
 
     /* Constructor */
     public IncepBot(){
-
     }
 
     public void initAutonomous(LinearOpMode lOpMode) {
@@ -112,7 +124,98 @@ public class IncepBot
                 rightFDrive.getCurrentPosition(),
                 leftBDrive.getCurrentPosition(),
                 rightBDrive.getCurrentPosition());
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+
+        parameters.mode                = BNO055IMU.SensorMode.IMU;
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.loggingEnabled      = false;
+
+        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
+        // on a Core Device Interface Module and named "imu".
+        imu = hwMap.get(BNO055IMU.class, "imu");
+
+        imu.initialize(parameters);
+
+        myLOpMode.telemetry.addData("Mode", "IMU calibrating...");
         myLOpMode.telemetry.update();
+
+        // make sure the imu gyro is calibrated before continuing.
+        for (int i=0; (i<40 && !myLOpMode.isStopRequested() && !imu.isGyroCalibrated()); i++)
+        {
+            myLOpMode.sleep(50);
+            myLOpMode.idle();
+        }
+
+        colorSensor = hwMap.colorSensor.get("color");
+
+        myLOpMode.telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
+        composeTelemetry();
+        myLOpMode.telemetry.update();
+    }
+
+    void composeTelemetry() {
+
+        // At the beginning of each telemetry update, grab a bunch of data
+        // from the IMU that we will then display in separate lines.
+        myLOpMode.telemetry.addAction(new Runnable() { @Override public void run()
+        {
+            // Acquiring the angles is relatively expensive; we don't want
+            // to do that in each of the three items that need that info, as that's
+            // three times the necessary expense.
+            angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        }
+        });
+
+        myLOpMode.telemetry.addLine()
+                .addData("Z", new Func<String>() {
+                    @Override public String value() {
+                        return formatAngle(angles.angleUnit, angles.firstAngle);
+                    }
+                })
+                .addData("Y", new Func<String>() {
+                    @Override public String value() {
+                        return formatAngle(angles.angleUnit, angles.secondAngle);
+                    }
+                })
+                .addData("X", new Func<String>() {
+                    @Override public String value() {
+                        return formatAngle(angles.angleUnit, angles.thirdAngle);
+                    }
+                })
+                .addData("argb", new Func<String>() {
+                    @Override public String value() {
+                        return formatColor(colorSensor.argb());
+                    }
+                })
+        ;
+    };
+
+    //----------------------------------------------------------------------------------------------
+    // Formatting
+    //----------------------------------------------------------------------------------------------
+    String formatColor(int argb){
+        int a = argb >> 24 & 0xFF;
+        int r = argb >> 16 & 0xFF;
+        int g = argb >> 8 & 0xFF;
+        int b = argb >> 0 & 0xFF;
+
+        if ( a < 0x5 ) {
+            return String.format(Locale.getDefault(), "Unknown (0x%08x)", argb);
+        } else if ((r>>1 > b ) && (g<<1 > b)) {
+            return String.format(Locale.getDefault(), "Yellow (0x%08x)", argb);
+        } else {
+            return String.format(Locale.getDefault(), "Black (0x%08x)", argb);
+        }
+    }
+
+    String formatAngle(AngleUnit angleUnit, double angle) {
+        return formatDegrees(AngleUnit.DEGREES.fromUnit(angleUnit, angle));
+    }
+
+    String formatDegrees(double degrees){
+        return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
 
     /* Initialize standard Hardware interfaces */
