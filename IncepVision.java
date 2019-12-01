@@ -48,6 +48,7 @@ import org.firstinspires.ftc.robotcore.internal.vuforia.VuforiaException;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -86,7 +87,7 @@ public class IncepVision {
     private int vScale;
     private Recognition skystone_rec;
     private int pixelFormat;
-
+    private int framefound;
     /*
      * IMPORTANT: You need to obtain your own license key to use Vuforia. The string below with which
      * 'parameters.vuforiaLicenseKey' is initialized is for illustration only, and will not function.
@@ -143,6 +144,7 @@ public class IncepVision {
         vScale = 1;
         Recognition skystone_rec = null;
         pixelFormat = 0;
+        framefound = 0;
 
 
         for (int i = 0; i < windowwidth; i++) {
@@ -187,6 +189,7 @@ public class IncepVision {
             //List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
             List<Recognition> updatedRecognitions = tfod.getRecognitions();
 
+
             if (updatedRecognitions != null) {
                 // step through the list of recognitions and display boundary info.
                 int i = 0;
@@ -200,9 +203,9 @@ public class IncepVision {
                                 recognition.getRight(), recognition.getBottom());*/
 
                     // Choose highest confidence
-                    if ((skystone_rec == null) || (recognition.getConfidence() > skystone_rec.getConfidence())) {
+                    //if ((skystone_rec == null) || (recognition.getConfidence() > skystone_rec.getConfidence())) {
                         skystone_rec = recognition;
-                    }
+                    //}
                 }
                 if (updatedRecognitions.size() > 0) {
                     myLOpMode.telemetry.addData("# Object Detected", "%d (%.2f)", updatedRecognitions.size(), skystone_rec.getConfidence());
@@ -211,7 +214,16 @@ public class IncepVision {
                 }
 
                 // get Frame
-                CloseableFrame myFrame = vuforia.getFrameQueue().poll();
+                CloseableFrame myFrame;
+                try {
+                     myFrame = vuforia.getFrameQueue().poll(100, TimeUnit.MILLISECONDS);
+                } catch(Exception e) {
+                    //throw new RuntimeException(e);
+                    myFrame = null;
+                }
+
+                framefound = 0;
+                if (myFrame != null) framefound = 1;
 
                 if ((myFrame != null) && (skystone_rec != null)) {
 
@@ -230,7 +242,7 @@ public class IncepVision {
                     // discover how the pixels are stored
                     pixelFormat = myImage.getFormat();
 
-                    BoundOffset = bufWidth * 0.25;
+                    BoundOffset = bufWidth * 0.05;
 
                     // object stats.
                     //int hScale = skystone_rec.getImageWidth() / bufWidth;
@@ -329,7 +341,7 @@ public class IncepVision {
                             BlockNumber = 3;
                         }
                     }
-                    myFrame.close();
+                    //myFrame.close();
                 }
             }
         }
@@ -338,9 +350,10 @@ public class IncepVision {
         myLOpMode.telemetry.addData(">", "BPP: %d pf: %d, Edge Found: %b %x %x %x %x", bytes_per_pixel, pixelFormat, edgeFound, pixelArray[0], pixelArray[1], pixelArray[2], pixelArray[3]);
         myLOpMode.telemetry.addData("Top Bottom Left Right ", "%d %d %d %d", top, bottom, left, boundary);
         myLOpMode.telemetry.addData(">", "Row, vScale: %d, %d", row, vScale);
-        myLOpMode.telemetry.addData(">", "Col: %d", column);
+        myLOpMode.telemetry.addData(">", "Col: %d %d", column, framefound);
         myLOpMode.telemetry.addData(">", "Threshold: %d  sum: %d", threshold, sum);
         myLOpMode.telemetry.addData(">", "Block Number: %d", BlockNumber);
+        //myLOpMode.telemetry.addData("updatedrecognitions size", "%d", tfod.getRecognitions().size());
         myLOpMode.telemetry.update();
 
         //will the return the block number
@@ -393,7 +406,7 @@ public class IncepVision {
         tfodParameters.minimumConfidence = 0.6;
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
         tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
-        tfod.setClippingMargins(320,250,0,150);
+        tfod.setClippingMargins(32,125,32,125);
     }
 }
 /*
