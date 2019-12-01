@@ -77,7 +77,6 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
         // Wait until we're told to go
         while (!isStarted()) {
             block = vision.getBlockNumber();
-            sleep(100);
         }
         vision.shutdown();
 
@@ -88,7 +87,7 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
         encoderStraight(DRIVE_SPEED,50,13);
         encoderRotate(TURN_SPEED,360,10);
         encoderRotate(TURN_SPEED,360,10);
-        encoderStraight(DRIVE_SPEEC,-25,4);
+        encoderStraight(DRIVE_SPEED,-25,4);
 */
 
         robot.encoderStraight(DRIVE_SPEED,-32,3);
@@ -133,84 +132,3 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
         telemetry.update();
     }
 }
-
-
-        /*
-        // Old unused code for posterity
-        // Step through each leg of the path,
-        // Note: Reverse movement is obtained by setting a negative distance (not speed)
-
-        encoderDrive(DRIVE_SPEED,  24*4,  24*4, 10.0);    // S1: Forward 72 Inches
-        encoderRotate(TURN_SPEED,  360, 10.0);                    // S2: Turn Right 1 rotations
-        sleep(500);     // pause for servos to move
-        encoderRotate(TURN_SPEED,  360, 10.0);                    // S3: Turn Right 1 rotations
-        sleep(500);     // pause for servos to move
-        encoderRotate(TURN_SPEED,  360, 10.0);                    // S4: Turn Right 1 rotations
-        sleep(500);     // pause for servos to move
-        encoderRotate(TURN_SPEED,  360, 10.0);                    // S5: Turn Right 1 rotations
-        sleep(500);     // pause for servos to move
-        encoderDrive(DRIVE_SPEED,  -24*3.5,  -24*3.5, 10.0);  // S6: Backwards 48 Inches
-
-        encoderStraight(37.0,3);
-        encoderPivot(180,4);
-        encoderStraight(20,2);
-        encoderPivot(-90,2);
-        encoderStraight(24,2);
-        encoderStraight(-70,3);
-        encoderRotate(-90,2);
-        encoderStraight(24,2);
-        encoderPivot(180,3);
-        encoderStraight(20,2);
-        encoderPivot(-90,2);
-        encoderStraight(70,3);
-        */
-
-        /*
-        *         // This code implements a soft start and soft stop based on time/speed/distance
-        *         // It's likely more complicated than necessary.  A distance=only approach is
-        *         // better below.  Turns still seem to have some issue in the time/speed/distance.
-        *         static final double     SECONDS_TO_FULL_POWER   = 1.5;
-        *         static final double     SPEED_RAMP_PER_MS       = (1.0/1000.0) / SECONDS_TO_FULL_POWER;
-        *         static final double     SPEED_OFFS              = 0.05;
-        *         double lastPos=0;
-        *         double lt;
-        *         double rem;
-        *         double rate;
-        *         boolean decel = false;
-        *         ElapsedTime     looptime = new ElapsedTime();
-        *         looptime.reset()
-        *                 if(false) {
-        *                     // Record elapsed time
-        *                     lt = looptime.milliseconds();
-        *                     // Reset the timer for next loop
-        *                     looptime.reset();
-        *                     // Get current position
-        *                     curPos = Math.abs(robot.leftFDrive.getCurrentPosition());
-        *                     // How much farther?
-        *                     toGo = tgtPos - curPos;
-        *                     // Compute remaining time based on encoder rate from last loop
-        *                     rate = ((curPos - lastPos) / lt);
-        *                     rem = toGo / rate;
-        *                     // Save the new position
-        *                     lastPos = curPos;
-        *                     // If the delta to our target stop speed is > than our deceleration rate, start to slow down
-        *                     if ((actSpeed > 0.20) && ((actSpeed - 0.20) > (rem * SPEED_RAMP_PER_MS))) {
-        *                         actSpeed = Math.max(actSpeed - (lt * SPEED_RAMP_PER_MS), 0.20);
-        *                         robot.leftFDrive.setPower(actSpeed);
-        *                         robot.rightFDrive.setPower(actSpeed * (67 / 70.0));
-        *                         robot.leftBDrive.setPower(actSpeed);
-        *                         robot.rightBDrive.setPower(actSpeed * (67 / 70.0));
-        *                         decel = true;
-        *                     } else {
-        *                         if (!decel && (actSpeed < speed)) {
-        *                             // If our speed is below our target and we're not slowing down, speed up
-        *                             actSpeed = Math.min(actSpeed + (lt * SPEED_RAMP_PER_MS), speed);
-        *                             robot.leftFDrive.setPower(actSpeed);
-        *                             robot.rightFDrive.setPower(actSpeed * (67 / 70.0));
-        *                             robot.leftBDrive.setPower(actSpeed);
-        *                             robot.rightBDrive.setPower(actSpeed * (67 / 70.0));
-        *                         }
-        *                     }
-        *                 }
-        *                 //telemetry.addData("Path3",  "Running rate: %3.3f, rem: %7.0f, s: %1.3f", rate, rem, actSpeed);
-        */

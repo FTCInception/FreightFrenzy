@@ -203,9 +203,9 @@ public class IncepVision {
                                 recognition.getRight(), recognition.getBottom());*/
 
                     // Choose highest confidence
-                    //if ((skystone_rec == null) || (recognition.getConfidence() > skystone_rec.getConfidence())) {
+                    if ((skystone_rec == null) || (recognition.getConfidence() > skystone_rec.getConfidence())) {
                         skystone_rec = recognition;
-                    //}
+                    }
                 }
                 if (updatedRecognitions.size() > 0) {
                     myLOpMode.telemetry.addData("# Object Detected", "%d (%.2f)", updatedRecognitions.size(), skystone_rec.getConfidence());
@@ -333,6 +333,8 @@ public class IncepVision {
                     if (edgeFound) {
                         int dist = column - left;
 
+                        // > half might work better here.
+                        //if (dist >= ((3 * Third)/2)) {
                         if (dist >= (2 * Third)) {
                             BlockNumber = 1;
                         } else if (dist >= (Third / 2)) {

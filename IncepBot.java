@@ -290,7 +290,7 @@ public class IncepBot
     }
 
     public void encoderRotate(double speed, double degrees, double timeoutS) {
-        encoderDrive( speed, degrees * INCHES_PER_DEGREE, -degrees * INCHES_PER_DEGREE, timeoutS );
+        encoderMyDrive( speed, degrees * INCHES_PER_DEGREE, -degrees * INCHES_PER_DEGREE, timeoutS );
     }
 
     public void encoderPivot(double speed, double degrees, double timeoutS) {
@@ -575,8 +575,210 @@ public class IncepBot
     }
 
     /*
+     *  Method to perfmorm an arbitrary turn with differential wheel power and gyro feedback
+     *  IMU gyro is used to help steer if we're going straight.
+     *  Move will stop if any of three conditions occur:
+     *  1) Move gets to the desired heading
+     *  2) Move runs out of time
+     *  3) Driver stops the opmode running.
+     */
+    /*
+    public void gyroTurn(double degrees,
+                         double leftPower, double rightPower,
+                         double timeoutS) {
+        int newLeftFTarget;
+        int newRightFTarget;
+        int newLeftBTarget;
+        int newRightBTarget;
+        double curPosL, curPosR;
+        double toGoL, toGoR;
+        double actSpeedL, actSpeedR;
+        double newSpeedL, newSpeedR;
+        double spdUpL,spdDnL,spdUpR,spdDnR;
+        boolean doneL, doneR;
+        double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownT = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        ElapsedTime     runtime = new ElapsedTime();
+        double tgtHeading, curHeading, deltaHeading;
+        double KhL = 1.0;
+        double KhR = 1.0;
+
+        // Get the current Heading
+        curHeading = getHeading();
+
+        // FIXME: Let's assume the caller has made sure our left/right power will turn the same direction as our degrees for now
+
+        // If we're not going straight, change the speed down profile to a turning-friendly version
+        if (leftPower != rightPower) {
+            speedRampDown = speedRampDownT;
+        }
+
+        // Ensure that the opmode is still active
+        if (myLOpMode.opModeIsActive()) {
+
+            leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            rightFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            leftBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            rightBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+            // We'll handle the power/speed/encoders
+            leftFDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            rightFDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            leftBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            rightBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+            // The front wheels are slipping so they stop and fight the back.  Set them
+            // to FLOAT here to try to avoid that.  Not sure if this actually works
+            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
+            // FIXME: New code use the current heading + the degrees to compute the target for gyro feedback
+            //// Determine new target position, and pass to motor controller
+            //newLeftFTarget = (int)(leftInches * COUNTS_PER_INCH);
+            //newRightFTarget = (int)(rightInches * COUNTS_PER_INCH);
+            //newLeftBTarget = (int)(leftInches * COUNTS_PER_INCH);
+            //newRightBTarget = (int)(rightInches * COUNTS_PER_INCH);
+
+            // FIXME: Initialize toGo
+            //// Initialze toGo == target (maximum toGo)
+            //toGoL = Math.abs(newLeftBTarget);
+            //toGoR = Math.abs(newRightBTarget);
+
+            // reset the timeout time and start motion at the minimum speed.
+            runtime.reset();
+
+            // FIXME: Probably don't need this
+            speed = Math.abs(speed);
+
+            // Setting the starting speed is now handled inside the loop below on the first iteration.
+            // Don't set the speed out here because a 'pivot' where one side has a '0' distance
+            // request would start moving too soon.
+
+            // Initialize variables before the loop
+            // FIXME: We are only using gyro as the feedback variable, so these variables can likely drop to a single instance
+            doneL = doneR = false;
+            // FIXME: Probably only one speed up and one speed down  array for the robot overall but we'll apply a power difference to each wheel based on the input power variables
+            spdUpL = spdUpR = newSpeedL = newSpeedR = speedRampUp[0];
+            spdDnL = spdDnR = speedRampDown[0];
+
+            // FIXME: We don't really care about encoder position any more.  So get the gyro heading here instead.
+            curPosL = leftBDrive.getCurrentPosition();
+            curPosR = rightBDrive.getCurrentPosition();
+
+            // FIXME: only one done
+            // Keep looping while we are still active, and there is time left, and we haven't reached the target
+            while (myLOpMode.opModeIsActive() &&
+                    (runtime.seconds() < timeoutS) &&
+                    ( !doneL || !doneR)) {
+
+                // Check if we're done
+                // This code implements a soft start and soft stop.
+                // FIXME: Only one of these for gyro now
+                // FIXME: Instead of thinking of position / togo as encoder values, now we think of them as angles/degrees.  Compute the same types of values but with degrees.
+                if (!doneL) {
+                    curPosL = leftBDrive.getCurrentPosition();
+                    doneL = ((Math.abs(newLeftBTarget) - Math.abs(curPosL)) < CLOSE_ENOUGH);
+
+                    // How much farther?
+                    toGoL = Math.min(toGoL, Math.max(0, Math.abs(newLeftBTarget - curPosL)));
+                    // Compute speed on acceleration and deceleration legs
+                    spdUpL = Math.min(speedRampUp[Math.min((int) (Math.abs(curPosL) / SOFT_D_UP), speedRampUp.length - 1)], speed);
+                    spdDnL = Math.min(speedRampDown[Math.min((int) (Math.abs(toGoL) / SOFT_D_DOWN2), speedRampDown.length - 1)], speed);
+
+                    // Use the minimum speed or 0
+                    newSpeedL = doneL ? 0 : Math.min(spdUpL, spdDnL);
+                }
+
+                if (!doneR) {
+                    curPosR = rightBDrive.getCurrentPosition();
+                    doneR = ((Math.abs(newRightBTarget) - Math.abs(curPosR)) < CLOSE_ENOUGH);
+
+                    // How much farther?
+                    toGoR  = Math.min(toGoR, Math.max(0,Math.abs(newRightBTarget - curPosR)));
+                    // Compute speed on acceleration and deceleration legs
+                    spdUpR = Math.min(speedRampUp[Math.min((int)(Math.abs(curPosR)/SOFT_D_UP),speedRampUp.length-1)],speed);
+                    spdDnR = Math.min(speedRampDown[Math.min((int)(Math.abs(toGoR)/SOFT_D_DOWN2),speedRampDown.length-1)],speed);
+
+                    // Use the minimum speed or 0
+                    newSpeedR = doneR ? 0 : Math.min(spdUpR, spdDnR) ;
+                }
+
+
+                // FIXME: There is no such thing as "drift" in our first implementation
+                // Compute drift, negate for correction
+                if (leftInches == rightInches) {
+                    curHeading = getHeading();
+                    deltaHeading = -1.0 * AngleUnit.DEGREES.normalize(tgtHeading - curHeading);
+
+                    // If driving straight backwards, negate again
+                    if (leftInches < 0 ) {
+                        deltaHeading *= -1.0;
+                    }
+                } else {
+                    // if not straight, no correction needed
+                    deltaHeading = 0;
+                }
+
+                // FIXME: No drift, no steer
+                // Steering proportional constant
+                double P = 0.05;
+
+                // FIXME: So now we need to actually scale the input power to match the ramp up/down target.
+                // FIXME: Find the side with the largest value, apply the ramp up/down to that wheel, scale the slower wheel down to maintain ratio.
+                // Change power and steer
+                actSpeedL = newSpeedL;
+                // Reverse stuff if driving backwards
+                if ( newLeftFTarget < 0 ) {
+                    actSpeedL *= -1.0;
+                }
+                // Never change the sign. Make the change proportional to the error
+                KhL = Math.max(0.0, (1.0 + (deltaHeading * P)));
+                leftFDrive.setPower (Math.max(-1.0, Math.min(1.0, actSpeedL * KpL * KhL )));
+                leftBDrive.setPower (Math.max(-1.0, Math.min(1.0, actSpeedL * KpL * KhL )));
+
+                // Change power and steer
+                actSpeedR = newSpeedR;
+                // Reverse stuff if driving backwards
+                if ( newRightFTarget < 0 ) {
+                    actSpeedR *= -1.0;
+                }
+                // Never change the sign. Make the change proportional to the error
+                KhR = Math.max(0.0, (1.0 - (deltaHeading * P)));
+                rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeedR * KpR * KhR )));
+                rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeedR * KpR * KhR )));
+
+                // FIXME: Update Telemetry for gyro info
+                myLOpMode.telemetry.addData("left",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, actSpeedL, (int)curPosL, (int)newLeftBTarget, (int)toGoL);
+                myLOpMode.telemetry.addData("rght",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, actSpeedR, (int)curPosR, (int)newRightBTarget, (int)toGoR);
+                myLOpMode.telemetry.update();
+            }
+
+            // The front wheels are slipping so they stop and fight the back.  Set them
+            // to FLOAT earlier, so reset to BRAKE here.
+            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+            // Stop all motion;
+            leftFDrive.setPower(0);
+            rightFDrive.setPower(0);
+            leftBDrive.setPower(0);
+            rightBDrive.setPower(0);
+
+            // Reset run mode
+            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        }
+    }
+    */
+
+
+    /*
      *  Method to perfmorm a relative move, based on encoder counts.
-     *  IMU gyro is used to help steer.
+     *  IMU gyro is used to help steer if we're going straight.
      *  Move will stop if any of three conditions occur:
      *  1) Move gets to the desired position
      *  2) Move runs out of time
@@ -589,20 +791,27 @@ public class IncepBot
         int newRightFTarget;
         int newLeftBTarget;
         int newRightBTarget;
-        double curPos;
-        double tgtPos;
-        double toGo;
-        double actSpeed;
-        double newSpeed;
-        double spdUp,spdDn;
+        double curPosL, curPosR;
+        double toGoL, toGoR;
+        double actSpeedL, actSpeedR;
+        double newSpeedL, newSpeedR;
+        double spdUpL,spdDnL,spdUpR,spdDnR;
+        boolean doneL, doneR;
         double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownT = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         ElapsedTime     runtime = new ElapsedTime();
         double tgtHeading, curHeading, deltaHeading;
         double KhL = 1.0;
         double KhR = 1.0;
 
+        // Get the current Heading
         tgtHeading = getHeading();
+
+        // If we're not going straight, change the speed down profile to a turning-friendly version
+        if (leftInches != rightInches) {
+            speedRampDown = speedRampDownT;
+        }
 
         // Ensure that the opmode is still active
         if (myLOpMode.opModeIsActive()) {
@@ -628,66 +837,103 @@ public class IncepBot
             newRightFTarget = (int)(rightInches * COUNTS_PER_INCH);
             newLeftBTarget = (int)(leftInches * COUNTS_PER_INCH);
             newRightBTarget = (int)(rightInches * COUNTS_PER_INCH);
-            tgtPos = newLeftFTarget;
+
+            // Initialze toGo == target (maximum toGo)
+            toGoL = Math.abs(newLeftBTarget);
+            toGoR = Math.abs(newRightBTarget);
 
             // reset the timeout time and start motion at the minimum speed.
             runtime.reset();
             speed = Math.abs(speed);
-            actSpeed = speedRampUp[0];
-            if ( tgtPos < 0 ) {
-                actSpeed *= -1.0;
-            }
-            leftFDrive.setPower(actSpeed * KpL);
-            rightFDrive.setPower(actSpeed * KpR);
-            leftBDrive.setPower(actSpeed * KpL);
-            rightBDrive.setPower(actSpeed * KpR);
 
-            // keep looping while we are still active, and there is time left, and both motors are running.
-            // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
-            // its target position, the motion will stop.  This is "safer" in the event that the robot will
-            // always end the motion as soon as possible.
-            // However, if you require that BOTH motors have finished their moves before the robot continues
-            // onto the next step, use (isBusy() || isBusy()) in the loop test.
+            // Setting the starting speed is now handled inside the loop below on the first iteration.
+            // Don't set the speed out here because a 'pivot' where one side has a '0' distance
+            // request would start moving too soon.
+
+            // Initialize variables before the loop
+            doneL = doneR = false;
+            spdUpL = spdUpR = newSpeedL = newSpeedR = speedRampUp[0];
+            spdDnL = spdDnR = speedRampDown[0];
+            curPosL = leftBDrive.getCurrentPosition();
+            curPosR = rightBDrive.getCurrentPosition();
+
+            // Keep looping while we are still active, and there is time left, and we haven't reached the target
             while (myLOpMode.opModeIsActive() &&
-                    //(runtime.seconds() < timeoutS) &&
-                    ((Math.abs(newLeftBTarget  -  (curPos = leftBDrive.getCurrentPosition())) > CLOSE_ENOUGH) ||
-                     (Math.abs(newRightBTarget -            rightBDrive.getCurrentPosition()) > CLOSE_ENOUGH))) {
+                    (runtime.seconds() < timeoutS) &&
+                    ( !doneL || !doneR)) {
 
+                // Check if we're done
                 // This code implements a soft start and soft stop.
-                // How much farther?
-                toGo  = Math.max(0,Math.abs(tgtPos - curPos));
+                if (!doneL) {
+                    curPosL = leftBDrive.getCurrentPosition();
+                    doneL = ((Math.abs(newLeftBTarget) - Math.abs(curPosL)) < CLOSE_ENOUGH);
 
-                // Compute speed on acceleration and deceleration legs
-                spdUp = Math.min(speedRampUp[Math.min((int)(Math.abs(curPos)/SOFT_D_UP),speedRampUp.length-1)],speed);
-                spdDn = Math.min(speedRampDown[Math.min((int)(Math.abs(toGo)/SOFT_D_DOWN2),speedRampDown.length-1)],speed);
+                    // How much farther?
+                    toGoL = Math.min(toGoL, Math.max(0, Math.abs(newLeftBTarget - curPosL)));
+                    // Compute speed on acceleration and deceleration legs
+                    spdUpL = Math.min(speedRampUp[Math.min((int) (Math.abs(curPosL) / SOFT_D_UP), speedRampUp.length - 1)], speed);
+                    spdDnL = Math.min(speedRampDown[Math.min((int) (Math.abs(toGoL) / SOFT_D_DOWN2), speedRampDown.length - 1)], speed);
 
-                // Use the minimum speed
-                newSpeed = Math.min(spdUp, spdDn);
+                    // Use the minimum speed or 0
+                    newSpeedL = doneL ? 0 : Math.min(spdUpL, spdDnL);
+                }
 
-                // Compute drif, negate for correction
-                curHeading = getHeading();
-                deltaHeading = -1.0 * AngleUnit.DEGREES.normalize(tgtHeading - curHeading);
+                if (!doneR) {
+                    curPosR = rightBDrive.getCurrentPosition();
+                    doneR = ((Math.abs(newRightBTarget) - Math.abs(curPosR)) < CLOSE_ENOUGH);
 
-                // Reverse stuff if driving backwards
-                if ( tgtPos < 0 ) {
-                    newSpeed *= -1.0;
-                    deltaHeading *= -1.0;
+                    // How much farther?
+                    toGoR  = Math.min(toGoR, Math.max(0,Math.abs(newRightBTarget - curPosR)));
+                    // Compute speed on acceleration and deceleration legs
+                    spdUpR = Math.min(speedRampUp[Math.min((int)(Math.abs(curPosR)/SOFT_D_UP),speedRampUp.length-1)],speed);
+                    spdDnR = Math.min(speedRampDown[Math.min((int)(Math.abs(toGoR)/SOFT_D_DOWN2),speedRampDown.length-1)],speed);
+
+                    // Use the minimum speed or 0
+                    newSpeedR = doneR ? 0 : Math.min(spdUpR, spdDnR) ;
+                }
+
+
+                // Compute drift, negate for correction
+                if (leftInches == rightInches) {
+                    curHeading = getHeading();
+                    deltaHeading = -1.0 * AngleUnit.DEGREES.normalize(tgtHeading - curHeading);
+
+                    // If driving straight backwards, negate again
+                    if (leftInches < 0 ) {
+                        deltaHeading *= -1.0;
+                    }
+                } else {
+                    // if not straight, no correction needed
+                    deltaHeading = 0;
                 }
 
                 // Steering proportional constant
-                double P = 0.1;
-                // Change power and steer
-                actSpeed = newSpeed;
+                double P = 0.05;
 
+                // Change power and steer
+                actSpeedL = newSpeedL;
+                // Reverse stuff if driving backwards
+                if ( newLeftFTarget < 0 ) {
+                    actSpeedL *= -1.0;
+                }
                 // Never change the sign. Make the change proportional to the error
                 KhL = Math.max(0.0, (1.0 + (deltaHeading * P)));
-                KhR = Math.max(0.0, (1.0 - (deltaHeading * P)));
-                leftFDrive.setPower (Math.max(-1.0, Math.min(1.0, actSpeed * KpL * KhL )));
-                rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeed * KpR * KhR )));
-                leftBDrive.setPower (Math.max(-1.0, Math.min(1.0, actSpeed * KpL * KhL )));
-                rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeed * KpR * KhR )));
+                leftFDrive.setPower (Math.max(-1.0, Math.min(1.0, actSpeedL * KpL * KhL )));
+                leftBDrive.setPower (Math.max(-1.0, Math.min(1.0, actSpeedL * KpL * KhL )));
 
-                myLOpMode.telemetry.addData("Path3",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int)curPos, (int)toGo);
+                // Change power and steer
+                actSpeedR = newSpeedR;
+                // Reverse stuff if driving backwards
+                if ( newRightFTarget < 0 ) {
+                    actSpeedR *= -1.0;
+                }
+                // Never change the sign. Make the change proportional to the error
+                KhR = Math.max(0.0, (1.0 - (deltaHeading * P)));
+                rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeedR * KpR * KhR )));
+                rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeedR * KpR * KhR )));
+
+                myLOpMode.telemetry.addData("left",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, actSpeedL, (int)curPosL, (int)newLeftBTarget, (int)toGoL);
+                myLOpMode.telemetry.addData("rght",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, actSpeedR, (int)curPosR, (int)newRightBTarget, (int)toGoR);
                 myLOpMode.telemetry.update();
             }
 
