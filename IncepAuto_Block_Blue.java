@@ -85,9 +85,18 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
  /*
         // Calibration code
         encoderStraight(DRIVE_SPEED,50,13);
-        encoderRotate(TURN_SPEED,360,10);
-        encoderRotate(TURN_SPEED,360,10);
+        gyroRotate(TURN_SPEED,360,10);
+        gyroRotate(TURN_SPEED,360,10);
         encoderStraight(DRIVE_SPEED,-25,4);
+
+        robot.gyroRotate(TURN_SPEED,90, 25);
+        sleep(1000);
+        robot.gyroRotate(TURN_SPEED,-90, 25);
+        sleep(1000);
+        robot.gyroRotate(TURN_SPEED,180, 25);
+        sleep(1000);
+        robot.gyroRotate(TURN_SPEED,-180, 25);
+        sleep(1000);
 */
 
         robot.encoderStraight(DRIVE_SPEED,-32,3);
@@ -100,23 +109,28 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
 
         robot.grabBlock();
 
-        //go to other side
-        robot.encoderStraight(DRIVE_SPEED,10,2);
-        robot.encoderRotate(TURN_SPEED,-90, 2.5);
+        // Make the turn
+        robot.gyroPivot( 1.0, 90.0, 6 );
+        //robot.encoderStraight(DRIVE_SPEED,10,2);
+        //robot.gyroRotate(TURN_SPEED,90, 2.5);
         robot.encoderStraight(DRIVE_SPEED,-38, 3);
 
         robot.dropBlock();
 
         //come back and go for next one
         robot.encoderStraight(DRIVE_SPEED,46, 3);
-        robot.encoderRotate(TURN_SPEED,90, 2.5);
-        robot.encoderStraight(DRIVE_SPEED,-12,3);
+
+        robot.gyroPivot( -1.0, -90.0, 6 );
+        //robot.gyroRotate(TURN_SPEED,-90, 2.5);
+        //robot.encoderStraight(DRIVE_SPEED,-12,3);
 
         robot.grabBlock();
 
         //go to other side
-        robot.encoderStraight(DRIVE_SPEED,10,2);
-        robot.encoderRotate(TURN_SPEED,-90, 2.5);
+        robot.gyroPivot( 1.0, 90.0, 6 );
+        //robot.encoderStraight(DRIVE_SPEED,10,2);
+        //robot.gyroRotate(TURN_SPEED,90, 2.5);
+
         robot.encoderStraight(DRIVE_SPEED,-48, 3);
 
         //drop block

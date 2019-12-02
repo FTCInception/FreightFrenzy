@@ -80,14 +80,18 @@ public class IncepBot
     private static final double     AXLE_LENGTH             = 13.25;          // Width of robot through the pivot point (center wheels)
     private static final double     INCHES_PER_DEGREE       = (AXLE_LENGTH * 3.14159) / 360.0;
     private static final double     SOFT_D_UP               = 50.0;
+    private static final double     SOFT_D_UP_DEGREE        = 5;
     private static final double     SOFT_D_DOWN             = 70.0;
     private static final double     SOFT_D_DOWN2            = 80.0;
+    private static final double     SOFT_D_DOWN_DEGREE      = 15;
     private static final double     KpL                     = 1.0;
     private static final double     KpR                     = 67.5/70.0;
     private static final double     PIVOT_FACTOR            = 2.05;
     private static final double     CLOSE_ENOUGH            = 15.0;
+    private static final double     CLOSE_ENOUGH_DEGREE     = 0.5;
     private static final double     RIGHT_ARC_COEFFICENT    = 1.00;
     private static final double     LEFT_ARC_COEFFICENT     = 1.25;
+    private static final double     IMU_CORR                = 1.04;
     static final double             RIGHT                   = 1;
     static final double             LEFT                    = 0;
     BNO055IMU               imu;
@@ -282,7 +286,7 @@ public class IncepBot
 
     public void dropBlock() {
         claw.setPosition(0);
-        myLOpMode.sleep(250);
+        //myLOpMode.sleep(250);
     }
 
     public void encoderStraight(double speed, double distance, double timeoutS) {
@@ -291,6 +295,25 @@ public class IncepBot
 
     public void encoderRotate(double speed, double degrees, double timeoutS) {
         encoderMyDrive( speed, degrees * INCHES_PER_DEGREE, -degrees * INCHES_PER_DEGREE, timeoutS );
+    }
+
+    public void gyroRotate(double speed, double degrees, double timeoutS) {
+        if (degrees > 0){
+            gyroTurn( degrees, -speed, speed, timeoutS );
+        } else {
+            gyroTurn( degrees, speed, -speed, timeoutS );
+        }
+
+    }
+
+    public void gyroPivot(double speed, double degrees, double timeoutS) {
+        // +speed and -degrees requires right power
+        // -speed and -degrees requires right power
+        if (((degrees > 0) && (speed > 0)) || ((degrees < 0) && (speed < 0))) {
+            gyroTurn( degrees, 0, speed, timeoutS );
+        } else {
+            gyroTurn( degrees, speed, 0, timeoutS );
+        }
     }
 
     public void encoderPivot(double speed, double degrees, double timeoutS) {
@@ -571,47 +594,54 @@ public class IncepBot
         Orientation     gyroOrien;
 
         gyroOrien = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-        return( AngleUnit.DEGREES.normalize(AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle)));
+        return( AngleUnit.DEGREES.normalize(AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle)*IMU_CORR));
     }
 
     /*
      *  Method to perfmorm an arbitrary turn with differential wheel power and gyro feedback
-     *  IMU gyro is used to help steer if we're going straight.
      *  Move will stop if any of three conditions occur:
      *  1) Move gets to the desired heading
      *  2) Move runs out of time
      *  3) Driver stops the opmode running.
      */
-    /*
     public void gyroTurn(double degrees,
                          double leftPower, double rightPower,
                          double timeoutS) {
-        int newLeftFTarget;
-        int newRightFTarget;
-        int newLeftBTarget;
-        int newRightBTarget;
-        double curPosL, curPosR;
-        double toGoL, toGoR;
-        double actSpeedL, actSpeedR;
-        double newSpeedL, newSpeedR;
-        double spdUpL,spdDnL,spdUpR,spdDnR;
-        boolean doneL, doneR;
+        double toGo;
+        double maxPower;
+        double actSpeed=0.0;
+        double newSpeed ;
+        double spdUp, spdDn;
         double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDownT = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        ElapsedTime     runtime = new ElapsedTime();
-        double tgtHeading, curHeading, deltaHeading;
-        double KhL = 1.0;
-        double KhR = 1.0;
+        double[] speedRampDownR = {0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownP = {0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
+        ElapsedTime runtime = new ElapsedTime();
+        double tgtHeading, curHeading, startHeading;
+        double KsL = 1.0;
+        double KsR = 1.0;
 
         // Get the current Heading
-        curHeading = getHeading();
+        startHeading = curHeading = getHeading();
+        // Where we are headed
+        tgtHeading = AngleUnit.normalizeDegrees(curHeading + degrees) ;
+        // Initialize toGo
+        toGo = Math.abs(degrees);
+
+        //myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f",degrees,curHeading,startHeading,tgtHeading,AngleUnit.normalizeDegrees(curHeading - tgtHeading));
+        //myLOpMode.telemetry.update();
+        //myLOpMode.sleep(3000);
 
         // FIXME: Let's assume the caller has made sure our left/right power will turn the same direction as our degrees for now
 
-        // If we're not going straight, change the speed down profile to a turning-friendly version
-        if (leftPower != rightPower) {
-            speedRampDown = speedRampDownT;
+        // If this is a rotate, use rotate profile
+        if (leftPower == -rightPower) {
+            speedRampDown = speedRampDownR;
+        }
+
+        // If this is a Pivot, use Pivot profile
+        if ((leftPower == 0) || (rightPower == 0) ) {
+            speedRampDown = speedRampDownP;
         }
 
         // Ensure that the opmode is still active
@@ -633,125 +663,88 @@ public class IncepBot
             leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
             rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-            // FIXME: New code use the current heading + the degrees to compute the target for gyro feedback
-            //// Determine new target position, and pass to motor controller
-            //newLeftFTarget = (int)(leftInches * COUNTS_PER_INCH);
-            //newRightFTarget = (int)(rightInches * COUNTS_PER_INCH);
-            //newLeftBTarget = (int)(leftInches * COUNTS_PER_INCH);
-            //newRightBTarget = (int)(rightInches * COUNTS_PER_INCH);
+            // Initialize Power Ratio
+            //init maxpower
+            maxPower = Math.max( Math.abs(rightPower), Math.abs(leftPower) );
 
-            // FIXME: Initialize toGo
-            //// Initialze toGo == target (maximum toGo)
-            //toGoL = Math.abs(newLeftBTarget);
-            //toGoR = Math.abs(newRightBTarget);
+            // Power ratio for '0' values is special case
+            if (leftPower == 0) {
+                KsL = 0.0 ;
+                KsR = Math.abs(rightPower)/rightPower;
+            }
+
+            if (rightPower == 0 ) {
+                KsR = 0.0 ;
+                KsL = Math.abs(leftPower)/leftPower;
+            }
+
+            // Find the ratio for left and right.  The larger absolute value always is the (+/-)1.0 ratio
+            if (( leftPower != 0 ) && (rightPower != 0)) {
+                if ( Math.abs(leftPower) > Math.abs(rightPower) ) {
+                    // This division preserves the direction (+/-)
+                    KsL = Math.abs(leftPower)/leftPower;
+                    KsR = rightPower/Math.abs(leftPower);
+                } else {
+                    // This division preserves the direction (+/-)
+                    KsR = Math.abs(rightPower)/rightPower;
+                    KsL = leftPower/Math.abs(rightPower);
+                }
+            }
+
+            //myLOpMode.telemetry.addData("gyro", "KL: %.3f, KR: %.3f, max: %.2f",KsL, KsR,maxPower);
+            //myLOpMode.telemetry.update();
+            //myLOpMode.sleep(5000);
 
             // reset the timeout time and start motion at the minimum speed.
             runtime.reset();
-
-            // FIXME: Probably don't need this
-            speed = Math.abs(speed);
 
             // Setting the starting speed is now handled inside the loop below on the first iteration.
             // Don't set the speed out here because a 'pivot' where one side has a '0' distance
             // request would start moving too soon.
 
             // Initialize variables before the loop
-            // FIXME: We are only using gyro as the feedback variable, so these variables can likely drop to a single instance
-            doneL = doneR = false;
-            // FIXME: Probably only one speed up and one speed down  array for the robot overall but we'll apply a power difference to each wheel based on the input power variables
-            spdUpL = spdUpR = newSpeedL = newSpeedR = speedRampUp[0];
-            spdDnL = spdDnR = speedRampDown[0];
-
-            // FIXME: We don't really care about encoder position any more.  So get the gyro heading here instead.
-            curPosL = leftBDrive.getCurrentPosition();
-            curPosR = rightBDrive.getCurrentPosition();
-
-            // FIXME: only one done
+            // Use done to jump out of loop when you get close enough to the end
             // Keep looping while we are still active, and there is time left, and we haven't reached the target
             while (myLOpMode.opModeIsActive() &&
-                    (runtime.seconds() < timeoutS) &&
-                    ( !doneL || !doneR)) {
+                    (runtime.seconds() < timeoutS)) {
 
                 // Check if we're done
                 // This code implements a soft start and soft stop.
-                // FIXME: Only one of these for gyro now
-                // FIXME: Instead of thinking of position / togo as encoder values, now we think of them as angles/degrees.  Compute the same types of values but with degrees.
-                if (!doneL) {
-                    curPosL = leftBDrive.getCurrentPosition();
-                    doneL = ((Math.abs(newLeftBTarget) - Math.abs(curPosL)) < CLOSE_ENOUGH);
+                curHeading = getHeading();
 
-                    // How much farther?
-                    toGoL = Math.min(toGoL, Math.max(0, Math.abs(newLeftBTarget - curPosL)));
-                    // Compute speed on acceleration and deceleration legs
-                    spdUpL = Math.min(speedRampUp[Math.min((int) (Math.abs(curPosL) / SOFT_D_UP), speedRampUp.length - 1)], speed);
-                    spdDnL = Math.min(speedRampDown[Math.min((int) (Math.abs(toGoL) / SOFT_D_DOWN2), speedRampDown.length - 1)], speed);
-
-                    // Use the minimum speed or 0
-                    newSpeedL = doneL ? 0 : Math.min(spdUpL, spdDnL);
+                // FIXME: Handle overshoot of any size, not just CLOSE_ENOUGH_DEGREES
+                if ((Math.abs(AngleUnit.normalizeDegrees(curHeading - tgtHeading))) < CLOSE_ENOUGH_DEGREE) {
+                    break;
                 }
 
-                if (!doneR) {
-                    curPosR = rightBDrive.getCurrentPosition();
-                    doneR = ((Math.abs(newRightBTarget) - Math.abs(curPosR)) < CLOSE_ENOUGH);
+                // How much farther?
+                toGo = Math.min(toGo, Math.max(0, Math.abs(AngleUnit.normalizeDegrees(tgtHeading - curHeading))));
 
-                    // How much farther?
-                    toGoR  = Math.min(toGoR, Math.max(0,Math.abs(newRightBTarget - curPosR)));
-                    // Compute speed on acceleration and deceleration legs
-                    spdUpR = Math.min(speedRampUp[Math.min((int)(Math.abs(curPosR)/SOFT_D_UP),speedRampUp.length-1)],speed);
-                    spdDnR = Math.min(speedRampDown[Math.min((int)(Math.abs(toGoR)/SOFT_D_DOWN2),speedRampDown.length-1)],speed);
+                // Compute speed on acceleration and deceleration legs
+                spdUp = Math.min(speedRampUp[Math.min((int) (Math.abs(AngleUnit.normalizeDegrees(startHeading - curHeading)) / SOFT_D_UP_DEGREE), speedRampUp.length - 1)], maxPower);
+                spdDn = Math.min(speedRampDown[Math.min((int) (Math.abs(toGo) / SOFT_D_DOWN_DEGREE), speedRampDown.length - 1)], maxPower);
 
-                    // Use the minimum speed or 0
-                    newSpeedR = doneR ? 0 : Math.min(spdUpR, spdDnR) ;
+                // Scale the final speed against the input power.
+                newSpeed = Math.min(spdDn, spdUp);
+
+                // Only update the motors if we really need too
+                if (newSpeed != actSpeed ) {
+
+                    // Record the new base speed
+                    actSpeed = newSpeed;
+
+                    // Change and scale power, the direction is already baked into KsR and KsL
+                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)));
+                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)));
+                    rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)));
+                    rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)));
                 }
 
-
-                // FIXME: There is no such thing as "drift" in our first implementation
-                // Compute drift, negate for correction
-                if (leftInches == rightInches) {
-                    curHeading = getHeading();
-                    deltaHeading = -1.0 * AngleUnit.DEGREES.normalize(tgtHeading - curHeading);
-
-                    // If driving straight backwards, negate again
-                    if (leftInches < 0 ) {
-                        deltaHeading *= -1.0;
-                    }
-                } else {
-                    // if not straight, no correction needed
-                    deltaHeading = 0;
-                }
-
-                // FIXME: No drift, no steer
-                // Steering proportional constant
-                double P = 0.05;
-
-                // FIXME: So now we need to actually scale the input power to match the ramp up/down target.
-                // FIXME: Find the side with the largest value, apply the ramp up/down to that wheel, scale the slower wheel down to maintain ratio.
-                // Change power and steer
-                actSpeedL = newSpeedL;
-                // Reverse stuff if driving backwards
-                if ( newLeftFTarget < 0 ) {
-                    actSpeedL *= -1.0;
-                }
-                // Never change the sign. Make the change proportional to the error
-                KhL = Math.max(0.0, (1.0 + (deltaHeading * P)));
-                leftFDrive.setPower (Math.max(-1.0, Math.min(1.0, actSpeedL * KpL * KhL )));
-                leftBDrive.setPower (Math.max(-1.0, Math.min(1.0, actSpeedL * KpL * KhL )));
-
-                // Change power and steer
-                actSpeedR = newSpeedR;
-                // Reverse stuff if driving backwards
-                if ( newRightFTarget < 0 ) {
-                    actSpeedR *= -1.0;
-                }
-                // Never change the sign. Make the change proportional to the error
-                KhR = Math.max(0.0, (1.0 - (deltaHeading * P)));
-                rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeedR * KpR * KhR )));
-                rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeedR * KpR * KhR )));
-
-                // FIXME: Update Telemetry for gyro info
-                myLOpMode.telemetry.addData("left",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, actSpeedL, (int)curPosL, (int)newLeftBTarget, (int)toGoL);
-                myLOpMode.telemetry.addData("rght",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, actSpeedR, (int)curPosR, (int)newRightBTarget, (int)toGoR);
-                myLOpMode.telemetry.update();
+                // Telemetry removed to increase the loop rate.
+                //myLOpMode.telemetry.addData("left", "s: %1.3f",actSpeedL);
+                //myLOpMode.telemetry.addData("right", "s: %1.3f",actSpeedR);
+                //myLOpMode.telemetry.addData("gyro", "deg: %1.3f, curr: %1.3f, start: %1.3f, tgt: %1.3f",degrees,curHeading,startHeading,tgtHeading);
+                // myLOpMode.telemetry.update();
             }
 
             // The front wheels are slipping so they stop and fight the back.  Set them
@@ -771,9 +764,11 @@ public class IncepBot
             leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+            //myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f",degrees,curHeading,startHeading,tgtHeading,AngleUnit.normalizeDegrees(curHeading - tgtHeading));
+            //myLOpMode.telemetry.update();
+            //myLOpMode.sleep(5000);
         }
     }
-    */
 
 
     /*
