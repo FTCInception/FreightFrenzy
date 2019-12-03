@@ -91,7 +91,7 @@ public class IncepBot
     private static final double     CLOSE_ENOUGH_DEGREE     = 0.5;
     private static final double     RIGHT_ARC_COEFFICENT    = 1.00;
     private static final double     LEFT_ARC_COEFFICENT     = 1.25;
-    private static final double     IMU_CORR                = 1.04;
+    private static final double     IMU_CORR                = 1.03;
     static final double             RIGHT                   = 1;
     static final double             LEFT                    = 0;
     BNO055IMU               imu;
@@ -224,7 +224,28 @@ public class IncepBot
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
 
-    /* Initialize standard Hardware interfaces */
+    /* Check color sensor */
+    public boolean isColorSensorYellow() {
+        int argb = colorSensor.argb();
+        int a = argb >> 24 & 0xFF;
+        int r = argb >> 16 & 0xFF;
+        int g = argb >> 8 & 0xFF;
+        int b = argb >> 0 & 0xFF;
+
+        // Pure yellow == 100% r + 100% g + 0% b
+        // For us, r/2 > b and g/2 > b is sufficent
+        // a < 5 is too far away to be accurate.
+        if ( a < 0x5 ) {
+            return false;
+        } else if ((r>>1 > b ) && (g>>1 > b)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
+        /* Initialize standard Hardware interfaces */
     public void init(HardwareMap ahwMap) {
         // Save reference to Hardware map
         hwMap = ahwMap;

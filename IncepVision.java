@@ -123,7 +123,9 @@ public class IncepVision {
         // constants
         step = 4;
         windowwidth = 16;
-        threshold = 0x50 * windowwidth;
+        // Turn the threshold down just a little as we were triggering on the gap
+        // between blocks and sometimes the mat.
+        threshold = 0x40 * windowwidth;
 
         BlockNumber = 0;
         bytes_per_pixel = -1;
@@ -242,7 +244,8 @@ public class IncepVision {
                     // discover how the pixels are stored
                     pixelFormat = myImage.getFormat();
 
-                    BoundOffset = bufWidth * 0.05;
+                    // Shrink the sampel window just a little to make the block lineup more tolerant.
+                    BoundOffset = bufWidth * 0.1;
 
                     // object stats.
                     //int hScale = skystone_rec.getImageWidth() / bufWidth;
@@ -333,9 +336,9 @@ public class IncepVision {
                     if (edgeFound) {
                         int dist = column - left;
 
-                        // > half might work better here.
-                        //if (dist >= ((3 * Third)/2)) {
-                        if (dist >= (2 * Third)) {
+                        //if (dist >= (2 * Third)) {
+                        // Detecting block 1 only has about 1/2"-1" tolerance. Give a little more tolerance
+                        if (dist >= ((3 * Third)/2)) {
                             BlockNumber = 1;
                         } else if (dist >= (Third / 2)) {
                             BlockNumber = 2;
@@ -408,7 +411,8 @@ public class IncepVision {
         tfodParameters.minimumConfidence = 0.6;
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
         tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
-        tfod.setClippingMargins(32,125,32,125);
+        // This matches the .1 bound above.
+        tfod.setClippingMargins(64,125,64,125);
     }
 }
 /*

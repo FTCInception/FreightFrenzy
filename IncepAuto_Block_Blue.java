@@ -99,48 +99,194 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
         sleep(1000);
 */
 
-        robot.encoderStraight(DRIVE_SPEED,-32,3);
+        //Set block for testing purposes
+        //block = 3;
 
+        //First Section, doesn't change no matter which block
+        robot.encoderStraight(DRIVE_SPEED, -32, 3);
+
+        // This is backup code in case we need to fix broken vision for some reason.
+        // If block 1 is yellow, we better grab block 3 next (we're getting 2 now.
+        // This should reverse for red auto.
         // Enable the LED, sample the color sensor automatically via telemetery update, turn off LED
-        robot.colorSensor.enableLed(true);
-        sleep(100);
-        telemetry.update();
-        robot.colorSensor.enableLed(false);
+        //robot.colorSensor.enableLed(true);
+        //sleep(100);
+        //if (isColorSensorYellow) {
+        //   block = 3;
+        //}
+        //robot.colorSensor.enableLed(false);
 
         robot.grabBlock();
 
         // Make the turn
-        robot.gyroPivot( 1.0, 90.0, 6 );
-        //robot.encoderStraight(DRIVE_SPEED,10,2);
-        //robot.gyroRotate(TURN_SPEED,90, 2.5);
-        robot.encoderStraight(DRIVE_SPEED,-38, 3);
+        //robot.gyroPivot( 1.0, 90.0, 6 );
+        robot.encoderStraight(DRIVE_SPEED,10,2);
+        robot.gyroRotate(TURN_SPEED,90, 2.5);
 
-        robot.dropBlock();
+        //Section 2, dependant on whether block is 1,2 or 3.
+        if (block == 3){
+            //go to other side
+            robot.encoderStraight(DRIVE_SPEED,-50, 3);
 
-        //come back and go for next one
-        robot.encoderStraight(DRIVE_SPEED,46, 3);
+            robot.dropBlock();
+            //come back and go for next one
+            robot.encoderStraight(DRIVE_SPEED,42, 3);
+            //robot.gyroPivot( -1.0, -90.0, 6 );
 
-        robot.gyroPivot( -1.0, -90.0, 6 );
-        //robot.gyroRotate(TURN_SPEED,-90, 2.5);
-        //robot.encoderStraight(DRIVE_SPEED,-12,3);
+            robot.gyroRotate(TURN_SPEED,-90, 2.5);
+            robot.encoderStraight(DRIVE_SPEED,-12,3);
 
-        robot.grabBlock();
+            robot.grabBlock();
 
-        //go to other side
-        robot.gyroPivot( 1.0, 90.0, 6 );
-        //robot.encoderStraight(DRIVE_SPEED,10,2);
-        //robot.gyroRotate(TURN_SPEED,90, 2.5);
+            //go to other side
+            //robot.gyroPivot( 1.0, 90.0, 6 );
 
-        robot.encoderStraight(DRIVE_SPEED,-48, 3);
+            robot.encoderStraight(DRIVE_SPEED,10,2);
+            robot.gyroRotate(TURN_SPEED,90, 2.5);
 
-        //drop block
-        robot.dropBlock();
+            robot.encoderStraight(DRIVE_SPEED,-42, 3);
 
-        //come back
-        robot.encoderStraight(DRIVE_SPEED,15, 1.5);
+            //drop block
+            robot.dropBlock();
 
-        // Extend for parking reach
-        robot.grabBlock();
+            //come back
+            robot.encoderStraight(DRIVE_SPEED,15, 1.5);
+
+            // Extend for parking reach
+            robot.grabBlock();
+        }  else if (block == 2){
+            //go to other side
+            robot.encoderStraight(DRIVE_SPEED,-50, 3);
+
+            robot.dropBlock();
+            //come back and go for next one
+            robot.encoderStraight(DRIVE_SPEED,72, 3);
+            //robot.gyroPivot( -1.0, -90.0, 6 );
+
+            robot.gyroRotate(TURN_SPEED,-90, 2.5);
+            robot.encoderStraight(DRIVE_SPEED,-12,3);
+
+            robot.grabBlock();
+
+            //go to other side
+            //robot.gyroPivot( 1.0, 90.0, 6 );
+
+            robot.encoderStraight(DRIVE_SPEED,10,2);
+            robot.gyroRotate(TURN_SPEED,90, 2.5);
+
+            robot.encoderStraight(DRIVE_SPEED,-72, 3);
+
+            //drop block
+            robot.dropBlock();
+
+            //come back
+            robot.encoderStraight(DRIVE_SPEED,15, 1.5);
+
+            // Extend for parking reach
+            robot.grabBlock();
+        } else if (block == 1){
+            //go to other side
+            robot.encoderStraight(DRIVE_SPEED,-50, 3);
+
+            robot.dropBlock();
+            //come back and go for next one
+            robot.encoderStraight(DRIVE_SPEED,56, 3);
+            //robot.gyroPivot( -1.0, -90.0, 6 );
+
+            robot.gyroRotate(TURN_SPEED,-90, 2.5);
+            robot.encoderStraight(DRIVE_SPEED,-12,3);
+
+            robot.grabBlock();
+
+            //go to other side
+            //robot.gyroPivot( 1.0, 90.0, 6 );
+
+            robot.encoderStraight(DRIVE_SPEED,10,2);
+            robot.gyroRotate(TURN_SPEED,90, 2.5);
+
+            robot.encoderStraight(DRIVE_SPEED,-56, 3);
+
+            //drop block
+            robot.dropBlock();
+
+            //come back
+            robot.encoderStraight(DRIVE_SPEED,15, 1.5);
+
+            // Extend for parking reach
+            robot.grabBlock();
+        } else {
+            //go to other side
+            robot.encoderStraight(DRIVE_SPEED,-54, 3);
+
+            robot.dropBlock();
+            //come back and go for next one
+            robot.encoderStraight(DRIVE_SPEED,46, 3);
+            robot.gyroPivot( -1.0, -90.0, 6 );
+
+            //robot.gyroRotate(TURN_SPEED,-90, 2.5);
+            //robot.encoderStraight(DRIVE_SPEED,-12,3);
+
+            robot.grabBlock();
+
+            //go to other side
+            robot.gyroPivot( 1.0, 90.0, 6 );
+
+            //robot.encoderStraight(DRIVE_SPEED,10,2);
+            //robot.gyroRotate(TURN_SPEED,90, 2.5);
+
+            robot.encoderStraight(DRIVE_SPEED,-46, 3);
+
+            //drop block
+            robot.dropBlock();
+
+            //come back and go for next one
+            robot.encoderStraight(DRIVE_SPEED,62, 3);
+            robot.gyroPivot( -1.0, -90.0, 6 );
+            robot.encoderStraight(DRIVE_SPEED,-1, 3);
+
+            //robot.gyroRotate(TURN_SPEED,-90, 2.5);
+            //robot.encoderStraight(DRIVE_SPEED,-12,3);
+
+            robot.grabBlock();
+
+            //go to other side
+            robot.gyroPivot( 1.0, 90.0, 6 );
+
+            //robot.encoderStraight(DRIVE_SPEED,10,2);
+            //robot.gyroRotate(TURN_SPEED,90, 2.5);
+
+            robot.encoderStraight(DRIVE_SPEED,-62, 3);
+
+            //drop block
+            robot.dropBlock();
+
+            robot.encoderStraight(DRIVE_SPEED,70, 3);
+            robot.gyroPivot( -1.0, -90.0, 6 );
+            robot.encoderStraight(DRIVE_SPEED,-1, 3);
+
+            //robot.gyroRotate(TURN_SPEED,-90, 2.5);
+            //robot.encoderStraight(DRIVE_SPEED,-12,3);
+
+            robot.grabBlock();
+
+            //go to other side
+            robot.gyroPivot( 1.0, 90.0, 6 );
+
+            //robot.encoderStraight(DRIVE_SPEED,10,2);
+            //robot.gyroRotate(TURN_SPEED,90, 2.5);
+
+            robot.encoderStraight(DRIVE_SPEED,-70, 3);
+
+            //drop block
+            robot.dropBlock();
+
+            //come back
+            robot.encoderStraight(DRIVE_SPEED,15, 1.5);
+
+            // Extend for parking reach
+            robot.grabBlock();
+        }
+
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
