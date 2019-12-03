@@ -57,6 +57,10 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
     private static final double     TURN_SPEED              = 0.65;
     private static final double     PIVOT_SPEED             = 0.40;
     private static final double     SQ                      = 70/3.0;        // Length of 3 squares / 3 in case we want to think that way
+    // FIXME: Consider the following:
+    // private static final double block[7] = [0.0, 28.0, 36.0, 44.0, 4.0, 12.0, 20.0];
+    // private static final double dropZone = 82.0;
+    // private static final double bridge = 71.0;
     private IncepVision        vision   = new IncepVision();
     private int block;
 
@@ -123,14 +127,24 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
         robot.encoderStraight(DRIVE_SPEED,10,2);
         robot.gyroRotate(TURN_SPEED,90, 2.5);
 
+        // FIXME: Consider this:
+        // FIXME: All 3 block auto have exactly the saem sequence of instructions.  The only
+        // FIXME: difference is the length of a few of the straights.  Combining the
+        // FIXME: the sequnce into a single sequence with variables for movement length will save a lot of porting.
+
+        // FIXME: Consider the wall and block autos are only different in the length of a few move
+        // FIXME: commands to change lanes.  Making the auto identical with a 'lane' variable
+        // FIXME: variable to control the move length would save a lot of porting.
         //Section 2, dependant on whether block is 1,2 or 3.
         if (block == 3){
             //go to other side
             robot.encoderStraight(DRIVE_SPEED,-50, 3);
+            //robot.encoderStraight(DRIVE_SPEED,block[2] - dropZone, 3);
 
             robot.dropBlock();
             //come back and go for next one
             robot.encoderStraight(DRIVE_SPEED,42, 3);
+            //robot.encoderStraight(DRIVE_SPEED,dropZone - block[3], 3);
             //robot.gyroPivot( -1.0, -90.0, 6 );
 
             robot.gyroRotate(TURN_SPEED,-90, 2.5);
@@ -145,12 +159,15 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
             robot.gyroRotate(TURN_SPEED,90, 2.5);
 
             robot.encoderStraight(DRIVE_SPEED,-42, 3);
+            //robot.encoderStraight(DRIVE_SPEED, block[3] - dropZone, 3);
 
             //drop block
             robot.dropBlock();
 
             //come back
             robot.encoderStraight(DRIVE_SPEED,15, 1.5);
+            //robot.encoderStraight(DRIVE_SPEED,dropZone - bridge, 1.5);
+
 
             // Extend for parking reach
             robot.grabBlock();
