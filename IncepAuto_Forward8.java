@@ -32,7 +32,6 @@ package Inception.Skystone;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-
 /**
  * This file houses Autonomous code
  * It uses the main robot class Refbot to define the hardware and driving commands
@@ -47,19 +46,15 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
  */
-@Autonomous(name="Incep: Auto Foundation Blue", group="IncepBot")
-public class IncepAuto_Foundation_Blue extends LinearOpMode {
 
+@Autonomous(name="Incep: Auto Foward8", group="Incepbot")
+public class IncepAuto_Forward8 extends LinearOpMode {
     /* Declare OpMode members. */
-    private IncepBot         robot   = new IncepBot();   // Use a Pushbot's hardware
+
+    private IncepBot          robot   = new IncepBot();   // Use a Pushbot's hardware
 
     private static final double     DRIVE_SPEED             = 0.9;
-    private static final double     TURN_SPEED              = 0.6;
-    private static final double     PIVOT_SPEED             = 0.40;
-    private static final double     SQ                      = 70/3.0;        // Length of 3 squares / 3 in case we want to think that way
-    private static final double     FDC                     = 5;
-    private static final double     FPC                     = 2.5;
-
+    private static final double     TURN_SPEED              = 0.65;
 
     @Override
     public void runOpMode() {
@@ -69,28 +64,17 @@ public class IncepAuto_Foundation_Blue extends LinearOpMode {
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
+
+        // Init the robot setting for Autonomous play
         robot.initAutonomous(this);
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        robot.releaseFoundation();
 
-        robot.encoderStraight(DRIVE_SPEED,-17,3);
-        robot.encoderRotate(TURN_SPEED,-90,4);
-        robot.encoderStraight(DRIVE_SPEED,-18,3);
-        robot.encoderRotate(TURN_SPEED,90,4);
-        robot.encoderStraight(DRIVE_SPEED,-17,2.5);
+        sleep(24000);
 
-        robot.grabFoundation();
-
-        robot.encoderStraight(DRIVE_SPEED,18,2.5);
-        robot.encoderArc(PIVOT_SPEED, 90*FDC, IncepBot.LEFT, 0, 5);
-
-        robot.encoderStraight(DRIVE_SPEED,-10,2);
-        robot.releaseFoundation();
-        robot.encoderRotate(TURN_SPEED, 20, 2);
-        robot.encoderStraight(DRIVE_SPEED,40,16);
+        robot.encoderStraight(DRIVE_SPEED, 24, 3);
 
         telemetry.addData("Path", "Complete");
         telemetry.update();

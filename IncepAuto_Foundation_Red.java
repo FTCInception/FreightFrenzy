@@ -58,7 +58,7 @@ public class IncepAuto_Foundation_Red extends LinearOpMode {
     private static final double     TURN_SPEED              = 0.6;
     private static final double     PIVOT_SPEED             = 0.40;
     private static final double     SQ                      = 70/3.0;        // Length of 3 squares / 3 in case we want to think that way
-    private static final double     FDC                     = 2.0;
+    private static final double     FDC                     = 5.0;
 
     @Override
     public void runOpMode() {
@@ -75,46 +75,23 @@ public class IncepAuto_Foundation_Red extends LinearOpMode {
 
         robot.releaseFoundation();
 
-        robot.encoderStraight(DRIVE_SPEED,-17,2);
-        robot.encoderRotate(TURN_SPEED,90,3);
-        robot.encoderStraight(DRIVE_SPEED,-18,2);
-        robot.encoderRotate(TURN_SPEED,-90,3);
-        robot.encoderStraight(DRIVE_SPEED,-17,4);
+        robot.encoderStraight(DRIVE_SPEED,-17,3);
+        robot.encoderRotate(TURN_SPEED,90,4);
+        robot.encoderStraight(DRIVE_SPEED,-18,3);
+        robot.encoderRotate(TURN_SPEED,-90,4);
+        robot.encoderStraight(DRIVE_SPEED,-17,2.5);
 
         robot.grabFoundation();
 
-        robot.encoderStraight(DRIVE_SPEED,18,4);
-        robot.encoderArc(PIVOT_SPEED, 90*FDC, IncepBot.RIGHT, 2, 5);
+        robot.encoderStraight(DRIVE_SPEED,18,2.5);
+        robot.encoderArc(PIVOT_SPEED, 90*FDC, IncepBot.RIGHT, 0, 5);
 
-        robot.encoderStraight(DRIVE_SPEED,-16,4);
+        robot.encoderStraight(DRIVE_SPEED,-10,2);
         robot.releaseFoundation();
-        robot.encoderRotate(TURN_SPEED, -10, 2);
-        robot.encoderStraight(DRIVE_SPEED,43,15);
+        robot.encoderRotate(TURN_SPEED, -20, 2);
+        robot.encoderStraight(DRIVE_SPEED,30,16);
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
     }
 }
-
-/*
-robot.releaseFoundation();
-
-        robot.encoderStraight(DRIVE_SPEED,-32,3);
-
-        robot.grabFoundation();
-
-        robot.encoderStraight(DRIVE_SPEED,22,3);
-
-        robot.releaseFoundation();
-
-        robot.encoderRotate(TURN_SPEED, 90,3);
-        robot.encoderStraight(DRIVE_SPEED,30,3);
-        robot.encoderRotate(TURN_SPEED, 90,3);
-        robot.encoderStraight(DRIVE_SPEED,42,4);
-        robot.encoderRotate(TURN_SPEED, 90,3);
-        robot.encoderStraight(DRIVE_SPEED,30,3);
-        robot.encoderRotate(TURN_SPEED, -90,3);
-        robot.encoderStraight(DRIVE_SPEED,-40,3);
-        robot.encoderRotate(TURN_SPEED, -90,3);
-        robot.encoderStraight(DRIVE_SPEED,-40,3);
- */

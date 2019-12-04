@@ -50,13 +50,22 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 @Autonomous(name="Incep: Auto Block Red", group="Incepbot")
 public class IncepAuto_Block_Red extends LinearOpMode {
 
-    /* Declare OpMode members. */
     private IncepBot          robot   = new IncepBot();   // Use a Pushbot's hardware
 
     private static final double     DRIVE_SPEED             = 0.9;
     private static final double     TURN_SPEED              = 0.65;
     private static final double     PIVOT_SPEED             = 0.40;
     private static final double     SQ                      = 70/3.0;        // Length of 3 squares / 3 in case we want to think that way
+    private static final double[] blocks = {0.0, 28.0, 36.0, 44.0, 4.0, 12.0, 20.0};
+    private static final double dropZone = 82.0;
+    private static final double bridge = 71.0;
+    private static double firstBlock, secondBlock, thirdBlock, fourthBlock;
+    private static double turnDirection;
+    private static double laneLength;
+    private String className = this.getClass().getSimpleName().toLowerCase();
+
+    private IncepVision        vision   = new IncepVision();
+    private int block;
 
     @Override
     public void runOpMode() {
@@ -70,44 +79,138 @@ public class IncepAuto_Block_Red extends LinearOpMode {
         // Init the robot setting for Autonomous play
         robot.initAutonomous(this);
 
-        // Wait for the game to start (driver presses PLAY)
-        waitForStart();
- /*
-        // Calibration code
-        encoderStraight(DRIVE_SPEED,50,13);
-        encoderRotate(TURN_SPEED,360,10);
-        encoderRotate(TURN_SPEED,360,10);
-        encoderStraight(DRIVE_SPEEC,-25,4);
-*/
+        vision.initAutonomous(this);
 
-        robot.encoderStraight(DRIVE_SPEED,-32,3);
+        // Wait until we're told to go
+        while (!isStarted()) {
+            block = vision.getBlockNumber();
+        }
+        vision.shutdown();
+
+        // Red or blue alliance -- only difference is the turn direction
+        // and the block numbering
+        if (className.contains("blue")) {
+            turnDirection = 1.0;
+        } else {
+            turnDirection = -1.0;
+            if (block == 3) {
+                block = 1;
+            } else if (block == 1) {
+                block = 3;
+            }
+        }
+
+        // Wall or block lane -- only difference is a straight distance
+        if (className.contains("wall")) {
+            laneLength = 29.0;
+        } else {
+            laneLength = 10.0;
+        }
+
+        // Wait for the game to start (driver presses PLAY)
+        //waitForStart();
+
+        //Set block for testing purposes
+        //block = 3;
+
+        if (block == 3) {
+            firstBlock=blocks[2];
+            secondBlock=blocks[3];
+            thirdBlock=blocks[1];
+            fourthBlock=blocks[6];
+
+        } else if (block == 2) {
+            firstBlock=blocks[2];
+            secondBlock=blocks[5];
+            thirdBlock=blocks[3];
+            fourthBlock=blocks[1];
+
+        } else if (block == 1) {
+            firstBlock=blocks[2];
+            secondBlock=blocks[1];
+            thirdBlock=blocks[3];
+            fourthBlock=blocks[6];
+
+        } else {
+            firstBlock=blocks[2];
+            secondBlock=blocks[1];
+            thirdBlock=blocks[3];
+            fourthBlock=blocks[6];
+        }
+
+        // First Section, doesn't change no matter which block until we get 's' curve
+        robot.encoderStraight(DRIVE_SPEED, -32, 3);
+
+        // This is backup code in case we need to fix broken vision for some reason.
+        // If block 1 is yellow, we better grab block 3 next (we're getting 2 now.
+        // This should reverse for red auto.
+        // Enable the LED, sample the color sensor automatically via telemetery update, turn off LED
+        //robot.colorSensor.enableLed(true);
+        //sleep(100);
+        //if (isColorSensorYellow) {
+        //   block = 3;
+        //}
+        //robot.colorSensor.enableLed(false);
 
         robot.grabBlock();
 
-        //go to other side
-        robot.encoderStraight(DRIVE_SPEED,10,2);
-        robot.encoderRotate(TURN_SPEED,90, 2.5);
-        robot.encoderStraight(DRIVE_SPEED,-38, 3);
+        // Make the turn
+        //robot.gyroPivot( 1.0, 90.0, 6 );
+        robot.encoderStraight(DRIVE_SPEED,laneLength,4);
+        robot.gyroRotate(TURN_SPEED,90 * turnDirection, 4);
+
+        //Section 2, dependant on whether block is 1,2 or 3.
+        //go to drop zone
+        //robot.encoderStraight(DRIVE_SPEED,-50, 3);
+        robot.encoderStraight(DRIVE_SPEED,firstBlock - dropZone, 4);
 
         robot.dropBlock();
 
         //come back and go for next one
-        robot.encoderStraight(DRIVE_SPEED,46, 3);
-        robot.encoderRotate(TURN_SPEED,-90, 2.5);
-        robot.encoderStraight(DRIVE_SPEED,-12,3);
+        //robot.encoderStraight(DRIVE_SPEED,42, 3);
+        robot.encoderStraight(DRIVE_SPEED,dropZone - secondBlock, 4);
+
+        //robot.gyroPivot( -1.0, -90.0, 6 );
+        robot.gyroRotate(TURN_SPEED,-90 * turnDirection, 4);
+        robot.encoderStraight(DRIVE_SPEED,-(laneLength+2),4);
 
         robot.grabBlock();
 
-        //go to other side
-        robot.encoderStraight(DRIVE_SPEED,10,2);
-        robot.encoderRotate(TURN_SPEED,90, 2.5);
-        robot.encoderStraight(DRIVE_SPEED,-48, 3);
+        //robot.gyroPivot( 1.0, 90.0, 6 );
+        robot.encoderStraight(DRIVE_SPEED,laneLength+2,4);
+        robot.gyroRotate(TURN_SPEED,90 * turnDirection, 4);
+
+        //go to drop zone
+        //robot.encoderStraight(DRIVE_SPEED,-42, 3);
+        robot.encoderStraight(DRIVE_SPEED, secondBlock - dropZone, 4);
 
         //drop block
         robot.dropBlock();
 
-        //come back
-        robot.encoderStraight(DRIVE_SPEED,15, 1.5);
+        //come back and go for next one
+        //robot.encoderStraight(DRIVE_SPEED,42, 3);
+        robot.encoderStraight(DRIVE_SPEED,dropZone - thirdBlock, 4);
+
+        //robot.gyroPivot( -1.0, -90.0, 6 );
+        robot.gyroRotate(TURN_SPEED,-90 * turnDirection, 4);
+        robot.encoderStraight(DRIVE_SPEED,-(laneLength+2),4);
+
+        robot.grabBlock();
+
+        //robot.gyroPivot( 1.0, 90.0, 6 );
+        robot.encoderStraight(DRIVE_SPEED,laneLength+2,4);
+        robot.gyroRotate(TURN_SPEED,90 * turnDirection, 4);
+
+        //go to drop zone
+        //robot.encoderStraight(DRIVE_SPEED,-42, 3);
+        robot.encoderStraight(DRIVE_SPEED, thirdBlock - dropZone, 4);
+
+        //drop block
+        robot.dropBlock();
+
+        //Park under bridge
+        //robot.encoderStraight(DRIVE_SPEED,15, 1.5);
+        robot.encoderStraight(DRIVE_SPEED,dropZone - bridge, 4);
 
         // Extend for parking reach
         robot.grabBlock();
@@ -116,84 +219,3 @@ public class IncepAuto_Block_Red extends LinearOpMode {
         telemetry.update();
     }
 }
-
-
-        /*
-        // Old unused code for posterity
-        // Step through each leg of the path,
-        // Note: Reverse movement is obtained by setting a negative distance (not speed)
-
-        encoderDrive(DRIVE_SPEED,  24*4,  24*4, 10.0);    // S1: Forward 72 Inches
-        encoderRotate(TURN_SPEED,  360, 10.0);                    // S2: Turn Right 1 rotations
-        sleep(500);     // pause for servos to move
-        encoderRotate(TURN_SPEED,  360, 10.0);                    // S3: Turn Right 1 rotations
-        sleep(500);     // pause for servos to move
-        encoderRotate(TURN_SPEED,  360, 10.0);                    // S4: Turn Right 1 rotations
-        sleep(500);     // pause for servos to move
-        encoderRotate(TURN_SPEED,  360, 10.0);                    // S5: Turn Right 1 rotations
-        sleep(500);     // pause for servos to move
-        encoderDrive(DRIVE_SPEED,  -24*3.5,  -24*3.5, 10.0);  // S6: Backwards 48 Inches
-
-        encoderStraight(37.0,3);
-        encoderPivot(180,4);
-        encoderStraight(20,2);
-        encoderPivot(-90,2);
-        encoderStraight(24,2);
-        encoderStraight(-70,3);
-        encoderRotate(-90,2);
-        encoderStraight(24,2);
-        encoderPivot(180,3);
-        encoderStraight(20,2);
-        encoderPivot(-90,2);
-        encoderStraight(70,3);
-        */
-
-        /*
-        *         // This code implements a soft start and soft stop based on time/speed/distance
-        *         // It's likely more complicated than necessary.  A distance=only approach is
-        *         // better below.  Turns still seem to have some issue in the time/speed/distance.
-        *         static final double     SECONDS_TO_FULL_POWER   = 1.5;
-        *         static final double     SPEED_RAMP_PER_MS       = (1.0/1000.0) / SECONDS_TO_FULL_POWER;
-        *         static final double     SPEED_OFFS              = 0.05;
-        *         double lastPos=0;
-        *         double lt;
-        *         double rem;
-        *         double rate;
-        *         boolean decel = false;
-        *         ElapsedTime     looptime = new ElapsedTime();
-        *         looptime.reset()
-        *                 if(false) {
-        *                     // Record elapsed time
-        *                     lt = looptime.milliseconds();
-        *                     // Reset the timer for next loop
-        *                     looptime.reset();
-        *                     // Get current position
-        *                     curPos = Math.abs(robot.leftFDrive.getCurrentPosition());
-        *                     // How much farther?
-        *                     toGo = tgtPos - curPos;
-        *                     // Compute remaining time based on encoder rate from last loop
-        *                     rate = ((curPos - lastPos) / lt);
-        *                     rem = toGo / rate;
-        *                     // Save the new position
-        *                     lastPos = curPos;
-        *                     // If the delta to our target stop speed is > than our deceleration rate, start to slow down
-        *                     if ((actSpeed > 0.20) && ((actSpeed - 0.20) > (rem * SPEED_RAMP_PER_MS))) {
-        *                         actSpeed = Math.max(actSpeed - (lt * SPEED_RAMP_PER_MS), 0.20);
-        *                         robot.leftFDrive.setPower(actSpeed);
-        *                         robot.rightFDrive.setPower(actSpeed * (67 / 70.0));
-        *                         robot.leftBDrive.setPower(actSpeed);
-        *                         robot.rightBDrive.setPower(actSpeed * (67 / 70.0));
-        *                         decel = true;
-        *                     } else {
-        *                         if (!decel && (actSpeed < speed)) {
-        *                             // If our speed is below our target and we're not slowing down, speed up
-        *                             actSpeed = Math.min(actSpeed + (lt * SPEED_RAMP_PER_MS), speed);
-        *                             robot.leftFDrive.setPower(actSpeed);
-        *                             robot.rightFDrive.setPower(actSpeed * (67 / 70.0));
-        *                             robot.leftBDrive.setPower(actSpeed);
-        *                             robot.rightBDrive.setPower(actSpeed * (67 / 70.0));
-        *                         }
-        *                     }
-        *                 }
-        *                 //telemetry.addData("Path3",  "Running rate: %3.3f, rem: %7.0f, s: %1.3f", rate, rem, actSpeed);
-        */

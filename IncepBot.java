@@ -97,6 +97,8 @@ public class IncepBot
     BNO055IMU               imu;
     private Orientation             angles;
     ColorSensor             colorSensor;
+    private static final boolean     DEBUG                = false;
+
 
     /* local OpMode members. */
     HardwareMap hwMap           =  null;
@@ -451,9 +453,10 @@ public class IncepBot
                     IBDrive.setPower(actSpeed * KpI * ratio );
                 }
 
-                myLOpMode.telemetry.addData("Path3",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int)curPos, (int)toGo);
-                myLOpMode.telemetry.update();
-                //sleep(10);   // optional pause after each move
+                if ( DEBUG == true ) {
+                    myLOpMode.telemetry.addData("Path3", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int) curPos, (int) toGo);
+                    myLOpMode.telemetry.update();
+                }
             }
 
             // Stop all motion;
@@ -577,16 +580,10 @@ public class IncepBot
                     rightBDrive.setPower(actSpeed * KpR);
                 }
 
-                // Display it for the driver.
-                //telemetry.addData("Path1",  "Running to LF:%7d, RF: %7d, LB: %7d, RB: %7d", newLeftFTarget,  newRightFTarget, newLeftBTarget,  newRightBTarget);
-                //telemetry.addData("Path2",  "Running at LF:%7d, RF: %7d, LB: %7d, RB: %7d",
-                //                            leftFDrive.getCurrentPosition(),
-                //                            rightFDrive.getCurrentPosition(),
-                //                            leftBDrive.getCurrentPosition(),
-                //                            rightBDrive.getCurrentPosition());
-                myLOpMode.telemetry.addData("Path3",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int)curPos, (int)toGo);
-                myLOpMode.telemetry.update();
-                //sleep(10);   // optional pause after each move
+                if ( DEBUG == true) {
+                    myLOpMode.telemetry.addData("Path3", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int) curPos, (int) toGo);
+                    myLOpMode.telemetry.update();
+                }
             }
 
             // The front wheels are slipping so they stop and fight the back.  Set them
@@ -635,7 +632,7 @@ public class IncepBot
         double spdUp, spdDn;
         double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDownR = {0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownR = {0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         double[] speedRampDownP = {0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
         ElapsedTime runtime = new ElapsedTime();
         double tgtHeading, curHeading, startHeading;
@@ -649,9 +646,11 @@ public class IncepBot
         // Initialize toGo
         toGo = Math.abs(degrees);
 
-        //myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f",degrees,curHeading,startHeading,tgtHeading,AngleUnit.normalizeDegrees(curHeading - tgtHeading));
-        //myLOpMode.telemetry.update();
-        //myLOpMode.sleep(3000);
+        if ( DEBUG == true ) {
+            myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f",degrees,curHeading,startHeading,tgtHeading,AngleUnit.normalizeDegrees(curHeading - tgtHeading));
+            myLOpMode.telemetry.update();
+            //myLOpMode.sleep(3000);
+        }
 
         // FIXME: Let's assume the caller has made sure our left/right power will turn the same direction as our degrees for now
 
@@ -712,9 +711,11 @@ public class IncepBot
                 }
             }
 
-            //myLOpMode.telemetry.addData("gyro", "KL: %.3f, KR: %.3f, max: %.2f",KsL, KsR,maxPower);
-            //myLOpMode.telemetry.update();
-            //myLOpMode.sleep(5000);
+            if ( DEBUG == true ) {
+                myLOpMode.telemetry.addData("gyro", "KL: %.3f, KR: %.3f, max: %.2f",KsL, KsR,maxPower);
+                myLOpMode.telemetry.update();
+                //myLOpMode.sleep(5000);
+            }
 
             // reset the timeout time and start motion at the minimum speed.
             runtime.reset();
@@ -761,11 +762,12 @@ public class IncepBot
                     rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)));
                 }
 
-                // Telemetry removed to increase the loop rate.
-                //myLOpMode.telemetry.addData("left", "s: %1.3f",actSpeedL);
-                //myLOpMode.telemetry.addData("right", "s: %1.3f",actSpeedR);
-                //myLOpMode.telemetry.addData("gyro", "deg: %1.3f, curr: %1.3f, start: %1.3f, tgt: %1.3f",degrees,curHeading,startHeading,tgtHeading);
-                // myLOpMode.telemetry.update();
+                if ( DEBUG == true) {
+                    myLOpMode.telemetry.addData("left", "s: %1.3f",newSpeed * KpL * KsL);
+                    myLOpMode.telemetry.addData("right", "s: %1.3f",newSpeed * KpR * KsR);
+                    myLOpMode.telemetry.addData("gyro", "deg: %1.3f, curr: %1.3f, start: %1.3f, tgt: %1.3f",degrees,curHeading,startHeading,tgtHeading);
+                    myLOpMode.telemetry.update();
+                }
             }
 
             // The front wheels are slipping so they stop and fight the back.  Set them
@@ -785,9 +787,10 @@ public class IncepBot
             leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-            //myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f",degrees,curHeading,startHeading,tgtHeading,AngleUnit.normalizeDegrees(curHeading - tgtHeading));
-            //myLOpMode.telemetry.update();
-            //myLOpMode.sleep(5000);
+            if ( DEBUG == true) {
+                myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f", degrees, curHeading, startHeading, tgtHeading, AngleUnit.normalizeDegrees(curHeading - tgtHeading));
+                myLOpMode.telemetry.update();
+            }
         }
     }
 
@@ -809,17 +812,20 @@ public class IncepBot
         int newRightBTarget;
         double curPosL, curPosR;
         double toGoL, toGoR;
-        double actSpeedL, actSpeedR;
+        double actSpeedL=0, actSpeedR=0;
         double newSpeedL, newSpeedR;
         double spdUpL,spdDnL,spdUpR,spdDnR;
         boolean doneL, doneR;
-        double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampUp = {0.20, 0.25, 0.30, 0.35, 0.45, 0.55, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDown = {0.10, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975, 1.0};
         double[] speedRampDownT = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         ElapsedTime     runtime = new ElapsedTime();
         double tgtHeading, curHeading, deltaHeading;
         double KhL = 1.0;
         double KhR = 1.0;
+        // Steering proportional constant
+        // disable gyro assisted straight for now -- we drive straighter without.
+        double P = 0.00;
 
         // Get the current Heading
         tgtHeading = getHeading();
@@ -910,7 +916,7 @@ public class IncepBot
 
 
                 // Compute drift, negate for correction
-                if (leftInches == rightInches) {
+                if ((P != 0.0) && (leftInches == rightInches)) {
                     curHeading = getHeading();
                     deltaHeading = -1.0 * AngleUnit.DEGREES.normalize(tgtHeading - curHeading);
 
@@ -922,9 +928,6 @@ public class IncepBot
                     // if not straight, no correction needed
                     deltaHeading = 0;
                 }
-
-                // Steering proportional constant
-                double P = 0.05;
 
                 // Change power and steer
                 actSpeedL = newSpeedL;
@@ -948,8 +951,18 @@ public class IncepBot
                 rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeedR * KpR * KhR )));
                 rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeedR * KpR * KhR )));
 
-                myLOpMode.telemetry.addData("left",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, actSpeedL, (int)curPosL, (int)newLeftBTarget, (int)toGoL);
-                myLOpMode.telemetry.addData("rght",  "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, actSpeedR, (int)curPosR, (int)newRightBTarget, (int)toGoR);
+                if ( DEBUG == true) {
+                    myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, actSpeedL, (int) curPosL, (int) newLeftBTarget, (int) toGoL);
+                    myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, actSpeedR, (int) curPosR, (int) newRightBTarget, (int) toGoR);
+                    myLOpMode.telemetry.update();
+                }
+            }
+
+            if ( DEBUG == true) {
+                curPosL = leftBDrive.getCurrentPosition();
+                curPosR = rightBDrive.getCurrentPosition();
+                myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, actSpeedL, (int) curPosL, (int) newLeftBTarget, (int) toGoL);
+                myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, actSpeedR, (int) curPosR, (int) newRightBTarget, (int) toGoR);
                 myLOpMode.telemetry.update();
             }
 

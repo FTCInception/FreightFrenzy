@@ -49,21 +49,24 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 @Autonomous(name="Incep: Auto Block Blue", group="Incepbot")
 public class IncepAuto_Block_Blue extends LinearOpMode {
-
     /* Declare OpMode members. */
+
     private IncepBot          robot   = new IncepBot();   // Use a Pushbot's hardware
 
     private static final double     DRIVE_SPEED             = 0.9;
     private static final double     TURN_SPEED              = 0.65;
     private static final double     PIVOT_SPEED             = 0.40;
     private static final double     SQ                      = 70/3.0;        // Length of 3 squares / 3 in case we want to think that way
-    // FIXME: Consider the following:
-    // private static final double block[7] = [0.0, 28.0, 36.0, 44.0, 4.0, 12.0, 20.0];
-    // private static final double dropZone = 82.0;
-    // private static final double bridge = 71.0;
+    private static final double[] blocks = {0.0, 28.0, 36.0, 44.0, 4.0, 12.0, 20.0};
+    private static final double dropZone = 82.0;
+    private static final double bridge = 71.0;
+    private static double firstBlock, secondBlock, thirdBlock, fourthBlock;
+    private static double turnDirection;
+    private static double laneLength;
+    private String className = this.getClass().getSimpleName().toLowerCase();
+
     private IncepVision        vision   = new IncepVision();
     private int block;
-
 
     @Override
     public void runOpMode() {
@@ -76,6 +79,7 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
 
         // Init the robot setting for Autonomous play
         robot.initAutonomous(this);
+
         vision.initAutonomous(this);
 
         // Wait until we're told to go
@@ -84,29 +88,58 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
         }
         vision.shutdown();
 
+        // Red or blue alliance -- only difference is the turn direction
+        // and the block numbering
+        if (className.contains("blue")) {
+            turnDirection = 1.0;
+        } else {
+            turnDirection = -1.0;
+            if (block == 3) {
+                block = 1;
+            } else if (block == 1) {
+                block = 3;
+            }
+        }
+
+        // Wall or block lane -- only difference is a straight distance
+        if (className.contains("wall")) {
+            laneLength = 29.0;
+        } else {
+            laneLength = 10.0;
+        }
+
         // Wait for the game to start (driver presses PLAY)
         //waitForStart();
- /*
-        // Calibration code
-        encoderStraight(DRIVE_SPEED,50,13);
-        gyroRotate(TURN_SPEED,360,10);
-        gyroRotate(TURN_SPEED,360,10);
-        encoderStraight(DRIVE_SPEED,-25,4);
-
-        robot.gyroRotate(TURN_SPEED,90, 25);
-        sleep(1000);
-        robot.gyroRotate(TURN_SPEED,-90, 25);
-        sleep(1000);
-        robot.gyroRotate(TURN_SPEED,180, 25);
-        sleep(1000);
-        robot.gyroRotate(TURN_SPEED,-180, 25);
-        sleep(1000);
-*/
 
         //Set block for testing purposes
         //block = 3;
 
-        //First Section, doesn't change no matter which block
+        if (block == 3) {
+            firstBlock=blocks[2];
+            secondBlock=blocks[3];
+            thirdBlock=blocks[1];
+            fourthBlock=blocks[6];
+
+        } else if (block == 2) {
+            firstBlock=blocks[2];
+            secondBlock=blocks[5];
+            thirdBlock=blocks[3];
+            fourthBlock=blocks[1];
+
+        } else if (block == 1) {
+            firstBlock=blocks[2];
+            secondBlock=blocks[1];
+            thirdBlock=blocks[3];
+            fourthBlock=blocks[6];
+
+        } else {
+            firstBlock=blocks[2];
+            secondBlock=blocks[1];
+            thirdBlock=blocks[3];
+            fourthBlock=blocks[6];
+        }
+
+        // First Section, doesn't change no matter which block until we get 's' curve
         robot.encoderStraight(DRIVE_SPEED, -32, 3);
 
         // This is backup code in case we need to fix broken vision for some reason.
@@ -124,188 +157,106 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
 
         // Make the turn
         //robot.gyroPivot( 1.0, 90.0, 6 );
-        robot.encoderStraight(DRIVE_SPEED,10,2);
-        robot.gyroRotate(TURN_SPEED,90, 2.5);
+        robot.encoderStraight(DRIVE_SPEED,laneLength,4);
+        robot.gyroRotate(TURN_SPEED,90 * turnDirection, 4);
 
-        // FIXME: Consider this:
-        // FIXME: All 3 block auto have exactly the saem sequence of instructions.  The only
-        // FIXME: difference is the length of a few of the straights.  Combining the
-        // FIXME: the sequnce into a single sequence with variables for movement length will save a lot of porting.
-
-        // FIXME: Consider the wall and block autos are only different in the length of a few move
-        // FIXME: commands to change lanes.  Making the auto identical with a 'lane' variable
-        // FIXME: variable to control the move length would save a lot of porting.
         //Section 2, dependant on whether block is 1,2 or 3.
-        if (block == 3){
-            //go to other side
-            robot.encoderStraight(DRIVE_SPEED,-50, 3);
-            //robot.encoderStraight(DRIVE_SPEED,block[2] - dropZone, 3);
+        //go to drop zone
+        //robot.encoderStraight(DRIVE_SPEED,-50, 3);
+        robot.encoderStraight(DRIVE_SPEED,firstBlock - dropZone, 4);
 
-            robot.dropBlock();
-            //come back and go for next one
-            robot.encoderStraight(DRIVE_SPEED,42, 3);
-            //robot.encoderStraight(DRIVE_SPEED,dropZone - block[3], 3);
-            //robot.gyroPivot( -1.0, -90.0, 6 );
+        robot.dropBlock();
 
-            robot.gyroRotate(TURN_SPEED,-90, 2.5);
-            robot.encoderStraight(DRIVE_SPEED,-12,3);
+        //come back and go for next one
+        //robot.encoderStraight(DRIVE_SPEED,42, 3);
+        robot.encoderStraight(DRIVE_SPEED,dropZone - secondBlock, 4);
 
-            robot.grabBlock();
+        //robot.gyroPivot( -1.0, -90.0, 6 );
+        robot.gyroRotate(TURN_SPEED,-90 * turnDirection, 4);
+        robot.encoderStraight(DRIVE_SPEED,-(laneLength+2),4);
 
-            //go to other side
-            //robot.gyroPivot( 1.0, 90.0, 6 );
+        robot.grabBlock();
 
-            robot.encoderStraight(DRIVE_SPEED,10,2);
-            robot.gyroRotate(TURN_SPEED,90, 2.5);
+        //robot.gyroPivot( 1.0, 90.0, 6 );
+        robot.encoderStraight(DRIVE_SPEED,laneLength+2,4);
+        robot.gyroRotate(TURN_SPEED,90 * turnDirection, 4);
 
-            robot.encoderStraight(DRIVE_SPEED,-42, 3);
-            //robot.encoderStraight(DRIVE_SPEED, block[3] - dropZone, 3);
+        //go to drop zone
+        //robot.encoderStraight(DRIVE_SPEED,-42, 3);
+        robot.encoderStraight(DRIVE_SPEED, secondBlock - dropZone, 4);
 
-            //drop block
-            robot.dropBlock();
+        //drop block
+        robot.dropBlock();
 
-            //come back
-            robot.encoderStraight(DRIVE_SPEED,15, 1.5);
-            //robot.encoderStraight(DRIVE_SPEED,dropZone - bridge, 1.5);
+        //come back and go for next one
+        //robot.encoderStraight(DRIVE_SPEED,42, 3);
+        robot.encoderStraight(DRIVE_SPEED,dropZone - thirdBlock, 4);
 
+        //robot.gyroPivot( -1.0, -90.0, 6 );
+        robot.gyroRotate(TURN_SPEED,-90 * turnDirection, 4);
+        robot.encoderStraight(DRIVE_SPEED,-(laneLength+2),4);
 
-            // Extend for parking reach
-            robot.grabBlock();
-        }  else if (block == 2){
-            //go to other side
-            robot.encoderStraight(DRIVE_SPEED,-50, 3);
+        robot.grabBlock();
 
-            robot.dropBlock();
-            //come back and go for next one
-            robot.encoderStraight(DRIVE_SPEED,72, 3);
-            //robot.gyroPivot( -1.0, -90.0, 6 );
+        //robot.gyroPivot( 1.0, 90.0, 6 );
+        robot.encoderStraight(DRIVE_SPEED,laneLength+2,4);
+        robot.gyroRotate(TURN_SPEED,90 * turnDirection, 4);
 
-            robot.gyroRotate(TURN_SPEED,-90, 2.5);
-            robot.encoderStraight(DRIVE_SPEED,-12,3);
+        //go to drop zone
+        //robot.encoderStraight(DRIVE_SPEED,-42, 3);
+        robot.encoderStraight(DRIVE_SPEED, thirdBlock - dropZone, 4);
 
-            robot.grabBlock();
+        //drop block
+        robot.dropBlock();
 
-            //go to other side
-            //robot.gyroPivot( 1.0, 90.0, 6 );
+        //Park under bridge
+        //robot.encoderStraight(DRIVE_SPEED,15, 1.5);
+        robot.encoderStraight(DRIVE_SPEED,dropZone - bridge, 4);
 
-            robot.encoderStraight(DRIVE_SPEED,10,2);
-            robot.gyroRotate(TURN_SPEED,90, 2.5);
-
-            robot.encoderStraight(DRIVE_SPEED,-72, 3);
-
-            //drop block
-            robot.dropBlock();
-
-            //come back
-            robot.encoderStraight(DRIVE_SPEED,15, 1.5);
-
-            // Extend for parking reach
-            robot.grabBlock();
-        } else if (block == 1){
-            //go to other side
-            robot.encoderStraight(DRIVE_SPEED,-50, 3);
-
-            robot.dropBlock();
-            //come back and go for next one
-            robot.encoderStraight(DRIVE_SPEED,56, 3);
-            //robot.gyroPivot( -1.0, -90.0, 6 );
-
-            robot.gyroRotate(TURN_SPEED,-90, 2.5);
-            robot.encoderStraight(DRIVE_SPEED,-12,3);
-
-            robot.grabBlock();
-
-            //go to other side
-            //robot.gyroPivot( 1.0, 90.0, 6 );
-
-            robot.encoderStraight(DRIVE_SPEED,10,2);
-            robot.gyroRotate(TURN_SPEED,90, 2.5);
-
-            robot.encoderStraight(DRIVE_SPEED,-56, 3);
-
-            //drop block
-            robot.dropBlock();
-
-            //come back
-            robot.encoderStraight(DRIVE_SPEED,15, 1.5);
-
-            // Extend for parking reach
-            robot.grabBlock();
-        } else {
-            //go to other side
-            robot.encoderStraight(DRIVE_SPEED,-54, 3);
-
-            robot.dropBlock();
-            //come back and go for next one
-            robot.encoderStraight(DRIVE_SPEED,46, 3);
-            robot.gyroPivot( -1.0, -90.0, 6 );
-
-            //robot.gyroRotate(TURN_SPEED,-90, 2.5);
-            //robot.encoderStraight(DRIVE_SPEED,-12,3);
-
-            robot.grabBlock();
-
-            //go to other side
-            robot.gyroPivot( 1.0, 90.0, 6 );
-
-            //robot.encoderStraight(DRIVE_SPEED,10,2);
-            //robot.gyroRotate(TURN_SPEED,90, 2.5);
-
-            robot.encoderStraight(DRIVE_SPEED,-46, 3);
-
-            //drop block
-            robot.dropBlock();
-
-            //come back and go for next one
-            robot.encoderStraight(DRIVE_SPEED,62, 3);
-            robot.gyroPivot( -1.0, -90.0, 6 );
-            robot.encoderStraight(DRIVE_SPEED,-1, 3);
-
-            //robot.gyroRotate(TURN_SPEED,-90, 2.5);
-            //robot.encoderStraight(DRIVE_SPEED,-12,3);
-
-            robot.grabBlock();
-
-            //go to other side
-            robot.gyroPivot( 1.0, 90.0, 6 );
-
-            //robot.encoderStraight(DRIVE_SPEED,10,2);
-            //robot.gyroRotate(TURN_SPEED,90, 2.5);
-
-            robot.encoderStraight(DRIVE_SPEED,-62, 3);
-
-            //drop block
-            robot.dropBlock();
-
-            robot.encoderStraight(DRIVE_SPEED,70, 3);
-            robot.gyroPivot( -1.0, -90.0, 6 );
-            robot.encoderStraight(DRIVE_SPEED,-1, 3);
-
-            //robot.gyroRotate(TURN_SPEED,-90, 2.5);
-            //robot.encoderStraight(DRIVE_SPEED,-12,3);
-
-            robot.grabBlock();
-
-            //go to other side
-            robot.gyroPivot( 1.0, 90.0, 6 );
-
-            //robot.encoderStraight(DRIVE_SPEED,10,2);
-            //robot.gyroRotate(TURN_SPEED,90, 2.5);
-
-            robot.encoderStraight(DRIVE_SPEED,-70, 3);
-
-            //drop block
-            robot.dropBlock();
-
-            //come back
-            robot.encoderStraight(DRIVE_SPEED,15, 1.5);
-
-            // Extend for parking reach
-            robot.grabBlock();
-        }
-
+        // Extend for parking reach
+        robot.grabBlock();
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
     }
 }
+
+ /*
+        // Calibration code
+        sleep(3000);
+        robot.gyroRotate(TURN_SPEED,-90, 25);
+        sleep(3000);
+        robot.gyroRotate(TURN_SPEED,180, 25);
+        sleep(3000);
+        robot.gyroRotate(TURN_SPEED,-180, 25);
+        sleep(3000);
+        robot.gyroRotate(TURN_SPEED,270, 25);
+        sleep(3000);
+        robot.gyroRotate(TURN_SPEED,-270, 25);
+        sleep(3000);
+        robot.gyroRotate(TURN_SPEED,90, 25);
+        sleep(1000);
+        robot.gyroRotate(TURN_SPEED,90, 25);
+        sleep(1000);
+        robot.gyroRotate(TURN_SPEED,90, 25);
+        sleep(3000);
+        robot.gyroRotate(TURN_SPEED,-270, 25);
+        sleep(30000);
+
+        robot.encoderStraight(DRIVE_SPEED,-72,13);
+        sleep(3000);
+        robot.encoderStraight(DRIVE_SPEED,72,13);
+        sleep(3000);
+        robot.encoderStraight(DRIVE_SPEED,-48,13);
+        sleep(3000);
+        robot.encoderStraight(DRIVE_SPEED,48,13);
+        sleep(3000);
+        robot.encoderStraight(DRIVE_SPEED,-24,13);
+        sleep(3000);
+        robot.encoderStraight(DRIVE_SPEED,24,13);
+        sleep(3000);
+        robot.encoderStraight(DRIVE_SPEED,-12,13);
+        sleep(3000);
+        robot.encoderStraight(DRIVE_SPEED,12,13);
+        sleep(30000);
+*/
