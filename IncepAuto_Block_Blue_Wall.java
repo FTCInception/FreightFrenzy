@@ -102,7 +102,7 @@ public class IncepAuto_Block_Blue_Wall extends LinearOpMode {
 
         // Wall or block lane -- only difference is a straight distance
         if (className.contains("wall")) {
-            laneLength = 29.0;
+            laneLength = 27.0;
         } else {
             laneLength = 10.0;
         }
