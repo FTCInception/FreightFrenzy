@@ -312,13 +312,26 @@ public class IncepBot
         //myLOpMode.sleep(250);
     }
 
+    public void fastEncoderStraight(double speed, double distance, double timeoutS, double P) {
+        fastEncoderDrive( speed, distance, distance, timeoutS, P );
+    }
+
+    public void fastEncoderStraight(double speed, double distance, double timeoutS) {
+        fastEncoderDrive( speed, distance, distance, timeoutS );
+    }
+
     public void encoderStraight(double speed, double distance, double timeoutS) {
-        encoderMyDrive( speed, distance, distance, timeoutS );
+        encoderDrive( speed, distance, distance, timeoutS );
+    }
+
+    public void fastEncoderRotate(double speed, double degrees, double timeoutS) {
+        fastEncoderDrive( speed, degrees * INCHES_PER_DEGREE, -degrees * INCHES_PER_DEGREE, timeoutS );
     }
 
     public void encoderRotate(double speed, double degrees, double timeoutS) {
-        encoderMyDrive( speed, degrees * INCHES_PER_DEGREE, -degrees * INCHES_PER_DEGREE, timeoutS );
+        encoderDrive( speed, degrees * INCHES_PER_DEGREE, -degrees * INCHES_PER_DEGREE, timeoutS );
     }
+
 
     public void gyroRotate(double speed, double degrees, double timeoutS) {
         if (degrees > 0){
@@ -803,9 +816,25 @@ public class IncepBot
      *  2) Move runs out of time
      *  3) Driver stops the opmode running.
      */
-    public void encoderMyDrive(double speed,
+    public void fastEncoderDrive(double speed,
+                                 double leftInches, double rightInches,
+                                 double timeoutS) {
+
+        // Default value of P is 0.0 (no gyro assist)
+        fastEncoderDrive( speed, leftInches, rightInches, 0.0 ) ;
+    }
+
+     /*
+     *  Method to perfmorm a relative move, based on encoder counts.
+     *  IMU gyro is used to help steer if we're going straight.
+     *  Move will stop if any of three conditions occur:
+     *  1) Move gets to the desired position
+     *  2) Move runs out of time
+     *  3) Driver stops the opmode running.
+     */
+    public void fastEncoderDrive(double speed,
                                double leftInches, double rightInches,
-                               double timeoutS) {
+                               double timeoutS, double P) {
         int newLeftFTarget;
         int newRightFTarget;
         int newLeftBTarget;
@@ -825,7 +854,7 @@ public class IncepBot
         double KhR = 1.0;
         // Steering proportional constant
         // disable gyro assisted straight for now -- we drive straighter without.
-        double P = 0.00;
+        //double P = 0.00;
 
         // Get the current Heading
         tgtHeading = getHeading();
@@ -851,8 +880,9 @@ public class IncepBot
 
             // The front wheels are slipping so they stop and fight the back.  Set them
             // to FLOAT here to try to avoid that.  Not sure if this actually works
-            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            // No longer needed in this mode.
+            //leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            //rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
             // Determine new target position, and pass to motor controller
             newLeftFTarget = (int)(leftInches * COUNTS_PER_INCH);
@@ -898,6 +928,12 @@ public class IncepBot
 
                     // Use the minimum speed or 0
                     newSpeedL = doneL ? 0 : Math.min(spdUpL, spdDnL);
+
+                    // Change power and steer
+                    // Reverse stuff if driving backwards
+                    if ( newLeftFTarget < 0 ) {
+                        newSpeedL *= -1.0;
+                    }
                 }
 
                 if (!doneR) {
@@ -912,8 +948,13 @@ public class IncepBot
 
                     // Use the minimum speed or 0
                     newSpeedR = doneR ? 0 : Math.min(spdUpR, spdDnR) ;
-                }
 
+                    // Change power and steer
+                    // Reverse stuff if driving backwards
+                    if ( newRightFTarget < 0 ) {
+                        newSpeedR *= -1.0;
+                    }
+                }
 
                 // Compute drift, negate for correction
                 if ((P != 0.0) && (leftInches == rightInches)) {
@@ -924,58 +965,52 @@ public class IncepBot
                     if (leftInches < 0 ) {
                         deltaHeading *= -1.0;
                     }
-                } else {
-                    // if not straight, no correction needed
-                    deltaHeading = 0;
+                    // Never change the sign. Make the change proportional to the error
+                    KhL = Math.max(0.0, (1.0 + (deltaHeading * P)));
+                    KhR = Math.max(0.0, (1.0 - (deltaHeading * P)));
                 }
 
-                // Change power and steer
-                actSpeedL = newSpeedL;
-                // Reverse stuff if driving backwards
-                if ( newLeftFTarget < 0 ) {
-                    actSpeedL *= -1.0;
-                }
-                // Never change the sign. Make the change proportional to the error
-                KhL = Math.max(0.0, (1.0 + (deltaHeading * P)));
-                leftFDrive.setPower (Math.max(-1.0, Math.min(1.0, actSpeedL * KpL * KhL )));
-                leftBDrive.setPower (Math.max(-1.0, Math.min(1.0, actSpeedL * KpL * KhL )));
+                newSpeedL *= (KpL * KhL);
+                newSpeedR *= (KpR * KhR);
 
-                // Change power and steer
-                actSpeedR = newSpeedR;
-                // Reverse stuff if driving backwards
-                if ( newRightFTarget < 0 ) {
-                    actSpeedR *= -1.0;
+                if (newSpeedL != actSpeedL ) {
+                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+                    actSpeedL = newSpeedL;
                 }
-                // Never change the sign. Make the change proportional to the error
-                KhR = Math.max(0.0, (1.0 - (deltaHeading * P)));
-                rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeedR * KpR * KhR )));
-                rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, actSpeedR * KpR * KhR )));
+
+                if (newSpeedR != actSpeedR ) {
+                    rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
+                    rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
+                    actSpeedR = newSpeedR;
+                }
 
                 if ( DEBUG == true) {
-                    myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, actSpeedL, (int) curPosL, (int) newLeftBTarget, (int) toGoL);
-                    myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, actSpeedR, (int) curPosR, (int) newRightBTarget, (int) toGoR);
+                    myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, (int) newLeftBTarget, (int) toGoL);
+                    myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, newSpeedR, (int) curPosR, (int) newRightBTarget, (int) toGoR);
                     myLOpMode.telemetry.update();
                 }
             }
 
-            if ( DEBUG == true) {
-                curPosL = leftBDrive.getCurrentPosition();
-                curPosR = rightBDrive.getCurrentPosition();
-                myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, actSpeedL, (int) curPosL, (int) newLeftBTarget, (int) toGoL);
-                myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, actSpeedR, (int) curPosR, (int) newRightBTarget, (int) toGoR);
-                myLOpMode.telemetry.update();
-            }
-
             // The front wheels are slipping so they stop and fight the back.  Set them
             // to FLOAT earlier, so reset to BRAKE here.
-            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            // No longer needed in this mode.
+            //leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            //rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             // Stop all motion;
             leftFDrive.setPower(0);
             rightFDrive.setPower(0);
             leftBDrive.setPower(0);
             rightBDrive.setPower(0);
+
+            if ( DEBUG == true) {
+                curPosL = leftBDrive.getCurrentPosition();
+                curPosR = rightBDrive.getCurrentPosition();
+                myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, (int) newLeftBTarget, (int) toGoL);
+                myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, newSpeedR, (int) curPosR, (int) newRightBTarget, (int) toGoR);
+                myLOpMode.telemetry.update();
+            }
 
             // Reset run mode
             leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);

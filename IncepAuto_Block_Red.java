@@ -139,7 +139,7 @@ public class IncepAuto_Block_Red extends LinearOpMode {
         }
 
         // First Section, doesn't change no matter which block until we get 's' curve
-        robot.encoderStraight(DRIVE_SPEED, -32, 3);
+        robot.fastEncoderStraight(DRIVE_SPEED, -32, 3);
 
         // This is backup code in case we need to fix broken vision for some reason.
         // If block 1 is yellow, we better grab block 3 next (we're getting 2 now.
@@ -156,61 +156,61 @@ public class IncepAuto_Block_Red extends LinearOpMode {
 
         // Make the turn
         //robot.gyroPivot( 1.0, 90.0, 6 );
-        robot.encoderStraight(DRIVE_SPEED,laneLength,4);
+        robot.fastEncoderStraight(DRIVE_SPEED,laneLength,4);
         robot.gyroRotate(TURN_SPEED,90 * turnDirection, 4);
 
         //Section 2, dependant on whether block is 1,2 or 3.
         //go to drop zone
-        //robot.encoderStraight(DRIVE_SPEED,-50, 3);
-        robot.encoderStraight(DRIVE_SPEED,firstBlock - dropZone, 4);
+        //robot.fastEncoderStraight(DRIVE_SPEED,-50, 3);
+        robot.fastEncoderStraight(DRIVE_SPEED,firstBlock - dropZone, 4);
 
         robot.dropBlock();
 
         //come back and go for next one
-        //robot.encoderStraight(DRIVE_SPEED,42, 3);
-        robot.encoderStraight(DRIVE_SPEED,dropZone - secondBlock, 4);
+        //robot.fastEncoderStraight(DRIVE_SPEED,42, 3);
+        robot.fastEncoderStraight(DRIVE_SPEED,dropZone - secondBlock, 4);
 
         //robot.gyroPivot( -1.0, -90.0, 6 );
         robot.gyroRotate(TURN_SPEED,-90 * turnDirection, 4);
-        robot.encoderStraight(DRIVE_SPEED,-(laneLength+2),4);
+        robot.fastEncoderStraight(DRIVE_SPEED,-(laneLength+2),4);
 
         robot.grabBlock();
 
         //robot.gyroPivot( 1.0, 90.0, 6 );
-        robot.encoderStraight(DRIVE_SPEED,laneLength+2,4);
+        robot.fastEncoderStraight(DRIVE_SPEED,laneLength+2,4);
         robot.gyroRotate(TURN_SPEED,90 * turnDirection, 4);
 
         //go to drop zone
-        //robot.encoderStraight(DRIVE_SPEED,-42, 3);
-        robot.encoderStraight(DRIVE_SPEED, secondBlock - dropZone, 4);
+        //robot.fastEncoderStraight(DRIVE_SPEED,-42, 3);
+        robot.fastEncoderStraight(DRIVE_SPEED, secondBlock - dropZone, 4);
 
         //drop block
         robot.dropBlock();
 
         //come back and go for next one
-        //robot.encoderStraight(DRIVE_SPEED,42, 3);
-        robot.encoderStraight(DRIVE_SPEED,dropZone - thirdBlock, 4);
+        //robot.fastEncoderStraight(DRIVE_SPEED,42, 3);
+        robot.fastEncoderStraight(DRIVE_SPEED,dropZone - thirdBlock, 4);
 
         //robot.gyroPivot( -1.0, -90.0, 6 );
         robot.gyroRotate(TURN_SPEED,-90 * turnDirection, 4);
-        robot.encoderStraight(DRIVE_SPEED,-(laneLength+2),4);
+        robot.fastEncoderStraight(DRIVE_SPEED,-(laneLength+2),4);
 
         robot.grabBlock();
 
         //robot.gyroPivot( 1.0, 90.0, 6 );
-        robot.encoderStraight(DRIVE_SPEED,laneLength+2,4);
+        robot.fastEncoderStraight(DRIVE_SPEED,laneLength+2,4);
         robot.gyroRotate(TURN_SPEED,90 * turnDirection, 4);
 
         //go to drop zone
-        //robot.encoderStraight(DRIVE_SPEED,-42, 3);
-        robot.encoderStraight(DRIVE_SPEED, thirdBlock - dropZone, 4);
+        //robot.fastEncoderStraight(DRIVE_SPEED,-42, 3);
+        robot.fastEncoderStraight(DRIVE_SPEED, thirdBlock - dropZone, 4);
 
         //drop block
         robot.dropBlock();
 
         //Park under bridge
-        //robot.encoderStraight(DRIVE_SPEED,15, 1.5);
-        robot.encoderStraight(DRIVE_SPEED,dropZone - bridge, 4);
+        //robot.fastEncoderStraight(DRIVE_SPEED,15, 1.5);
+        robot.fastEncoderStraight(DRIVE_SPEED,dropZone - bridge, 4);
 
         // Extend for parking reach
         robot.grabBlock();
