@@ -61,52 +61,78 @@ import java.util.Locale;
  * Servo channel:  Servo to grab foundation: "foundation"
  * Servo channel:  Servo to grab blocks:     "claw"
  */
-public class IncepBot
-{
+public class IncepBot {
     /* Public OpMode members. */
-    public DcMotor  leftFDrive   = null;
-    public DcMotor  rightFDrive  = null;
-    public DcMotor  leftBDrive   = null;
-    public DcMotor  rightBDrive  = null;
-    public Servo    foundation1    = null;
-    public Servo    foundation2    = null;
-    public Servo    claw   = null;
+    public DcMotor leftFDrive = null;
+    public DcMotor rightFDrive = null;
+    public DcMotor leftBDrive = null;
+    public DcMotor rightBDrive = null;
+    public Servo foundation1 = null;
+    public Servo foundation2 = null;
+    public Servo claw = null;
 
-    private static final double     COUNTS_PER_MOTOR_REV    = 537.6 ;         // eg: TETRIX Motor Encoder
-    private static final double     DRIVE_GEAR_REDUCTION    = 10.0/11.0 ;     // This is < 1.0 if geared UP
-    private static final double     WHEEL_DIAMETER_INCHES   = 3.54331 ;       // For figuring circumference
-    private static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
+    private static final double COUNTS_PER_MOTOR_REV = 537.6;         // eg: TETRIX Motor Encoder
+    private static final double DRIVE_GEAR_REDUCTION = 10.0 / 11.0;     // This is < 1.0 if geared UP
+    private static final double WHEEL_DIAMETER_INCHES = 3.54331;       // For figuring circumference
+    private static final double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
             (WHEEL_DIAMETER_INCHES * 3.14159);
-    private static final double     AXLE_LENGTH             = 13.25;          // Width of robot through the pivot point (center wheels)
-    private static final double     INCHES_PER_DEGREE       = (AXLE_LENGTH * 3.14159) / 360.0;
-    private static final double     SOFT_D_UP               = 50.0;
-    private static final double     SOFT_D_UP_DEGREE        = 5;
-    private static final double     SOFT_D_DOWN             = 70.0;
-    private static final double     SOFT_D_DOWN2            = 80.0;
-    private static final double     SOFT_D_DOWN_DEGREE      = 15;
-    private static final double     KpL                     = 1.0;
-    private static final double     KpR                     = 67.5/70.0;
-    private static final double     PIVOT_FACTOR            = 2.05;
-    private static final double     CLOSE_ENOUGH            = 15.0;
-    private static final double     CLOSE_ENOUGH_DEGREE     = 0.5;
-    private static final double     RIGHT_ARC_COEFFICENT    = 1.00;
-    private static final double     LEFT_ARC_COEFFICENT     = 1.25;
-    private static final double     IMU_CORR                = 1.03;
-    static final double             RIGHT                   = 1;
-    static final double             LEFT                    = 0;
-    BNO055IMU               imu;
-    private Orientation             angles;
-    ColorSensor             colorSensor;
-    private static final boolean     DEBUG                = false;
+    private static final double AXLE_LENGTH = 13.25;          // Width of robot through the pivot point (center wheels)
+    private static final double INCHES_PER_DEGREE = (AXLE_LENGTH * 3.14159) / 360.0;
+    private static final double SOFT_D_UP = 50.0;
+    private static final double SOFT_D_UP_DEGREE = 5;
+    private static final double SOFT_D_DOWN = 70.0;
+    private static final double SOFT_D_DOWN2 = 80.0;
+    private static final double SOFT_D_DOWN_DEGREE = 15;
+    private static final double KpL = 1.0;
+    private static final double KpR = 67.5 / 70.0;
+    private static final double PIVOT_FACTOR = 2.05;
+    private static final double CLOSE_ENOUGH = 15.0;
+    private static final double CLOSE_ENOUGH_DEGREE = 0.5;
+    private static final double RIGHT_ARC_COEFFICENT = 1.00;
+    private static final double LEFT_ARC_COEFFICENT = 1.25;
+    private static final double IMU_CORR = 1.03;
+    static final double RIGHT = 1;
+    static final double LEFT = 0;
+    BNO055IMU imu;
+    private Orientation angles;
+    ColorSensor colorSensor;
+    private static final boolean DEBUG = false;
+    double minUp = 0.0;
+    double straightA = 0.0;
 
 
     /* local OpMode members. */
-    HardwareMap hwMap           =  null;
-    private ElapsedTime period  = new ElapsedTime();
+    HardwareMap hwMap = null;
+    private ElapsedTime period = new ElapsedTime();
     private static LinearOpMode myLOpMode;
 
     /* Constructor */
-    public IncepBot(){
+    public IncepBot() {
+    }
+    public void initIMU() {
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+
+        parameters.mode                = BNO055IMU.SensorMode.IMU;
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.loggingEnabled      = false;
+
+        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
+        // on a Core Device Interface Module and named "imu".
+        imu = hwMap.get(BNO055IMU.class, "imu");
+
+        imu.initialize(parameters);
+
+        myLOpMode.telemetry.addData("Mode", "IMU calibrating...");
+        myLOpMode.telemetry.update();
+
+        // make sure the imu gyro is calibrated before continuing.
+        for (int i=0; (i<40 && !imu.isGyroCalibrated()); i++)
+        {
+            myLOpMode.sleep(50);
+            myLOpMode.idle();
+        }
     }
 
     public void initAutonomous(LinearOpMode lOpMode) {
@@ -290,16 +316,16 @@ public class IncepBot
         claw.setPosition(0);
     }
 
-    public void grabFoundation() {
+    public void grabFoundation(int wait) {
         foundation1.setPosition(0);
         foundation2.setPosition(0);
-        myLOpMode.sleep(1000);
+        myLOpMode.sleep(wait);
     }
 
-    public void releaseFoundation() {
+    public void releaseFoundation(int wait) {
         foundation1.setPosition(1);
         foundation2.setPosition(1);
-        myLOpMode.sleep(750);
+        myLOpMode.sleep(wait);
     }
 
     public void grabBlock() {
@@ -312,12 +338,12 @@ public class IncepBot
         //myLOpMode.sleep(250);
     }
 
-    public void fastEncoderStraight(double speed, double distance, double timeoutS, double P) {
-        fastEncoderDrive( speed, distance, distance, timeoutS, P );
+    public double fastEncoderStraight(double speed, double distance, double timeoutS, double P) {
+        return(fastEncoderDrive( speed, distance, distance, timeoutS, P ));
     }
 
-    public void fastEncoderStraight(double speed, double distance, double timeoutS) {
-        fastEncoderDrive( speed, distance, distance, timeoutS );
+    public double fastEncoderStraight(double speed, double distance, double timeoutS) {
+        return(fastEncoderDrive( speed, distance, distance, timeoutS ));
     }
 
     public void encoderStraight(double speed, double distance, double timeoutS) {
@@ -332,23 +358,21 @@ public class IncepBot
         encoderDrive( speed, degrees * INCHES_PER_DEGREE, -degrees * INCHES_PER_DEGREE, timeoutS );
     }
 
-
-    public void gyroRotate(double speed, double degrees, double timeoutS) {
+    public double gyroRotate(double speed, double degrees, double timeoutS) {
         if (degrees > 0){
-            gyroTurn( degrees, -speed, speed, timeoutS );
+            return(gyroTurn( degrees, -speed, speed, timeoutS ));
         } else {
-            gyroTurn( degrees, speed, -speed, timeoutS );
+            return(gyroTurn( degrees, speed, -speed, timeoutS ));
         }
-
     }
 
-    public void gyroPivot(double speed, double degrees, double timeoutS) {
-        // +speed and -degrees requires right power
+    public double gyroPivot(double speed, double degrees, double timeoutS) {
+        // +speed and +degrees requires right power
         // -speed and -degrees requires right power
         if (((degrees > 0) && (speed > 0)) || ((degrees < 0) && (speed < 0))) {
-            gyroTurn( degrees, 0, speed, timeoutS );
+            return(gyroTurn( degrees, 0, speed, timeoutS ));
         } else {
-            gyroTurn( degrees, speed, 0, timeoutS );
+            return(gyroTurn( degrees, speed, 0, timeoutS ));
         }
     }
 
@@ -358,6 +382,15 @@ public class IncepBot
         } else {
             // We use -degrees, since to cancel out the negative degrees (we want positive right wheel rotation
             encoderDrive(speed, 0, -degrees * PIVOT_FACTOR * INCHES_PER_DEGREE, timeoutS);
+        }
+    }
+
+    public void fastEncoderPivot(double speed, double degrees, double timeoutS) {
+        if (degrees > 0) {
+            fastEncoderDrive(speed, degrees * PIVOT_FACTOR * INCHES_PER_DEGREE, 0, timeoutS);
+        } else {
+            // We use -degrees, since to cancel out the negative degrees (we want positive right wheel rotation
+            fastEncoderDrive(speed, 0, -degrees * PIVOT_FACTOR * INCHES_PER_DEGREE, timeoutS);
         }
     }
 
@@ -466,7 +499,7 @@ public class IncepBot
                     IBDrive.setPower(actSpeed * KpI * ratio );
                 }
 
-                if ( DEBUG == true ) {
+                if (DEBUG) {
                     myLOpMode.telemetry.addData("Path3", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int) curPos, (int) toGo);
                     myLOpMode.telemetry.update();
                 }
@@ -593,7 +626,7 @@ public class IncepBot
                     rightBDrive.setPower(actSpeed * KpR);
                 }
 
-                if ( DEBUG == true) {
+                if (DEBUG) {
                     myLOpMode.telemetry.addData("Path3", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d", spdUp, spdDn, actSpeed, (int) curPos, (int) toGo);
                     myLOpMode.telemetry.update();
                 }
@@ -635,7 +668,7 @@ public class IncepBot
      *  2) Move runs out of time
      *  3) Driver stops the opmode running.
      */
-    public void gyroTurn(double degrees,
+    public double gyroTurn(double degrees,
                          double leftPower, double rightPower,
                          double timeoutS) {
         double toGo;
@@ -643,14 +676,19 @@ public class IncepBot
         double actSpeed=0.0;
         double newSpeed ;
         double spdUp, spdDn;
+        // This profile is a hold over from the straight commands
         double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        // This profile is for rotate
         double[] speedRampDownR = {0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDownP = {0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
+        // This profile is for the foundation movement
+        double[] speedRampUpP = {0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownP = {0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
         ElapsedTime runtime = new ElapsedTime();
         double tgtHeading, curHeading, startHeading;
         double KsL = 1.0;
         double KsR = 1.0;
+        double delta, sign=1.0;
 
         // Get the current Heading
         startHeading = curHeading = getHeading();
@@ -659,7 +697,7 @@ public class IncepBot
         // Initialize toGo
         toGo = Math.abs(degrees);
 
-        if ( DEBUG == true ) {
+        if (DEBUG) {
             myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f",degrees,curHeading,startHeading,tgtHeading,AngleUnit.normalizeDegrees(curHeading - tgtHeading));
             myLOpMode.telemetry.update();
             //myLOpMode.sleep(3000);
@@ -674,6 +712,7 @@ public class IncepBot
 
         // If this is a Pivot, use Pivot profile
         if ((leftPower == 0) || (rightPower == 0) ) {
+            speedRampUp = speedRampUpP;
             speedRampDown = speedRampDownP;
         }
 
@@ -695,6 +734,8 @@ public class IncepBot
             // to FLOAT here to try to avoid that.  Not sure if this actually works
             leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
             rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            //leftBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            //rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
             // Initialize Power Ratio
             //init maxpower
@@ -724,7 +765,7 @@ public class IncepBot
                 }
             }
 
-            if ( DEBUG == true ) {
+            if (DEBUG) {
                 myLOpMode.telemetry.addData("gyro", "KL: %.3f, KR: %.3f, max: %.2f",KsL, KsR,maxPower);
                 myLOpMode.telemetry.update();
                 //myLOpMode.sleep(5000);
@@ -737,6 +778,11 @@ public class IncepBot
             // Don't set the speed out here because a 'pivot' where one side has a '0' distance
             // request would start moving too soon.
 
+            delta = AngleUnit.normalizeDegrees(curHeading - tgtHeading);
+            if ( delta != 0) {
+                sign = delta/Math.abs(delta);
+            }
+
             // Initialize variables before the loop
             // Use done to jump out of loop when you get close enough to the end
             // Keep looping while we are still active, and there is time left, and we haven't reached the target
@@ -747,9 +793,10 @@ public class IncepBot
                 // This code implements a soft start and soft stop.
                 curHeading = getHeading();
 
-                // FIXME: Handle overshoot of any size, not just CLOSE_ENOUGH_DEGREES
-                if ((Math.abs(AngleUnit.normalizeDegrees(curHeading - tgtHeading))) < CLOSE_ENOUGH_DEGREE) {
-                    break;
+                // Look to see if our delta is really close or if we over rotated already (sign changed on delta)
+                delta = AngleUnit.normalizeDegrees(curHeading - tgtHeading);
+                if (((Math.abs(delta)) < CLOSE_ENOUGH_DEGREE) || (delta/Math.abs(delta) != sign)) {
+                        break;
                 }
 
                 // How much farther?
@@ -775,7 +822,7 @@ public class IncepBot
                     rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)));
                 }
 
-                if ( DEBUG == true) {
+                if (DEBUG) {
                     myLOpMode.telemetry.addData("left", "s: %1.3f",newSpeed * KpL * KsL);
                     myLOpMode.telemetry.addData("right", "s: %1.3f",newSpeed * KpR * KsR);
                     myLOpMode.telemetry.addData("gyro", "deg: %1.3f, curr: %1.3f, start: %1.3f, tgt: %1.3f",degrees,curHeading,startHeading,tgtHeading);
@@ -783,16 +830,18 @@ public class IncepBot
                 }
             }
 
-            // The front wheels are slipping so they stop and fight the back.  Set them
-            // to FLOAT earlier, so reset to BRAKE here.
-            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
             // Stop all motion;
             leftFDrive.setPower(0);
             rightFDrive.setPower(0);
             leftBDrive.setPower(0);
             rightBDrive.setPower(0);
+
+            // The front wheels are slipping so they stop and fight the back.  Set them
+            // to FLOAT earlier, so reset to BRAKE here.
+            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            //leftBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            //rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             // Reset run mode
             leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -800,11 +849,13 @@ public class IncepBot
             leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-            if ( DEBUG == true) {
+            if (DEBUG) {
                 myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f", degrees, curHeading, startHeading, tgtHeading, AngleUnit.normalizeDegrees(curHeading - tgtHeading));
                 myLOpMode.telemetry.update();
+                myLOpMode.sleep(1000);
             }
         }
+        return(AngleUnit.normalizeDegrees(getHeading() - tgtHeading));
     }
 
 
@@ -816,12 +867,12 @@ public class IncepBot
      *  2) Move runs out of time
      *  3) Driver stops the opmode running.
      */
-    public void fastEncoderDrive(double speed,
+    public double fastEncoderDrive(double speed,
                                  double leftInches, double rightInches,
                                  double timeoutS) {
 
         // Default value of P is 0.0 (no gyro assist)
-        fastEncoderDrive( speed, leftInches, rightInches, 0.0 ) ;
+        return(fastEncoderDrive( speed, leftInches, rightInches, timeoutS,0.0 ));
     }
 
      /*
@@ -832,7 +883,7 @@ public class IncepBot
      *  2) Move runs out of time
      *  3) Driver stops the opmode running.
      */
-    public void fastEncoderDrive(double speed,
+    public double fastEncoderDrive(double speed,
                                double leftInches, double rightInches,
                                double timeoutS, double P) {
         int newLeftFTarget;
@@ -841,12 +892,12 @@ public class IncepBot
         int newRightBTarget;
         double curPosL, curPosR;
         double toGoL, toGoR;
-        double actSpeedL=0, actSpeedR=0;
+        double actSpeedL=0, actSpeedR=0, spdPosL=0, spdPosR=0, spdToGoL=0, spdToGoR=0;
         double newSpeedL, newSpeedR;
         double spdUpL,spdDnL,spdUpR,spdDnR;
         boolean doneL, doneR;
         double[] speedRampUp = {0.20, 0.25, 0.30, 0.35, 0.45, 0.55, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDown = {0.10, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975, 1.0};
+        double[] speedRampDown = {0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975, 1.0};
         double[] speedRampDownT = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         ElapsedTime     runtime = new ElapsedTime();
         double tgtHeading, curHeading, deltaHeading;
@@ -856,8 +907,10 @@ public class IncepBot
         // disable gyro assisted straight for now -- we drive straighter without.
         //double P = 0.00;
 
-        // Get the current Heading
-        tgtHeading = getHeading();
+        // Get the current Heading and update for the correction angle
+        tgtHeading = getHeading() - straightA;
+        // now clear the correction angle so it's never used again
+        straightA = 0.0;
 
         // If we're not going straight, change the speed down profile to a turning-friendly version
         if (leftInches != rightInches) {
@@ -867,6 +920,7 @@ public class IncepBot
         // Ensure that the opmode is still active
         if (myLOpMode.opModeIsActive()) {
 
+            // Reset encoders
             leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             rightFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             leftBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -880,11 +934,12 @@ public class IncepBot
 
             // The front wheels are slipping so they stop and fight the back.  Set them
             // to FLOAT here to try to avoid that.  Not sure if this actually works
-            // No longer needed in this mode.
-            //leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-            //rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            //leftBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            //rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-            // Determine new target position, and pass to motor controller
+            // Compute desired position
             newLeftFTarget = (int)(leftInches * COUNTS_PER_INCH);
             newRightFTarget = (int)(rightInches * COUNTS_PER_INCH);
             newLeftBTarget = (int)(leftInches * COUNTS_PER_INCH);
@@ -917,17 +972,27 @@ public class IncepBot
                 // Check if we're done
                 // This code implements a soft start and soft stop.
                 if (!doneL) {
-                    curPosL = leftBDrive.getCurrentPosition();
+                    spdPosL = curPosL = leftBDrive.getCurrentPosition();
+                    toGoL = Math.min(toGoL, Math.max(0, Math.abs(newLeftBTarget - curPosL)));
+                }
+                if (!doneR) {
+                    spdPosR = curPosR = rightBDrive.getCurrentPosition();
+                    toGoR  = Math.min(toGoR, Math.max(0,Math.abs(newRightBTarget - curPosR)));
+                }
+                if (leftInches == rightInches) {
+                    spdPosL = spdPosR = (curPosL + curPosR)/2;
+                    toGoL = toGoR = (toGoL + toGoR)/2;
+                }
+
+                if (!doneL) {
                     doneL = ((Math.abs(newLeftBTarget) - Math.abs(curPosL)) < CLOSE_ENOUGH);
 
-                    // How much farther?
-                    toGoL = Math.min(toGoL, Math.max(0, Math.abs(newLeftBTarget - curPosL)));
                     // Compute speed on acceleration and deceleration legs
-                    spdUpL = Math.min(speedRampUp[Math.min((int) (Math.abs(curPosL) / SOFT_D_UP), speedRampUp.length - 1)], speed);
+                    spdUpL = Math.max(Math.min(speedRampUp[Math.min((int) (Math.abs(spdPosL) / SOFT_D_UP), speedRampUp.length - 1)], speed),minUp);
                     spdDnL = Math.min(speedRampDown[Math.min((int) (Math.abs(toGoL) / SOFT_D_DOWN2), speedRampDown.length - 1)], speed);
 
                     // Use the minimum speed or 0
-                    newSpeedL = doneL ? 0 : Math.min(spdUpL, spdDnL);
+                    newSpeedL = doneL ? 0.05 : Math.min(spdUpL, spdDnL);
 
                     // Change power and steer
                     // Reverse stuff if driving backwards
@@ -937,17 +1002,14 @@ public class IncepBot
                 }
 
                 if (!doneR) {
-                    curPosR = rightBDrive.getCurrentPosition();
                     doneR = ((Math.abs(newRightBTarget) - Math.abs(curPosR)) < CLOSE_ENOUGH);
 
-                    // How much farther?
-                    toGoR  = Math.min(toGoR, Math.max(0,Math.abs(newRightBTarget - curPosR)));
                     // Compute speed on acceleration and deceleration legs
-                    spdUpR = Math.min(speedRampUp[Math.min((int)(Math.abs(curPosR)/SOFT_D_UP),speedRampUp.length-1)],speed);
+                    spdUpR = Math.max(Math.min(speedRampUp[Math.min((int)(Math.abs(spdPosR)/SOFT_D_UP),speedRampUp.length-1)],speed),minUp);
                     spdDnR = Math.min(speedRampDown[Math.min((int)(Math.abs(toGoR)/SOFT_D_DOWN2),speedRampDown.length-1)],speed);
 
                     // Use the minimum speed or 0
-                    newSpeedR = doneR ? 0 : Math.min(spdUpR, spdDnR) ;
+                    newSpeedR = doneR ? 0.05 : Math.min(spdUpR, spdDnR) ;
 
                     // Change power and steer
                     // Reverse stuff if driving backwards
@@ -985,9 +1047,9 @@ public class IncepBot
                     actSpeedR = newSpeedR;
                 }
 
-                if ( DEBUG == true) {
-                    myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, (int) newLeftBTarget, (int) toGoL);
-                    myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, newSpeedR, (int) curPosR, (int) newRightBTarget, (int) toGoR);
+                if (DEBUG) {
+                    myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
+                    myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, newSpeedR, (int) curPosR, newRightBTarget, (int) toGoR);
                     myLOpMode.telemetry.update();
                 }
             }
@@ -995,8 +1057,10 @@ public class IncepBot
             // The front wheels are slipping so they stop and fight the back.  Set them
             // to FLOAT earlier, so reset to BRAKE here.
             // No longer needed in this mode.
-            //leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            //rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            //leftBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            //rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             // Stop all motion;
             leftFDrive.setPower(0);
@@ -1004,11 +1068,11 @@ public class IncepBot
             leftBDrive.setPower(0);
             rightBDrive.setPower(0);
 
-            if ( DEBUG == true) {
+            if (DEBUG) {
                 curPosL = leftBDrive.getCurrentPosition();
                 curPosR = rightBDrive.getCurrentPosition();
-                myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, (int) newLeftBTarget, (int) toGoL);
-                myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, newSpeedR, (int) curPosR, (int) newRightBTarget, (int) toGoR);
+                myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
+                myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, newSpeedR, (int) curPosR, newRightBTarget, (int) toGoR);
                 myLOpMode.telemetry.update();
             }
 
@@ -1018,6 +1082,11 @@ public class IncepBot
             leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+        }
+        if (leftInches == rightInches) {
+            return (AngleUnit.normalizeDegrees(getHeading() - tgtHeading));
+        } else {
+            return(0.0);
         }
     }
 }

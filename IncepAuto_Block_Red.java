@@ -50,45 +50,40 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 @Autonomous(name="Incep: Auto Block Red", group="Incepbot")
 public class IncepAuto_Block_Red extends LinearOpMode {
 
-    private IncepBot          robot   = new IncepBot();   // Use a Pushbot's hardware
+    private IncepBot robot = new IncepBot();   // Use a Pushbot's hardware
 
-    private static final double     DRIVE_SPEED             = 0.9;
-    private static final double     TURN_SPEED              = 0.65;
-    private static final double     PIVOT_SPEED             = 0.40;
-    private static final double     SQ                      = 70/3.0;        // Length of 3 squares / 3 in case we want to think that way
+    private static final double DRIVE_SPEED = 0.9;
+    private static final double TURN_SPEED = 0.65;
+    private static final double PIVOT_SPEED = 0.40;
+    private static final double SQ = 70 / 3.0;        // Length of 3 squares / 3 in case we want to think that way
     private static final double[] blocks = {0.0, 28.0, 36.0, 44.0, 4.0, 12.0, 20.0};
     private static final double dropZone = 82.0;
     private static final double bridge = 71.0;
-    private static double firstBlock, secondBlock, thirdBlock, fourthBlock;
-    private static double turnDirection;
-    private static double laneLength;
     private String className = this.getClass().getSimpleName().toLowerCase();
 
-    private IncepVision        vision   = new IncepVision();
+    private IncepVision vision = new IncepVision();
     private int block;
+    private double P = 0.05;
+    private double a = 0;
 
     @Override
     public void runOpMode() {
+        double firstBlock, secondBlock, thirdBlock, fourthBlock;
+        double turnDirection;
+        double laneLength;
 
-        /*
-         * Initialize the drive system variables.
-         * The init() method of the hardware class does all the work here
-         */
+        // Init the robot and subsystems
         robot.init(hardwareMap);
-
-        // Init the robot setting for Autonomous play
         robot.initAutonomous(this);
-
         vision.initAutonomous(this);
 
-        // Wait until we're told to go
+        // Wait until we're told to go and look for the block
         while (!isStarted()) {
             block = vision.getBlockNumber();
         }
         vision.shutdown();
 
-        // Red or blue alliance -- only difference is the turn direction
-        // and the block numbering
+        // Red or blue alliance -- only difference is the turn direction and the block numbering
         if (className.contains("blue")) {
             turnDirection = 1.0;
         } else {
@@ -102,7 +97,7 @@ public class IncepAuto_Block_Red extends LinearOpMode {
 
         // Wall or block lane -- only difference is a straight distance
         if (className.contains("wall")) {
-            laneLength = 27.0;
+            laneLength = 29;
         } else {
             laneLength = 10.0;
         }
@@ -110,36 +105,46 @@ public class IncepAuto_Block_Red extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         //waitForStart();
 
-        //Set block for testing purposes
-        //block = 3;
-
+        // Choose the order we grab blocks in.
         if (block == 3) {
-            firstBlock=blocks[2];
-            secondBlock=blocks[3];
-            thirdBlock=blocks[1];
-            fourthBlock=blocks[6];
+            firstBlock=blocks[3];
+            secondBlock=blocks[6];
+            thirdBlock=blocks[0];
+            fourthBlock=blocks[0];
 
         } else if (block == 2) {
             firstBlock=blocks[2];
             secondBlock=blocks[5];
-            thirdBlock=blocks[3];
-            fourthBlock=blocks[1];
+            thirdBlock=blocks[0];
+            fourthBlock=blocks[0];
 
         } else if (block == 1) {
             firstBlock=blocks[2];
             secondBlock=blocks[1];
             thirdBlock=blocks[3];
-            fourthBlock=blocks[6];
+            fourthBlock=blocks[0];
 
         } else {
             firstBlock=blocks[2];
             secondBlock=blocks[1];
             thirdBlock=blocks[3];
-            fourthBlock=blocks[6];
+            fourthBlock=blocks[0];
         }
 
-        // First Section, doesn't change no matter which block until we get 's' curve
-        robot.fastEncoderStraight(DRIVE_SPEED, -32, 3);
+        // 'a' is used as an adjustment angle throughout the following code
+        // Each step along the way has a target angle returns the delta to that
+        // angle after each operation.  We keep track of the err adjustment
+        // and ask the next move to handle it so the error shouldn't build.
+        if (firstBlock == blocks[3]) {
+            a = robot.gyroPivot(-TURN_SPEED, (67 * turnDirection), 2);
+            a = robot.gyroPivot(-TURN_SPEED, (-67 * turnDirection)-a, 2);
+
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -20, 3, P);
+        } else {
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 3, P);
+        }
 
         // This is backup code in case we need to fix broken vision for some reason.
         // If block 1 is yellow, we better grab block 3 next (we're getting 2 now.
@@ -154,68 +159,65 @@ public class IncepAuto_Block_Red extends LinearOpMode {
 
         robot.grabBlock();
 
-        // Make the turn
-        //robot.gyroPivot( 1.0, 90.0, 6 );
-        robot.fastEncoderStraight(DRIVE_SPEED,laneLength,4);
-        robot.gyroRotate(TURN_SPEED,90 * turnDirection, 4);
+        // Backup and turn towards the drop zone
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,laneLength,4, P);
 
-        //Section 2, dependant on whether block is 1,2 or 3.
+        a = robot.gyroRotate(TURN_SPEED,(90 * turnDirection)-a, 4);
+
         //go to drop zone
-        //robot.fastEncoderStraight(DRIVE_SPEED,-50, 3);
-        robot.fastEncoderStraight(DRIVE_SPEED,firstBlock - dropZone, 4);
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,firstBlock - dropZone, 4, P);
 
         robot.dropBlock();
 
         //come back and go for next one
-        //robot.fastEncoderStraight(DRIVE_SPEED,42, 3);
-        robot.fastEncoderStraight(DRIVE_SPEED,dropZone - secondBlock, 4);
-
-        //robot.gyroPivot( -1.0, -90.0, 6 );
-        robot.gyroRotate(TURN_SPEED,-90 * turnDirection, 4);
-        robot.fastEncoderStraight(DRIVE_SPEED,-(laneLength+2),4);
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,dropZone - secondBlock, 4, P);
+        a = robot.gyroRotate(TURN_SPEED,(-90 * turnDirection)-a, 4);
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,-(laneLength+2),4, P);
 
         robot.grabBlock();
 
-        //robot.gyroPivot( 1.0, 90.0, 6 );
-        robot.fastEncoderStraight(DRIVE_SPEED,laneLength+2,4);
-        robot.gyroRotate(TURN_SPEED,90 * turnDirection, 4);
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,laneLength+2,4, P);
+        a = robot.gyroRotate(TURN_SPEED,(90 * turnDirection)-a, 4);
 
         //go to drop zone
-        //robot.fastEncoderStraight(DRIVE_SPEED,-42, 3);
-        robot.fastEncoderStraight(DRIVE_SPEED, secondBlock - dropZone, 4);
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, secondBlock - dropZone, 4, P);
 
         //drop block
         robot.dropBlock();
 
-        //come back and go for next one
-        //robot.fastEncoderStraight(DRIVE_SPEED,42, 3);
-        robot.fastEncoderStraight(DRIVE_SPEED,dropZone - thirdBlock, 4);
+        if (thirdBlock != blocks[0]) {
+            //come back and go for next one
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, dropZone - thirdBlock, 4, P);
+            a = robot.gyroRotate(TURN_SPEED, (-90 * turnDirection)-a, 4);
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -(laneLength + 2), 4, P);
 
-        //robot.gyroPivot( -1.0, -90.0, 6 );
-        robot.gyroRotate(TURN_SPEED,-90 * turnDirection, 4);
-        robot.fastEncoderStraight(DRIVE_SPEED,-(laneLength+2),4);
+            robot.grabBlock();
 
-        robot.grabBlock();
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, laneLength + 2, 4, P);
 
-        //robot.gyroPivot( 1.0, 90.0, 6 );
-        robot.fastEncoderStraight(DRIVE_SPEED,laneLength+2,4);
-        robot.gyroRotate(TURN_SPEED,90 * turnDirection, 4);
+            a = robot.gyroRotate(TURN_SPEED, (90 * turnDirection)-a, 4);
 
-        //go to drop zone
-        //robot.fastEncoderStraight(DRIVE_SPEED,-42, 3);
-        robot.fastEncoderStraight(DRIVE_SPEED, thirdBlock - dropZone, 4);
+            //go to drop zone
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, thirdBlock - dropZone, 4, P);
 
-        //drop block
-        robot.dropBlock();
+            //drop block
+            robot.dropBlock();
+        }
 
         //Park under bridge
-        //robot.fastEncoderStraight(DRIVE_SPEED,15, 1.5);
-        robot.fastEncoderStraight(DRIVE_SPEED,dropZone - bridge, 4);
+        robot.fastEncoderStraight(DRIVE_SPEED,dropZone - bridge, 4, P);
 
         // Extend for parking reach
         robot.grabBlock();
-
-        telemetry.addData("Path", "Complete");
-        telemetry.update();
     }
 }

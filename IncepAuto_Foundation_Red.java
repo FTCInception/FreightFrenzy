@@ -56,12 +56,20 @@ public class IncepAuto_Foundation_Red extends LinearOpMode {
 
     private static final double     DRIVE_SPEED             = 0.9;
     private static final double     TURN_SPEED              = 0.6;
-    private static final double     PIVOT_SPEED             = 0.40;
+    private static final double     PIVOT_SPEED             = 0.75;
     private static final double     SQ                      = 70/3.0;        // Length of 3 squares / 3 in case we want to think that way
-    private static final double     FDC                     = 5.0;
+    private String className = this.getClass().getSimpleName().toLowerCase();
 
     @Override
     public void runOpMode() {
+        double turnDirection;
+
+        // Red or blue alliance -- only difference is the turn direction
+        if (className.contains("blue")) {
+            turnDirection = 1.0;
+        } else {
+            turnDirection = -1.0;
+        }
 
         /*
          * Initialize the drive system variables.
@@ -73,25 +81,24 @@ public class IncepAuto_Foundation_Red extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        robot.releaseFoundation();
+        robot.releaseFoundation(0);
 
-        robot.encoderStraight(DRIVE_SPEED,-17,3);
-        robot.encoderRotate(TURN_SPEED,90,4);
-        robot.encoderStraight(DRIVE_SPEED,-18,3);
-        robot.encoderRotate(TURN_SPEED,-90,4);
-        robot.encoderStraight(DRIVE_SPEED,-17,2.5);
+        robot.fastEncoderStraight(DRIVE_SPEED,-17,2);
+        robot.fastEncoderRotate(TURN_SPEED, turnDirection * -90,2.5);
+        robot.fastEncoderStraight(DRIVE_SPEED,-18,2);
+        robot.fastEncoderRotate(TURN_SPEED, turnDirection * 90,2.5);
+        robot.fastEncoderStraight(DRIVE_SPEED,-19,2.5);
 
-        robot.grabFoundation();
+        robot.grabFoundation(1000);
 
-        robot.encoderStraight(DRIVE_SPEED,18,2.5);
-        robot.encoderArc(PIVOT_SPEED, 90*FDC, IncepBot.RIGHT, 0, 5);
+        robot.fastEncoderStraight(DRIVE_SPEED,20,3, 0.05);
 
-        robot.encoderStraight(DRIVE_SPEED,-10,2);
-        robot.releaseFoundation();
-        robot.encoderRotate(TURN_SPEED, -20, 2);
-        robot.encoderStraight(DRIVE_SPEED,30,16);
+        robot.gyroPivot(PIVOT_SPEED, turnDirection * 110, 6);
+        //robot.encoderArc(PIVOT_SPEED, 90*FDC, IncepBot.RIGHT, 0, 5);
 
-        telemetry.addData("Path", "Complete");
-        telemetry.update();
+        robot.fastEncoderStraight(DRIVE_SPEED,-22,2);
+        robot.releaseFoundation(750);
+        robot.fastEncoderRotate(TURN_SPEED, turnDirection * 10, 1);
+        robot.fastEncoderStraight(DRIVE_SPEED,39,16, 0.05);
     }
 }
