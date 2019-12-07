@@ -47,7 +47,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *
  */
 
-@Autonomous(name="Incep: Auto Foward8", group="Incepbot")
+@Autonomous(name="Incep: Auto Foward24", group="Incepbot")
 public class IncepAuto_Forward8 extends LinearOpMode {
     /* Declare OpMode members. */
 

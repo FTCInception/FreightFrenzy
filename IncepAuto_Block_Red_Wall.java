@@ -71,6 +71,10 @@ public class IncepAuto_Block_Red_Wall extends LinearOpMode {
         double firstBlock, secondBlock, thirdBlock, fourthBlock;
         double turnDirection;
         double laneLength;
+        double laneLengthWall;
+        double laneAdjust1;
+        double laneAdjust2;
+
 
         // Init the robot and subsystems
         robot.init(hardwareMap);
@@ -83,9 +87,15 @@ public class IncepAuto_Block_Red_Wall extends LinearOpMode {
         }
         vision.shutdown();
 
-        // Red or blue alliance -- only difference is the turn direction and the block numbering
+        // Red or blue alliance changes include:
+        // Correction for block numbering
+        // Turn direction
+        // And some KpX and lane control to handle some unknown red-side drift.
         if (className.contains("blue")) {
             turnDirection = 1.0;
+            laneLengthWall = 29;
+            laneAdjust1 = 0;
+            laneAdjust2 = 0;
         } else {
             turnDirection = -1.0;
             if (block == 3) {
@@ -93,11 +103,16 @@ public class IncepAuto_Block_Red_Wall extends LinearOpMode {
             } else if (block == 1) {
                 block = 3;
             }
+            laneLengthWall = 28;
+            laneAdjust1 = 1;
+            laneAdjust2 = 2;
+            robot.KpR *= 1.0;
+            robot.KpL *= 1.1;
         }
 
         // Wall or block lane -- only difference is a straight distance
         if (className.contains("wall")) {
-            laneLength = 29;
+            laneLength = laneLengthWall;
         } else {
             laneLength = 10.0;
         }
@@ -176,7 +191,7 @@ public class IncepAuto_Block_Red_Wall extends LinearOpMode {
         a = robot.fastEncoderStraight(DRIVE_SPEED,dropZone - secondBlock, 4, P);
         a = robot.gyroRotate(TURN_SPEED,(-90 * turnDirection)-a, 4);
         robot.straightA = a;
-        a = robot.fastEncoderStraight(DRIVE_SPEED,-(laneLength+2),4, P);
+        a = robot.fastEncoderStraight(DRIVE_SPEED,-(laneLength + 2 + laneAdjust1),4, P);
 
         robot.grabBlock();
 
@@ -197,7 +212,7 @@ public class IncepAuto_Block_Red_Wall extends LinearOpMode {
             a = robot.fastEncoderStraight(DRIVE_SPEED, dropZone - thirdBlock, 4, P);
             a = robot.gyroRotate(TURN_SPEED, (-90 * turnDirection)-a, 4);
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -(laneLength + 2), 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -(laneLength + 2 + laneAdjust2), 4, P);
 
             robot.grabBlock();
 

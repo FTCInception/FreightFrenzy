@@ -245,7 +245,7 @@ public class IncepVision {
                     pixelFormat = myImage.getFormat();
 
                     // Shrink the sampel window just a little to make the block lineup more tolerant.
-                    BoundOffset = bufWidth * 0.1;
+                    BoundOffset = bufWidth * 0.1125;
 
                     // object stats.
                     //int hScale = skystone_rec.getImageWidth() / bufWidth;
@@ -412,7 +412,8 @@ public class IncepVision {
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
         tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
         // This matches the .1 bound above.
-        tfod.setClippingMargins(64,125,64,125);
+        // FIXME: make the boundary offset and this match for sure
+        tfod.setClippingMargins(72,125,72,125);
     }
 }
 /*

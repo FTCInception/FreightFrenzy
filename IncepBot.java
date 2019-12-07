@@ -35,6 +35,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 
 import org.firstinspires.ftc.robotcore.external.Func;
@@ -83,9 +84,11 @@ public class IncepBot {
     private static final double SOFT_D_DOWN = 70.0;
     private static final double SOFT_D_DOWN2 = 80.0;
     private static final double SOFT_D_DOWN_DEGREE = 15;
-    private static final double KpL = 1.0;
-    private static final double KpR = 67.5 / 70.0;
+    private static final double fKpL = 1.0;
+    private static final double fKpR = 67.5 / 70.0;
     private static final double PIVOT_FACTOR = 2.05;
+    static double KpL;
+    static double KpR;
     private static final double CLOSE_ENOUGH = 15.0;
     private static final double CLOSE_ENOUGH_DEGREE = 0.5;
     private static final double RIGHT_ARC_COEFFICENT = 1.00;
@@ -133,6 +136,17 @@ public class IncepBot {
             myLOpMode.sleep(50);
             myLOpMode.idle();
         }
+    }
+
+    public double getBatteryVoltage() {
+        double result = Double.POSITIVE_INFINITY;
+        for (VoltageSensor sensor : hwMap.voltageSensor) {
+            double voltage = sensor.getVoltage();
+            if (voltage > 0) {
+                result = Math.min(result, voltage);
+            }
+        }
+        return result;
     }
 
     public void initAutonomous(LinearOpMode lOpMode) {
@@ -184,7 +198,13 @@ public class IncepBot {
         colorSensor = hwMap.colorSensor.get("color");
         colorSensor.enableLed(false);
 
+        // Adjust our overall power based on a 12.5V battery
+        double volts = getBatteryVoltage();
+        KpL = fKpL * (12.5 / volts);
+        KpR = fKpR * (12.5 / volts);
+
         myLOpMode.telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
+        myLOpMode.telemetry.addData("voltage", "%.1f, KpR: %.3f, KpL: %.3f", volts, KpR, KpL);
         composeTelemetry();
         myLOpMode.telemetry.update();
     }
@@ -435,10 +455,10 @@ public class IncepBot {
             OBDrive = rightBDrive ;
             IFDrive = leftFDrive ;
             IBDrive = leftBDrive ;
-            //KpO = KpR ;
-            //KpI = KpL ;
-            KpO = 1.0 ;
-            KpI = 1.0 ;
+            KpO = KpR ;
+            KpI = KpL ;
+            //KpO = 1.0 ;
+            //KpI = 1.0 ;
             InnerDist *= LEFT_ARC_COEFFICENT ;
             OuterDist *= LEFT_ARC_COEFFICENT ;
             tgtPos *= LEFT_ARC_COEFFICENT ;
