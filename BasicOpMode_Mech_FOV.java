@@ -33,6 +33,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
@@ -57,16 +58,50 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
     private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
-    private static DcMotor l_intake_motor, r_intake_motor;
+    private static DcMotor l_in_motor, r_in_motor;
+    private static DcMotor l_out_motor, r_out_motor;
+    private static Servo foundation1, foundation2;
+    private static Servo grabber1, grabber2, slide;
+
     BNO055IMU imu,imu2;
     Orientation angles,angles2;
 
     double theta, r_speed, new_x, new_y;
 
-    double MAX_INTAKE_POWER = 0.1;
+    double MAX_INTAKE_POWER = 0.8;
+    double MAX_DRIVE_POWER = 0.7;
 
     // Declare other variables
 
+    public BNO055IMU initIMU(String imuName) {
+
+        BNO055IMU imu;
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+
+        parameters.mode                = BNO055IMU.SensorMode.IMU;
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.loggingEnabled      = false;
+
+        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
+        // on a Core Device Interface Module and named "imu".
+        imu = hardwareMap.get(BNO055IMU.class, imuName);
+
+        imu.initialize(parameters);
+
+        telemetry.addData("Mode", "IMU calibrating...");
+        telemetry.update();
+
+        // make sure the imu gyro is calibrated before continuing.
+        for (int i=0; (i<40 && !imu.isGyroCalibrated()); i++)
+        {
+            sleep(50);
+            idle();
+        }
+
+        return(imu);
+    }
 
     @Override
     public void runOpMode() {
@@ -81,37 +116,34 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         l_b_motor = hardwareMap.dcMotor.get("left_back");
         r_f_motor = hardwareMap.dcMotor.get("right_front");
         r_b_motor = hardwareMap.dcMotor.get("right_back");
-        l_intake_motor = hardwareMap.dcMotor.get("right_intake");
-        r_intake_motor = hardwareMap.dcMotor.get("left_intake");
+        l_in_motor = hardwareMap.dcMotor.get("right_in");
+        r_in_motor = hardwareMap.dcMotor.get("left_in");
+
+        foundation1 = hardwareMap.servo.get("foundation1");
+        foundation2 = hardwareMap.servo.get("foundation2");
+
+        // FIXME -- controller 2
+        // grabber1 = hardwareMap.servo.get("grabber1");
+        // grabber2 = hardwareMap.servo.get("grabber2");
+        // slide = hardwareMap.servo.get("slide");
+        // l_out_motor = hardwareMap.dcMotor.get("right_out");
+        // r_out_motor = hardwareMap.dcMotor.get("left_out");
 
 
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-
-        parameters.mode                = BNO055IMU.SensorMode.IMU;
-        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.loggingEnabled      = false;
-
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-        imu.initialize(parameters);
-
-        imu2 = hardwareMap.get(BNO055IMU.class, "imu2");
-        imu2.initialize(parameters);
-
-
-        telemetry.addData("Mode", "calibrating...");
-        telemetry.update();
+        imu = initIMU("imu");
+        imu2 = initIMU("imu 1");
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
         l_f_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         l_b_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        l_intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        l_in_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        //l_out_motor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         r_f_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         r_b_motor.setDirection(DcMotorSimple.Direction.FORWARD);
-        r_intake_motor.setDirection(DcMotorSimple.Direction.FORWARD);
-
+        r_in_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+        //r_out_motor.setDirection(DcMotorSimple.Direction.FORWARD);
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
@@ -122,14 +154,19 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
             // Setup a variable for each drive wheel to save power level for telemetry
             double forward, strafe, rotate, degrees;
-            double intake_pwr;
+            double in_pwr, out_pwr;
 
             angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
             angles2   = imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
-
-            intake_pwr = gamepad1.left_trigger * MAX_INTAKE_POWER;
-            intake_pwr -= gamepad1.right_trigger * MAX_INTAKE_POWER;
+            // FIXME -- controller 2
+            // out_pwr = gamepad2.left_trigger * MAX_INTAKE_POWER;
+            // out_pwr -= gamepad2.right_trigger * MAX_INTAKE_POWER;
+            // slide.setPosition( gamepad2.a ? 1.0 : 0.0 );
+            // grabber1.setPosition( gamepad2.left_bumper ? 1.0 : 0.0 );
+            // grabber2.setPosition( gamepad2.right_bumper ? 1.0 : 0.0 );
+            // l_out_motor.setPower(out_pwr);
+            // r_out_motor.setPower(out_pwr);
 
             //speed control
             strafe = gamepad1.left_stick_x;
@@ -144,9 +181,9 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             forward = new_y;
 
             //Quarter speed
-            strafe /= 4;
-            forward /= 4;
-            rotate /= 4;
+            strafe *= MAX_DRIVE_POWER;
+            forward *= MAX_DRIVE_POWER;
+            rotate *= MAX_DRIVE_POWER;
 
             // Send calculated power to wheels
             l_f_motor.setPower(forward + strafe + rotate);
@@ -154,8 +191,14 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             r_f_motor.setPower(forward - strafe - rotate);
             r_b_motor.setPower(forward + strafe - rotate);
 
-            l_intake_motor.setPower(intake_pwr);
-            r_intake_motor.setPower(intake_pwr);
+            // Additional driver controls
+            in_pwr = gamepad1.left_trigger * MAX_INTAKE_POWER;
+            in_pwr -= gamepad1.right_trigger * MAX_INTAKE_POWER;
+            l_in_motor.setPower(in_pwr);
+            r_in_motor.setPower(in_pwr);
+
+            foundation1.setPosition( gamepad1.left_bumper ? 1.0 : 0.0 );
+            foundation2.setPosition( gamepad1.right_bumper ? 0.0 : 1.0 );
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
