@@ -68,6 +68,9 @@ public class MechBot {
     public DcMotor rightFDrive = null;
     public DcMotor leftBDrive = null;
     public DcMotor rightBDrive = null;
+    public DcMotor l_in_motor = null;
+    public DcMotor r_in_motor = null;
+
     public Servo foundation1 = null;
     public Servo foundation2 = null;
     public Servo claw = null;
@@ -77,9 +80,9 @@ public class MechBot {
     private static final double WHEEL_DIAMETER_INCHES = 4;       // For figuring circumference
     private static final double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
             (WHEEL_DIAMETER_INCHES * 3.14159);
-    private static final double AXLE_LENGTH = 13.625;          // Width of robot through the pivot point (center wheels)
+    private static final double AXLE_LENGTH = 13.5;          // Width of robot through the pivot point (center wheels)
     // Multiple INCHES_PER_DEGREE by 2.0 to handle the sliding of the MECH wheel rollers?
-    private static final double INCHES_PER_DEGREE = 2.0 * ( (AXLE_LENGTH * 3.14159) / 360.0 );
+    private static final double INCHES_PER_DEGREE = 1.75 * ( (AXLE_LENGTH * 3.14159) / 360.0 );
     private static final double SOFT_D_UP = 50.0;
     private static final double SOFT_D_UP_DEGREE = 5;
     private static final double SOFT_D_DOWN = 70.0;
@@ -301,18 +304,25 @@ public class MechBot {
         rightFDrive = hwMap.get(DcMotor.class, "right_front");
         leftBDrive  = hwMap.get(DcMotor.class, "left_back");
         rightBDrive = hwMap.get(DcMotor.class, "right_back");
+        r_in_motor = hwMap.get(DcMotor.class, "right_in");
+        l_in_motor = hwMap.get(DcMotor.class, "left_in");
+
 
         //leftArm    = hwMap.get(DcMotor.class, "left_arm");
         leftFDrive.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
         leftBDrive.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
         rightFDrive.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
         rightBDrive.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
+        l_in_motor.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
+        r_in_motor.setDirection(DcMotor.Direction.FORWARD); // Set to REVERSE if using AndyMark motors
 
         // Set all motors to zero power
         leftFDrive.setPower(0);
         rightFDrive.setPower(0);
         leftBDrive.setPower(0);
         rightBDrive.setPower(0);
+        r_in_motor.setPower(0);
+        l_in_motor.setPower(0);
 
         //leftArm.setPower(0);
 
@@ -322,6 +332,8 @@ public class MechBot {
         rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        //l_in_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        //r_in_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         //leftArm.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
@@ -698,7 +710,7 @@ public class MechBot {
         double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         // This profile is for rotate
-        double[] speedRampDownR = {0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownR = {0.20, 0.25, 0.30, 0.40, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         // This profile is for the foundation movement
         double[] speedRampUpP = {0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         double[] speedRampDownP = {0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
@@ -906,7 +918,7 @@ public class MechBot {
                                    double timeoutS, double P) {
 
         double[] speedRampUp = {0.20, 0.25, 0.30, 0.35, 0.45, 0.55, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDown = {0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975, 1.0};
+        double[] speedRampDown = {0.05, 0.11, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975, 1.0};
         double[] speedRampDownT = {0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
 
         // If we're not going straight, change the speed down profile to a turning-friendly version

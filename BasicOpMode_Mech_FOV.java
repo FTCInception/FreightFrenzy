@@ -61,15 +61,15 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     private static DcMotor l_in_motor, r_in_motor;
     private static DcMotor l_out_motor, r_out_motor;
     private static Servo foundation1, foundation2;
-    private static Servo grabber1, grabber2, slide;
+    private static Servo back_grabber, front_grabber, slide;
 
     BNO055IMU imu,imu2;
     Orientation angles,angles2;
 
     double theta, r_speed, new_x, new_y;
 
-    double MAX_INTAKE_POWER = 0.8;
-    double MAX_DRIVE_POWER = 0.7;
+    double MAX_INTAKE_POWER = 0.9;
+    double MAX_DRIVE_POWER = 0.4;
 
     // Declare other variables
 
@@ -105,6 +105,11 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
     @Override
     public void runOpMode() {
+        double f_set[] = {1.0, 0.53};
+        double b_set[] = {0.30, 0.0};
+        boolean left_prev=false, right_prev=false;
+        int f_pos=0, b_pos=0;
+
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
@@ -122,9 +127,9 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         foundation1 = hardwareMap.servo.get("foundation1");
         foundation2 = hardwareMap.servo.get("foundation2");
 
+         back_grabber = hardwareMap.servo.get("grabber1");
+         front_grabber = hardwareMap.servo.get("grabber2");
         // FIXME -- controller 2
-        // grabber1 = hardwareMap.servo.get("grabber1");
-        // grabber2 = hardwareMap.servo.get("grabber2");
         // slide = hardwareMap.servo.get("slide");
         // l_out_motor = hardwareMap.dcMotor.get("right_out");
         // r_out_motor = hardwareMap.dcMotor.get("left_out");
@@ -152,6 +157,27 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
+            if (gamepad2.left_bumper) {
+                if(!left_prev) {
+                    f_pos = (f_pos + 1) % 2;
+                    front_grabber.setPosition(f_set[f_pos]);
+                    left_prev = true;
+                }
+            } else {
+                left_prev = false;
+            }
+
+            if (gamepad2.right_bumper) {
+                if (!right_prev){
+                    b_pos = (b_pos + 1) % 2;
+                    back_grabber.setPosition(b_set[b_pos]);
+                    right_prev = true;
+                }
+            } else {
+                right_prev = false;
+            }
+
+
             // Setup a variable for each drive wheel to save power level for telemetry
             double forward, strafe, rotate, degrees;
             double in_pwr, out_pwr;
@@ -163,8 +189,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             // out_pwr = gamepad2.left_trigger * MAX_INTAKE_POWER;
             // out_pwr -= gamepad2.right_trigger * MAX_INTAKE_POWER;
             // slide.setPosition( gamepad2.a ? 1.0 : 0.0 );
-            // grabber1.setPosition( gamepad2.left_bumper ? 1.0 : 0.0 );
-            // grabber2.setPosition( gamepad2.right_bumper ? 1.0 : 0.0 );
+            ////front_grabber.setPosition( gamepad2.left_bumper ? 1.0 : 0.53 );
+            ////back_grabber.setPosition( gamepad2.right_bumper ? 0.30 : 0.0 );
             // l_out_motor.setPower(out_pwr);
             // r_out_motor.setPower(out_pwr);
 
