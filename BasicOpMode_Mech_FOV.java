@@ -68,6 +68,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
     double theta, r_speed, new_x, new_y;
 
+    double MAX_OUTTAKE_POWER = 0.5;
     double MAX_INTAKE_POWER = 0.9;
     double MAX_DRIVE_POWER = 0.4;
 
@@ -131,8 +132,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
          front_grabber = hardwareMap.servo.get("grabber2");
         // FIXME -- controller 2
         // slide = hardwareMap.servo.get("slide");
-        // l_out_motor = hardwareMap.dcMotor.get("right_out");
-        // r_out_motor = hardwareMap.dcMotor.get("left_out");
+        l_out_motor = hardwareMap.dcMotor.get("right_out");
+        r_out_motor = hardwareMap.dcMotor.get("left_out");
 
 
         imu = initIMU("imu");
@@ -143,12 +144,12 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         l_f_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         l_b_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         l_in_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        //l_out_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        l_out_motor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         r_f_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         r_b_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         r_in_motor.setDirection(DcMotorSimple.Direction.FORWARD);
-        //r_out_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+        r_out_motor.setDirection(DcMotorSimple.Direction.FORWARD);
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
@@ -157,6 +158,14 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
+            // Setup a variable for each drive wheel to save power level for telemetry
+            double forward, strafe, rotate, degrees;
+            double in_pwr, out_pwr;
+
+            angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+            angles2   = imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+            // FIXME -- controller 2
             if (gamepad2.left_bumper) {
                 if(!left_prev) {
                     f_pos = (f_pos + 1) % 2;
@@ -177,22 +186,11 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 right_prev = false;
             }
 
-
-            // Setup a variable for each drive wheel to save power level for telemetry
-            double forward, strafe, rotate, degrees;
-            double in_pwr, out_pwr;
-
-            angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            angles2   = imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-
-            // FIXME -- controller 2
-            // out_pwr = gamepad2.left_trigger * MAX_INTAKE_POWER;
-            // out_pwr -= gamepad2.right_trigger * MAX_INTAKE_POWER;
             // slide.setPosition( gamepad2.a ? 1.0 : 0.0 );
-            ////front_grabber.setPosition( gamepad2.left_bumper ? 1.0 : 0.53 );
-            ////back_grabber.setPosition( gamepad2.right_bumper ? 0.30 : 0.0 );
-            // l_out_motor.setPower(out_pwr);
-            // r_out_motor.setPower(out_pwr);
+            out_pwr = gamepad2.left_trigger * MAX_OUTTAKE_POWER;
+            out_pwr -= gamepad2.right_trigger * MAX_OUTTAKE_POWER;
+            l_out_motor.setPower(out_pwr);
+            r_out_motor.setPower(out_pwr);
 
             //speed control
             strafe = gamepad1.left_stick_x;
