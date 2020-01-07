@@ -33,6 +33,7 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
@@ -340,15 +341,24 @@ public class MechBot {
         // Define and initialize ALL installed servos.
         foundation1  = hwMap.get(Servo.class, "foundation1");
         foundation2  = hwMap.get(Servo.class, "foundation2");
-        //claw = hwMap.get(Servo.class, "claw");
+        claw = hwMap.get(Servo.class, "claw");
         foundation1.setPosition(0);
         foundation2.setPosition(1);
-        //claw.setPosition(0);
+        claw.setPosition(0);
+    }
+
+    //Used to change motor direction before and after strafing.
+    public void invertMotorDirection(DcMotor motor) {
+        if (motor.getDirection() == DcMotor.Direction.FORWARD) {
+            motor.setDirection(DcMotor.Direction.REVERSE);
+        } else {
+            motor.setDirection(DcMotor.Direction.FORWARD);
+        }
     }
 
     public void grabFoundation(int wait) {
-        foundation1.setPosition(1);
-        foundation2.setPosition(0);
+        foundation1.setPosition(0.9);
+        foundation2.setPosition(0.1);
         myLOpMode.sleep(wait);
     }
 
@@ -358,15 +368,15 @@ public class MechBot {
         myLOpMode.sleep(wait);
     }
 
-    //public void grabBlock() {
-    //    claw.setPosition(1);
-    //    myLOpMode.sleep(400);
-    //}
+    public void grabBlock(int wait) {
+        claw.setPosition(1);
+        myLOpMode.sleep(wait);
+    }
 
-    //public void dropBlock() {
-    //    claw.setPosition(0);
-    //    //myLOpMode.sleep(250);
-    //}
+    public void dropBlock( int wait) {
+        claw.setPosition(0);
+        myLOpMode.sleep(wait);
+    }
 
     public double fastEncoderStraight(double speed, double distance, double timeoutS, double P) {
         return(fastEncoderDrive( speed, distance, distance, timeoutS, P ));
@@ -889,6 +899,26 @@ public class MechBot {
     }
 
 
+    public double fastEncoderStrafe(double speed,
+                                   double inchesToLeft,
+                                   double timeoutS) {
+        double a;
+        double[] speedRampUp = {0.30, 0.35, 0.45, 0.55, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDown = {0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975, 1.0};
+
+        invertMotorDirection(leftFDrive);
+        invertMotorDirection(rightBDrive);
+
+        // Default value of P is 0.0 (no gyro assist)
+        a = fastEncoderDrive( speed, inchesToLeft, inchesToLeft, timeoutS, 0.0 , speedRampUp, speedRampDown);
+
+        invertMotorDirection(rightBDrive);
+        invertMotorDirection(leftFDrive);
+
+        return( a ) ;
+
+    }
+
     /*
      *  Method to perfmorm a relative move, based on encoder counts.
      *  IMU gyro is used to help steer if we're going straight.
@@ -946,13 +976,13 @@ public class MechBot {
         int newRightBTarget;
         double curPosL, curPosR;
         double toGoL, toGoR;
-        double actSpeedL=0, actSpeedR=0, spdPosL=0, spdPosR=0, spdToGoL=0, spdToGoR=0;
+        double actSpeedL = 0, actSpeedR = 0, spdPosL = 0, spdPosR = 0, spdToGoL = 0, spdToGoR = 0;
         double newSpeedL, newSpeedR;
-        double spdUpL,spdDnL,spdUpR,spdDnR;
+        double spdUpL, spdDnL, spdUpR, spdDnR;
         boolean doneL, doneR;
         double[] speedRampUp = up;
         double[] speedRampDown = down;
-        ElapsedTime     runtime = new ElapsedTime();
+        ElapsedTime runtime = new ElapsedTime();
         double tgtHeading, curHeading, deltaHeading;
         // For gyro heading adjustments
         double KhL = 1.0;
@@ -994,10 +1024,10 @@ public class MechBot {
             //rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
             // Compute desired position
-            newLeftFTarget = (int)(leftInches * COUNTS_PER_INCH);
-            newRightFTarget = (int)(rightInches * COUNTS_PER_INCH);
-            newLeftBTarget = (int)(leftInches * COUNTS_PER_INCH);
-            newRightBTarget = (int)(rightInches * COUNTS_PER_INCH);
+            newLeftFTarget = (int) (leftInches * COUNTS_PER_INCH);
+            newRightFTarget = (int) (rightInches * COUNTS_PER_INCH);
+            newLeftBTarget = (int) (leftInches * COUNTS_PER_INCH);
+            newRightBTarget = (int) (rightInches * COUNTS_PER_INCH);
 
             // Initialze toGo == target (maximum toGo)
             toGoL = Math.abs(newLeftBTarget);
@@ -1021,7 +1051,7 @@ public class MechBot {
             // Keep looping while we are still active, and there is time left, and we haven't reached the target
             while (myLOpMode.opModeIsActive() &&
                     (runtime.seconds() < timeoutS) &&
-                    ( !doneL || !doneR)) {
+                    (!doneL || !doneR)) {
 
                 // Check if we're done
                 // This code implements a soft start and soft stop.
@@ -1031,18 +1061,18 @@ public class MechBot {
                 }
                 if (!doneR) {
                     spdPosR = curPosR = rightBDrive.getCurrentPosition();
-                    toGoR  = Math.min(toGoR, Math.max(0,Math.abs(newRightBTarget - curPosR)));
+                    toGoR = Math.min(toGoR, Math.max(0, Math.abs(newRightBTarget - curPosR)));
                 }
                 if (leftInches == rightInches) {
-                    spdPosL = spdPosR = (curPosL + curPosR)/2;
-                    toGoL = toGoR = (toGoL + toGoR)/2;
+                    spdPosL = spdPosR = (curPosL + curPosR) / 2;
+                    toGoL = toGoR = (toGoL + toGoR) / 2;
                 }
 
                 if (!doneL) {
                     doneL = ((Math.abs(newLeftBTarget) - Math.abs(curPosL)) < CLOSE_ENOUGH);
 
                     // Compute speed on acceleration and deceleration legs
-                    spdUpL = Math.max(Math.min(speedRampUp[Math.min((int) (Math.abs(spdPosL) / SOFT_D_UP), speedRampUp.length - 1)], speed),minUp);
+                    spdUpL = Math.max(Math.min(speedRampUp[Math.min((int) (Math.abs(spdPosL) / SOFT_D_UP), speedRampUp.length - 1)], speed), minUp);
                     spdDnL = Math.min(speedRampDown[Math.min((int) (Math.abs(toGoL) / SOFT_D_DOWN2), speedRampDown.length - 1)], speed);
 
                     // Use the minimum speed or 0
@@ -1050,7 +1080,7 @@ public class MechBot {
 
                     // Change power and steer
                     // Reverse stuff if driving backwards
-                    if ( newLeftFTarget < 0 ) {
+                    if (newLeftFTarget < 0) {
                         newSpeedL *= -1.0;
                     }
                 }
@@ -1059,15 +1089,15 @@ public class MechBot {
                     doneR = ((Math.abs(newRightBTarget) - Math.abs(curPosR)) < CLOSE_ENOUGH);
 
                     // Compute speed on acceleration and deceleration legs
-                    spdUpR = Math.max(Math.min(speedRampUp[Math.min((int)(Math.abs(spdPosR)/SOFT_D_UP),speedRampUp.length-1)],speed),minUp);
-                    spdDnR = Math.min(speedRampDown[Math.min((int)(Math.abs(toGoR)/SOFT_D_DOWN2),speedRampDown.length-1)],speed);
+                    spdUpR = Math.max(Math.min(speedRampUp[Math.min((int) (Math.abs(spdPosR) / SOFT_D_UP), speedRampUp.length - 1)], speed), minUp);
+                    spdDnR = Math.min(speedRampDown[Math.min((int) (Math.abs(toGoR) / SOFT_D_DOWN2), speedRampDown.length - 1)], speed);
 
                     // Use the minimum speed or 0
-                    newSpeedR = doneR ? 0.05 : Math.min(spdUpR, spdDnR) ;
+                    newSpeedR = doneR ? 0.05 : Math.min(spdUpR, spdDnR);
 
                     // Change power and steer
                     // Reverse stuff if driving backwards
-                    if ( newRightFTarget < 0 ) {
+                    if (newRightFTarget < 0) {
                         newSpeedR *= -1.0;
                     }
                 }
@@ -1078,7 +1108,7 @@ public class MechBot {
                     deltaHeading = -1.0 * AngleUnit.DEGREES.normalize(tgtHeading - curHeading);
 
                     // If driving straight backwards, negate again
-                    if (leftInches < 0 ) {
+                    if (leftInches < 0) {
                         deltaHeading *= -1.0;
                     }
                     // Never change the sign. Make the change proportional to the error
@@ -1089,13 +1119,13 @@ public class MechBot {
                 newSpeedL *= (KpL * KhL);
                 newSpeedR *= (KpR * KhR);
 
-                if (newSpeedL != actSpeedL ) {
+                if (newSpeedL != actSpeedL) {
                     leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
                     leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
                     actSpeedL = newSpeedL;
                 }
 
-                if (newSpeedR != actSpeedR ) {
+                if (newSpeedR != actSpeedR) {
                     rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
                     rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
                     actSpeedR = newSpeedR;
@@ -1140,8 +1170,12 @@ public class MechBot {
         if (leftInches == rightInches) {
             return (AngleUnit.normalizeDegrees(getHeading() - tgtHeading));
         } else {
-            return(0.0);
+            return (0.0);
         }
     }
+
+
+
 }
+
 

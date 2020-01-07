@@ -60,7 +60,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
     private static DcMotor l_in_motor, r_in_motor;
     private static DcMotor l_out_motor, r_out_motor;
-    private static Servo foundation1, foundation2;
+    private static Servo foundation1, foundation2, claw;
     private static Servo back_grabber, front_grabber, slide;
 
     BNO055IMU imu,imu2;
@@ -106,10 +106,16 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
     @Override
     public void runOpMode() {
-        double f_set[] = {1.0, 0.53};
-        double b_set[] = {0.30, 0.0};
-        boolean left_prev=false, right_prev=false;
-        int f_pos=0, b_pos=0;
+        double fGrabSet[] = {1.0, 0.53};
+        double bGrabSet[] = {0.30, 0.0};
+        boolean lBump2Prev=false, rBump2Prev=false;
+        int fGrabPos=0, bGrabPos=0;
+        double lFounSet[] = {0.0, 0.9};
+        double rFounSet[] = {1.0, 0.1};
+        double clawSet[] = {0.0, 1.0};
+        boolean lBump1Prev=false, rBump1Prev=false;
+        int lFounPos=0, rFounPos=0, clawPos=0;
+
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -127,6 +133,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
         foundation1 = hardwareMap.servo.get("foundation1");
         foundation2 = hardwareMap.servo.get("foundation2");
+        claw = hardwareMap.servo.get("claw");
 
          back_grabber = hardwareMap.servo.get("grabber1");
          front_grabber = hardwareMap.servo.get("grabber2");
@@ -162,28 +169,26 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             double forward, strafe, rotate, degrees;
             double in_pwr, out_pwr;
 
-            angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            angles2   = imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-
-            // FIXME -- controller 2
+            // Begin controller 1 (driver)
+            // Single button toggle for grabbers
             if (gamepad2.left_bumper) {
-                if(!left_prev) {
-                    f_pos = (f_pos + 1) % 2;
-                    front_grabber.setPosition(f_set[f_pos]);
-                    left_prev = true;
+                if(!lBump2Prev) {
+                    fGrabPos++; fGrabPos %= 2;
+                    front_grabber.setPosition(fGrabSet[fGrabPos]);
+                    lBump2Prev = true;
                 }
             } else {
-                left_prev = false;
+                lBump2Prev = false;
             }
 
             if (gamepad2.right_bumper) {
-                if (!right_prev){
-                    b_pos = (b_pos + 1) % 2;
-                    back_grabber.setPosition(b_set[b_pos]);
-                    right_prev = true;
+                if (!rBump2Prev){
+                    bGrabPos++; bGrabPos %= 2;
+                    back_grabber.setPosition(bGrabSet[bGrabPos]);
+                    rBump2Prev = true;
                 }
             } else {
-                right_prev = false;
+                rBump2Prev = false;
             }
 
             // slide.setPosition( gamepad2.a ? 1.0 : 0.0 );
@@ -192,10 +197,13 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             l_out_motor.setPower(out_pwr);
             r_out_motor.setPower(out_pwr);
 
+            // Begin controller 1 (driver)
             //speed control
             strafe = gamepad1.left_stick_x;
             forward = -gamepad1.left_stick_y;
             rotate = gamepad1.right_stick_x;
+            angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+            //angles2   = imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
             degrees = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
 
             CarToPol(strafe,forward);
@@ -221,8 +229,29 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             l_in_motor.setPower(in_pwr);
             r_in_motor.setPower(in_pwr);
 
-            foundation1.setPosition( gamepad1.left_bumper ? 1.0 : 0.0 );
-            foundation2.setPosition( gamepad1.right_bumper ? 0.0 : 1.0 );
+            // Single button toggle for foundation servos
+            if (gamepad1.left_bumper) {
+                if(!lBump1Prev) {
+                    lFounPos++; lFounPos %= 2;
+                    rFounPos++; rFounPos %= 2;
+                    foundation1.setPosition(lFounSet[lFounPos]);
+                    foundation2.setPosition(rFounSet[rFounPos]);
+                    lBump1Prev = true;
+                }
+            } else {
+                lBump1Prev = false;
+            }
+
+            // Single button toggle for claw servo
+            if (gamepad1.right_bumper) {
+                if (!rBump1Prev){
+                    clawPos++; clawPos %= 2;
+                    claw.setPosition(clawSet[clawPos]);
+                    rBump1Prev = true;
+                }
+            } else {
+                rBump1Prev = false;
+            }
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
