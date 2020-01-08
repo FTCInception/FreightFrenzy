@@ -87,44 +87,6 @@ public class MechAuto_Foundation_Blue extends LinearOpMode {
         // Capture the starting angle (probably close to 0.0)
         start_a = robot.getHeading();
 
-/*
-        robot.gyroRotate(TURN_SPEED, turnDirection * -90,30);
-        robot.gyroRotate(TURN_SPEED, turnDirection * 90,30);
-        // FIXME -- -180 rotate freaks out for some reason.
-        robot.gyroRotate(TURN_SPEED, turnDirection * -180,30);
-        robot.gyroRotate(TURN_SPEED, turnDirection * 180,30);
-        robot.gyroRotate(TURN_SPEED, turnDirection * -270,30);
-        robot.gyroRotate(TURN_SPEED, turnDirection * 270,30);
-        robot.gyroRotate(TURN_SPEED, turnDirection * -360,30);
-        robot.gyroRotate(TURN_SPEED, turnDirection * 360,30);
-
-        robot.fastEncoderRotate(TURN_SPEED, turnDirection * -90,30);
-        robot.fastEncoderRotate(TURN_SPEED, turnDirection * 90,30);
-        robot.fastEncoderRotate(TURN_SPEED, turnDirection * -180,30);
-        robot.fastEncoderRotate(TURN_SPEED, turnDirection * 180,30);
-        robot.fastEncoderRotate(TURN_SPEED, turnDirection * -270,30);
-        robot.fastEncoderRotate(TURN_SPEED, turnDirection * 270,30);
-        robot.fastEncoderRotate(TURN_SPEED, turnDirection * -360,30);
-        robot.fastEncoderRotate(TURN_SPEED, turnDirection * 360,30);
-
-        a = robot.fastEncoderStraight(DRIVE_SPEED,12,30, P);
-        robot.straightA = a;
-        a = robot.fastEncoderStraight(DRIVE_SPEED,-12,30, P);
-        robot.straightA = a;
-        a = robot.fastEncoderStraight(DRIVE_SPEED,24,30, P);
-        robot.straightA = a;
-        a = robot.fastEncoderStraight(DRIVE_SPEED,-24,30, P);
-        robot.straightA = a;
-        a = robot.fastEncoderStraight(DRIVE_SPEED,48,30, P);
-        robot.straightA = a;
-        a = robot.fastEncoderStraight(DRIVE_SPEED,-48,30, P);
-        robot.straightA = a;
-        a = robot.fastEncoderStraight(DRIVE_SPEED,72,30, P);
-        robot.straightA = a;
-        a = robot.fastEncoderStraight(DRIVE_SPEED,-72,30, P);
-        robot.straightA = a;
-*/
-
         // Init servos
         robot.releaseFoundation(0);
 
@@ -178,3 +140,41 @@ public class MechAuto_Foundation_Blue extends LinearOpMode {
         robot.fastEncoderStraight(DRIVE_SPEED,34,15, 0.05);
     }
 }
+
+/*
+        robot.gyroRotate(TURN_SPEED, turnDirection * -90,30);
+        robot.gyroRotate(TURN_SPEED, turnDirection * 90,30);
+        // FIXME -- -180 rotate freaks out for some reason.
+        robot.gyroRotate(TURN_SPEED, turnDirection * -180,30);
+        robot.gyroRotate(TURN_SPEED, turnDirection * 180,30);
+        robot.gyroRotate(TURN_SPEED, turnDirection * -270,30);
+        robot.gyroRotate(TURN_SPEED, turnDirection * 270,30);
+        robot.gyroRotate(TURN_SPEED, turnDirection * -360,30);
+        robot.gyroRotate(TURN_SPEED, turnDirection * 360,30);
+
+        robot.fastEncoderRotate(TURN_SPEED, turnDirection * -90,30);
+        robot.fastEncoderRotate(TURN_SPEED, turnDirection * 90,30);
+        robot.fastEncoderRotate(TURN_SPEED, turnDirection * -180,30);
+        robot.fastEncoderRotate(TURN_SPEED, turnDirection * 180,30);
+        robot.fastEncoderRotate(TURN_SPEED, turnDirection * -270,30);
+        robot.fastEncoderRotate(TURN_SPEED, turnDirection * 270,30);
+        robot.fastEncoderRotate(TURN_SPEED, turnDirection * -360,30);
+        robot.fastEncoderRotate(TURN_SPEED, turnDirection * 360,30);
+
+        a = robot.fastEncoderStraight(DRIVE_SPEED,12,30, P);
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,-12,30, P);
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,24,30, P);
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,-24,30, P);
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,48,30, P);
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,-48,30, P);
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,72,30, P);
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,-72,30, P);
+        robot.straightA = a;
+*/

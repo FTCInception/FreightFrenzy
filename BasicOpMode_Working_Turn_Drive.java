@@ -68,7 +68,7 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
     BNO055IMU imu;
     Orientation angles;
     IntegratingGyroscope gyro;
-    private ColorSensor colorSensor;
+    //private ColorSensor colorSensor;
 
 
     // Declare other variables
@@ -77,6 +77,12 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
 
     @Override
     public void runOpMode() {
+        double lFounSet[] = {1.0, 0.0};
+        double rFounSet[] = {1.0, 0.0};
+        double clawSet[] = {0.0, 1.0};
+        boolean lBump1Prev=false, rBump1Prev=false;
+        int lFounPos=0, rFounPos=0, clawPos=0;
+
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
@@ -120,9 +126,9 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
 
         gyro = (IntegratingGyroscope)imu;
 
-        colorSensor = hardwareMap.colorSensor.get("color");
-        colorSensor.enableLed(true);
-        colorSensor.enableLed(false);
+        //colorSensor = hardwareMap.colorSensor.get("color");
+        //colorSensor.enableLed(true);
+        //colorSensor.enableLed(false);
 
         composeTelemetry();
         telemetry.log().add("Waiting for start...");
@@ -187,6 +193,35 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
                 dirInvert = -1;
             }
 
+
+            // Single button toggle for foundation servos
+            // Left Bumper for Foundation
+            if (gamepad1.left_bumper) {
+                if(!lBump1Prev) {
+                    lFounPos++; lFounPos %= 2;
+                    rFounPos++; rFounPos %= 2;
+                    foundation1.setPosition(lFounSet[lFounPos]);
+                    foundation2.setPosition(rFounSet[rFounPos]);
+                    lBump1Prev = true;
+                }
+            } else {
+                lBump1Prev = false;
+            }
+
+            // Single button toggle for claw servo
+            // Right bumper for claw
+            if (gamepad1.right_bumper) {
+                if (!rBump1Prev){
+                    clawPos++; clawPos %= 2;
+                    claw.setPosition(clawSet[clawPos]);
+                    rBump1Prev = true;
+                }
+            } else {
+                rBump1Prev = false;
+            }
+
+            /*
+            // Old style controls
             //foundation servo control
             if(gamepad1.right_trigger > .5){
                 foundation1.setPosition(1);
@@ -204,6 +239,7 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
             else if(gamepad1.left_trigger < .5){
                 claw.setPosition(0);
             }
+            */
 
             l_f_motor_power   = Range.clip(((drive* dirInvert) - turn) * speedModifier, -1.0, 1.0) ;
             l_b_motor_power   = Range.clip(((drive* dirInvert) - turn) * speedModifier, -1.0, 1.0) ;
@@ -222,7 +258,7 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
             telemetry.addData("Speed Modifier", "Speed Modifier:" , speedModifier);
             telemetry.update();
         }
-        colorSensor.enableLed(false);
+        //colorSensor.enableLed(false);
     }
 
     void composeTelemetry() {
@@ -252,11 +288,6 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
                 .addData("X", new Func<String>() {
                     @Override public String value() {
                         return formatAngle(angles.angleUnit, angles.thirdAngle);
-                    }
-                })
-                .addData("argb", new Func<String>() {
-                    @Override public String value() {
-                        return formatColor(colorSensor.argb());
                     }
                 })
         ;

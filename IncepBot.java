@@ -98,7 +98,7 @@ public class IncepBot {
     static final double LEFT = 0;
     BNO055IMU imu;
     private Orientation angles;
-    ColorSensor colorSensor;
+    //ColorSensor colorSensor;
     private static final boolean DEBUG = false;
     double minUp = 0.0;
     double straightA = 0.0;
@@ -195,8 +195,8 @@ public class IncepBot {
             myLOpMode.idle();
         }
 
-        colorSensor = hwMap.colorSensor.get("color");
-        colorSensor.enableLed(false);
+        //colorSensor = hwMap.colorSensor.get("color");
+        //colorSensor.enableLed(false);
 
         // Adjust our overall power based on a 12.5V battery
         double volts = getBatteryVoltage();
@@ -238,11 +238,6 @@ public class IncepBot {
                         return formatAngle(angles.angleUnit, angles.thirdAngle);
                     }
                 })
-                .addData("argb", new Func<String>() {
-                    @Override public String value() {
-                        return formatColor(colorSensor.argb());
-                    }
-                })
         ;
     };
 
@@ -273,6 +268,7 @@ public class IncepBot {
     }
 
     /* Check color sensor */
+    /*
     public boolean isColorSensorYellow() {
         int argb = colorSensor.argb();
         int a = argb >> 24 & 0xFF;
@@ -291,7 +287,7 @@ public class IncepBot {
             return false;
         }
     }
-
+    */
 
         /* Initialize standard Hardware interfaces */
     public void init(HardwareMap ahwMap) {
@@ -895,7 +891,24 @@ public class IncepBot {
         return(fastEncoderDrive( speed, leftInches, rightInches, timeoutS,0.0 ));
     }
 
-     /*
+
+    public double fastEncoderDrive(double speed,
+                                   double leftInches, double rightInches,
+                                   double timeoutS, double P) {
+
+        double[] speedRampUp = {0.20, 0.25, 0.30, 0.35, 0.45, 0.55, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDown = {0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975, 1.0};
+        double[] speedRampDownT = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+
+        // If we're not going straight, change the speed down profile to a turning-friendly version
+        if (leftInches != rightInches) {
+            speedRampDown = speedRampDownT;
+        }
+
+        return(fastEncoderDrive( speed, leftInches, rightInches, timeoutS, P, speedRampUp, speedRampDown ));
+    }
+
+    /*
      *  Method to perfmorm a relative move, based on encoder counts.
      *  IMU gyro is used to help steer if we're going straight.
      *  Move will stop if any of three conditions occur:
@@ -905,7 +918,8 @@ public class IncepBot {
      */
     public double fastEncoderDrive(double speed,
                                double leftInches, double rightInches,
-                               double timeoutS, double P) {
+                               double timeoutS, double P, double[] up, double[] down) {
+
         int newLeftFTarget;
         int newRightFTarget;
         int newLeftBTarget;
@@ -916,9 +930,8 @@ public class IncepBot {
         double newSpeedL, newSpeedR;
         double spdUpL,spdDnL,spdUpR,spdDnR;
         boolean doneL, doneR;
-        double[] speedRampUp = {0.20, 0.25, 0.30, 0.35, 0.45, 0.55, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDown = {0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975, 1.0};
-        double[] speedRampDownT = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampUp = up;
+        double[] speedRampDown = down;
         ElapsedTime     runtime = new ElapsedTime();
         double tgtHeading, curHeading, deltaHeading;
         double KhL = 1.0;
@@ -933,9 +946,9 @@ public class IncepBot {
         straightA = 0.0;
 
         // If we're not going straight, change the speed down profile to a turning-friendly version
-        if (leftInches != rightInches) {
-            speedRampDown = speedRampDownT;
-        }
+        //if (leftInches != rightInches) {
+        //    speedRampDown = speedRampDownT;
+        //}
 
         // Ensure that the opmode is still active
         if (myLOpMode.opModeIsActive()) {

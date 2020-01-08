@@ -29,6 +29,7 @@
 
 package Inception.Skystone;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -49,6 +50,7 @@ import com.qualcomm.robotcore.hardware.Servo;
  */
 
 @TeleOp(name="Tank Drive", group="Linear Opmode")
+@Disabled
 public class BasicOpMode_Working_Tank_Drive extends LinearOpMode {
 
     // Declare OpMode members.

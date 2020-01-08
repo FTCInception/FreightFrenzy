@@ -36,6 +36,8 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.robotcore.util.Range;
+
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -70,7 +72,10 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
     double MAX_OUTTAKE_POWER = 0.5;
     double MAX_INTAKE_POWER = 0.9;
-    double MAX_DRIVE_POWER = 0.4;
+
+    // Declare other variables
+    double speedModifier = 0.5;
+    double adjustAngle = 0.0;
 
     // Declare other variables
 
@@ -135,8 +140,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         foundation2 = hardwareMap.servo.get("foundation2");
         claw = hardwareMap.servo.get("claw");
 
-         back_grabber = hardwareMap.servo.get("grabber1");
-         front_grabber = hardwareMap.servo.get("grabber2");
+        back_grabber = hardwareMap.servo.get("grabber1");
+        front_grabber = hardwareMap.servo.get("grabber2");
         // FIXME -- controller 2
         // slide = hardwareMap.servo.get("slide");
         l_out_motor = hardwareMap.dcMotor.get("right_out");
@@ -168,6 +173,10 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             // Setup a variable for each drive wheel to save power level for telemetry
             double forward, strafe, rotate, degrees;
             double in_pwr, out_pwr;
+            double l_f_motor_power;
+            double l_b_motor_power;
+            double r_f_motor_power;
+            double r_b_motor_power;
 
             // Begin controller 1 (driver)
             // Single button toggle for grabbers
@@ -202,9 +211,15 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             strafe = gamepad1.left_stick_x;
             forward = -gamepad1.left_stick_y;
             rotate = gamepad1.right_stick_x;
+
             angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
             //angles2   = imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
             degrees = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
+
+            if (gamepad1.dpad_up) {
+                adjustAngle = degrees;
+            }
+            degrees = AngleUnit.DEGREES.normalize(degrees - adjustAngle);
 
             CarToPol(strafe,forward);
             theta -= degrees;
@@ -212,24 +227,39 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             strafe = new_x;
             forward = new_y;
 
-            //Quarter speed
-            strafe *= MAX_DRIVE_POWER;
-            forward *= MAX_DRIVE_POWER;
-            rotate *= MAX_DRIVE_POWER;
+            l_f_motor_power   = Range.clip((forward + strafe + rotate) * speedModifier, -1.0, 1.0) ;
+            l_b_motor_power   = Range.clip((forward - strafe + rotate) * speedModifier, -1.0, 1.0) ;
+            r_f_motor_power   = Range.clip((forward - strafe - rotate) * speedModifier, -1.0, 1.0) ;
+            r_b_motor_power   = Range.clip((forward + strafe - rotate) * speedModifier, -1.0, 1.0) ;
 
             // Send calculated power to wheels
-            l_f_motor.setPower(forward + strafe + rotate);
-            l_b_motor.setPower(forward - strafe + rotate);
-            r_f_motor.setPower(forward - strafe - rotate);
-            r_b_motor.setPower(forward + strafe - rotate);
+            l_f_motor.setPower(l_f_motor_power);
+            l_b_motor.setPower(l_b_motor_power);
+            r_f_motor.setPower(r_f_motor_power);
+            r_b_motor.setPower(r_b_motor_power);
 
             // Additional driver controls
-            in_pwr = gamepad1.left_trigger * MAX_INTAKE_POWER;
-            in_pwr -= gamepad1.right_trigger * MAX_INTAKE_POWER;
+            //speed control
+            in_pwr = gamepad1.right_trigger * MAX_INTAKE_POWER;
+            in_pwr -= gamepad1.left_trigger * MAX_INTAKE_POWER;
             l_in_motor.setPower(in_pwr);
             r_in_motor.setPower(in_pwr);
 
+            if (gamepad1.x) {
+                speedModifier = 1;
+            }
+            else if (gamepad1.y) {
+                speedModifier = 0.75;
+            }
+            else if (gamepad1.b) {
+                speedModifier = .5;
+            }
+            else if (gamepad1.a) {
+                speedModifier = 0.25;
+            }
+
             // Single button toggle for foundation servos
+            // Left Bumper for Foundation
             if (gamepad1.left_bumper) {
                 if(!lBump1Prev) {
                     lFounPos++; lFounPos %= 2;
@@ -243,6 +273,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             }
 
             // Single button toggle for claw servo
+            // Right bumper for claw
             if (gamepad1.right_bumper) {
                 if (!rBump1Prev){
                     clawPos++; clawPos %= 2;

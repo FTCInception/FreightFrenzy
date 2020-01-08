@@ -59,9 +59,13 @@ public class IncepAuto_Foundation_Blue extends LinearOpMode {
     private static final double     SQ                      = 70/3.0;        // Length of 3 squares / 3 in case we want to think that way
     private String className = this.getClass().getSimpleName().toLowerCase();
 
+    private double a=0;
+    private double start_a=0;
+
     @Override
     public void runOpMode() {
         double turnDirection;
+        double d[] = {0.3, 0.4};
 
         // Red or blue alliance -- only difference is the turn direction
         if (className.contains("blue")) {
@@ -78,6 +82,60 @@ public class IncepAuto_Foundation_Blue extends LinearOpMode {
         robot.initAutonomous(this);
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
+
+        // Capture the starting angle (probably close to 0.0)
+        start_a = robot.getHeading();
+
+        // Init servos
+        robot.releaseFoundation(0);
+
+        // Move off the wall
+        a = robot.fastEncoderStraight(DRIVE_SPEED,-14,2);
+
+        // Turn left
+        a = robot.gyroRotate(TURN_SPEED, (turnDirection * 90)-a,2.5);
+
+        // Offset to middle of foundation
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,-18,2);
+
+        // Turn back
+        a = robot.gyroRotate(TURN_SPEED, (turnDirection * -90)-a,2.5);
+
+        // Drive to Foundation
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED,-19,2);
+
+        // Hook foundation
+        robot.grabFoundation(1000);
+
+        // Grab foundation a ways
+        robot.straightA = a;
+        a = robot.fastEncoderDrive(DRIVE_SPEED,17, 17, 3, 0.05, d, d );
+
+        // Rotate foundation a little more than 90 degrees
+        a = robot.gyroPivot(PIVOT_SPEED, (turnDirection * 110)-a, 6);
+
+        // Push foundation back against the wall, also aligns the bot
+        robot.fastEncoderDrive(DRIVE_SPEED,-22, -22,3, 0.0, d, d );
+
+        // Release
+        robot.releaseFoundation(250);
+
+        // Separate from foundation to allow som rotating
+        robot.fastEncoderDrive(DRIVE_SPEED,3, 3, 1, 0.05, d, d );
+
+        // Now rotate to about +/-85 degrees to hug the wall
+        a = robot.getHeading();
+        robot.gyroRotate(TURN_SPEED, ((87 * turnDirection) - a) + start_a, 2);
+
+        // Drive to the bridge along the wall
+        robot.fastEncoderStraight(DRIVE_SPEED,40,15, 0.05);
+
+        // Extend if we overshoot
+        robot.grabBlock();
+
+        /*
 
         robot.releaseFoundation(0);
 
@@ -98,5 +156,7 @@ public class IncepAuto_Foundation_Blue extends LinearOpMode {
         robot.releaseFoundation(750);
         robot.fastEncoderRotate(TURN_SPEED, turnDirection * 10, 1);
         robot.fastEncoderStraight(DRIVE_SPEED,39,16, 0.05);
+
+         */
     }
 }
