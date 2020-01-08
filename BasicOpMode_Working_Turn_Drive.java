@@ -173,16 +173,16 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
             */
 
             //speed control
-            if (gamepad1.x) {
+            if (gamepad1.y) {
                 speedModifier = 1;
             }
-            else if (gamepad1.y) {
+            else if (gamepad1.b) {
                 speedModifier = 0.75;
             }
-            else if (gamepad1.b) {
+            else if (gamepad1.a) {
                 speedModifier = .5;
             }
-            else if (gamepad1.a) {
+            else if (gamepad1.x) {
                 speedModifier = 0.25;
             }
 
