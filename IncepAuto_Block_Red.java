@@ -57,7 +57,7 @@ public class IncepAuto_Block_Red extends LinearOpMode {
     private static final double PIVOT_SPEED = 0.40;
     private static final double SQ = 70 / 3.0;        // Length of 3 squares / 3 in case we want to think that way
     private static final double[] blocks = {0.0, 28.0, 36.0, 44.0, 4.0, 12.0, 20.0};
-    private static final double dropZone = 82.0;
+    private static final double dropZone = 83.0;  // was 82.0
     private static final double bridge = 71.0;
     private String className = this.getClass().getSimpleName().toLowerCase();
 
@@ -81,11 +81,15 @@ public class IncepAuto_Block_Red extends LinearOpMode {
         robot.initAutonomous(this);
         vision.initAutonomous(this);
 
+        robot.clawAttention(0);
+
         // Wait until we're told to go and look for the block
         while (!isStarted()) {
             block = vision.getBlockNumber();
         }
         vision.shutdown();
+        vision.RestoreWhite();
+        robot.dropBlock(0);
 
         // Red or blue alliance changes include:
         // Correction for block numbering
@@ -151,11 +155,11 @@ public class IncepAuto_Block_Red extends LinearOpMode {
         // angle after each operation.  We keep track of the err adjustment
         // and ask the next move to handle it so the error shouldn't build.
         if (firstBlock == blocks[3]) {
-            a = robot.gyroPivot(-TURN_SPEED, (67 * turnDirection), 2);
-            a = robot.gyroPivot(-TURN_SPEED, (-67 * turnDirection)-a, 2);
+            a = robot.gyroPivot(-TURN_SPEED, (71 * turnDirection), 2);
+            a = robot.gyroPivot(-TURN_SPEED, (-71 * turnDirection)-a, 2);
 
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -20, 3, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -19.4, 3, P);
         } else {
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 3, P);

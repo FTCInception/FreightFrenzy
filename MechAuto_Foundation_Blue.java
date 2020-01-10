@@ -136,8 +136,12 @@ public class MechAuto_Foundation_Blue extends LinearOpMode {
         a = robot.getHeading();
         robot.gyroRotate(TURN_SPEED, ((87 * turnDirection) - a) + start_a, 2);
 
+        // Put claws away to avoid damage
+        robot.releaseFoundation(0);
+
         // Drive to the bridge along the wall
         robot.fastEncoderStraight(DRIVE_SPEED,34,15, 0.05);
+
     }
 }
 

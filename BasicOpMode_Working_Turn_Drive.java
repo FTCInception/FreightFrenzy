@@ -79,7 +79,7 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
     public void runOpMode() {
         double lFounSet[] = {1.0, 0.0};
         double rFounSet[] = {1.0, 0.0};
-        double clawSet[] = {0.0, 1.0};
+        double clawSet[] = {1.0, 0.0};
         boolean lBump1Prev=false, rBump1Prev=false;
         int lFounPos=0, rFounPos=0, clawPos=0;
 
@@ -173,16 +173,16 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
             */
 
             //speed control
-            if (gamepad1.y) {
+            if (gamepad1.x) {
                 speedModifier = 1;
             }
-            else if (gamepad1.b) {
+            else if (gamepad1.y) {
                 speedModifier = 0.75;
             }
-            else if (gamepad1.a) {
+            else if (gamepad1.b) {
                 speedModifier = .5;
             }
-            else if (gamepad1.x) {
+            else if (gamepad1.a) {
                 speedModifier = 0.25;
             }
 

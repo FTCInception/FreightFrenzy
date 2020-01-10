@@ -245,16 +245,16 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             l_in_motor.setPower(in_pwr);
             r_in_motor.setPower(in_pwr);
 
-            if (gamepad1.y) {
+            if (gamepad1.x) {
                 speedModifier = 1;
             }
-            else if (gamepad1.b) {
+            else if (gamepad1.y) {
                 speedModifier = 0.75;
             }
-            else if (gamepad1.a) {
+            else if (gamepad1.b) {
                 speedModifier = .5;
             }
-            else if (gamepad1.x) {
+            else if (gamepad1.a) {
                 speedModifier = 0.25;
             }
 

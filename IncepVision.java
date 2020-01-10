@@ -46,6 +46,10 @@ import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 import org.firstinspires.ftc.robotcore.internal.vuforia.VuforiaException;
 
+import android.graphics.Color;
+import android.app.Activity;
+import android.view.View;
+
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -72,6 +76,7 @@ public class IncepVision {
     private int bytes_per_pixel;
     private int row;
     private int column;
+    private int botGrade = Color.RED;
     private int bufWidth;
     private int bufHeight;
     private int recWidth;
@@ -88,6 +93,11 @@ public class IncepVision {
     private Recognition skystone_rec;
     private int pixelFormat;
     private int framefound;
+    // get a reference to the RelativeLayout so we can change the
+    // background color of the Robot Controller
+    int relativeLayoutId;
+    View relativeLayout;
+
     /*
      * IMPORTANT: You need to obtain your own license key to use Vuforia. The string below with which
      * 'parameters.vuforiaLicenseKey' is initialized is for illustration only, and will not function.
@@ -131,6 +141,7 @@ public class IncepVision {
         bytes_per_pixel = -1;
         row = -1;
         column = -1;
+        botGrade = Color.RED;
         bufWidth = -1;
         bufHeight = -1;
         recWidth = -1;
@@ -170,6 +181,11 @@ public class IncepVision {
             tfod.activate();
         }
 
+        // get a reference to the RelativeLayout so we can change the
+        // background color of the Robot Controller
+        relativeLayoutId = lOpMode.hardwareMap.appContext.getResources().getIdentifier("RelativeLayout", "id", lOpMode.hardwareMap.appContext.getPackageName());
+        relativeLayout = ((Activity) lOpMode.hardwareMap.appContext).findViewById(relativeLayoutId);
+
         /** Wait for the game to begin */
         myLOpMode.telemetry.addData(">", "Vision Code Initialized");
         myLOpMode.telemetry.update();
@@ -178,8 +194,19 @@ public class IncepVision {
 
 
     //below function returns skystone blocks
+    public void RestoreWhite() {
+        relativeLayout.post(new Runnable() {
+            public void run() {
+                relativeLayout.setBackgroundColor(Color.WHITE);
+            }
+        });
+    }
+
+
+        //below function returns skystone blocks
     public int getBlockNumber() {
         int center;
+        int ideal=0;
 
         int PixelIndex;
         int Third;
@@ -344,6 +371,44 @@ public class IncepVision {
                             BlockNumber = 2;
                         } else {
                             BlockNumber = 3;
+
+                            column = boundary - windowwidth;
+                            // Find the skystone black edge from right to left to help with alignment
+                            done = false;
+                            while (!done) {
+                                sum = 0;
+                                PixelIndex = (row * bufWidth * bytes_per_pixel) + column * bytes_per_pixel; // column updates every loop - must update pixelIndex
+                                if (pixelFormat == PIXEL_FORMAT.GRAYSCALE) { // GRAYSCALE = 4
+                                    for (int index = 0; index < windowwidth; index++) {
+                                        sum += myBuffer.getChar(PixelIndex + index * bytes_per_pixel) & 0x00ff;
+                                    }
+                                } else if (pixelFormat == PIXEL_FORMAT.RGB565) { // RGB565 = 1
+                                    for (int index = 0; index < windowwidth; index++) {
+                                        // Mask out the green bits
+                                        // right shift out the blue bits
+                                        // multiply by 4 since this is 6 bits and not a full 8
+                                        char pixelChar = myBuffer.getChar(PixelIndex + index * bytes_per_pixel);
+                                        double red = ((pixelChar & 0xf800) >> 11) << 3; // 5 bits to 8
+                                        double green = ((pixelChar & 0x07e0) >> 5) << 2; // 6 bits to 8
+                                        double blue = ((pixelChar & 0x001F)) << 3; // 5 bits to 8;
+                                        double gray = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+
+                                        sum += (int) (gray) & 0xff;
+                                    }
+                                }
+
+                                //PixelIndex += step;
+                                column -= step;
+
+                                // if column is less than the left edge of the object
+                                if (column < left) {
+                                    done = true;
+                                }
+
+                                if (sum <= threshold) {
+                                    done = true;
+                                }
+                            }
                         }
                     }
                     //myFrame.close();
@@ -351,13 +416,37 @@ public class IncepVision {
             }
         }
 
-        myLOpMode.telemetry.addData(">", "Buffer(WxH): (%d x %d) (%d x %d)", bufWidth, bufHeight, recWidth, recHeight);
-        myLOpMode.telemetry.addData(">", "BPP: %d pf: %d, Edge Found: %b %x %x %x %x", bytes_per_pixel, pixelFormat, edgeFound, pixelArray[0], pixelArray[1], pixelArray[2], pixelArray[3]);
-        myLOpMode.telemetry.addData("Top Bottom Left Right ", "%d %d %d %d", top, bottom, left, boundary);
-        myLOpMode.telemetry.addData(">", "Row, vScale: %d, %d", row, vScale);
-        myLOpMode.telemetry.addData(">", "Col: %d %d", column, framefound);
-        myLOpMode.telemetry.addData(">", "Threshold: %d  sum: %d", threshold, sum);
+        if (BlockNumber == 1) {
+            ideal = 468;
+        } else if (BlockNumber == 2) {
+            ideal = 252;
+        } else if (BlockNumber == 3) {
+            ideal = 208;
+        } else {
+            ideal = 0;
+        }
+
+        if ( Math.abs(ideal - column) < 7 ) {
+            botGrade = Color.GREEN;
+        } else if ( Math.abs(ideal - column) < 15 ) {
+            botGrade = Color.YELLOW;
+        } else {
+            botGrade = Color.RED;
+        }
+
+        relativeLayout.post(new Runnable() {
+            public void run() {
+                relativeLayout.setBackgroundColor(botGrade);
+            }
+        });
+
+        myLOpMode.telemetry.addData(">", "Col: %d (%d) (%d)", column, ideal, framefound);
         myLOpMode.telemetry.addData(">", "Block Number: %d", BlockNumber);
+        //myLOpMode.telemetry.addData(">", "Buffer(WxH): (%d x %d) (%d x %d)", bufWidth, bufHeight, recWidth, recHeight);
+        //myLOpMode.telemetry.addData(">", "BPP: %d pf: %d, Edge Found: %b %x %x %x %x", bytes_per_pixel, pixelFormat, edgeFound, pixelArray[0], pixelArray[1], pixelArray[2], pixelArray[3]);
+        //myLOpMode.telemetry.addData("Top Bottom Left Right ", "%d %d %d %d", top, bottom, left, boundary);
+        //myLOpMode.telemetry.addData(">", "Row, vScale: %d, %d", row, vScale);
+        //myLOpMode.telemetry.addData(">", "Threshold: %d  sum: %d", threshold, sum);
         //myLOpMode.telemetry.addData("updatedrecognitions size", "%d", tfod.getRecognitions().size());
         myLOpMode.telemetry.update();
 

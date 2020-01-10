@@ -78,11 +78,15 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
         robot.initAutonomous(this);
         vision.initAutonomous(this);
 
+        robot.clawAttention(0);
+
         // Wait until we're told to go and look for the block
         while (!isStarted()) {
             block = vision.getBlockNumber();
         }
         vision.shutdown();
+        vision.RestoreWhite();
+        robot.dropBlock(0);
 
         // Red or blue alliance -- only difference is the turn direction and the block numbering
         if (className.contains("blue")) {
@@ -137,8 +141,8 @@ public class IncepAuto_Block_Blue extends LinearOpMode {
         // angle after each operation.  We keep track of the err adjustment
         // and ask the next move to handle it so the error shouldn't build.
         if (firstBlock == blocks[3]) {
-            a = robot.gyroPivot(-TURN_SPEED, (67 * turnDirection), 2);
-            a = robot.gyroPivot(-TURN_SPEED, (-67 * turnDirection)-a, 2);
+            a = robot.gyroPivot(-TURN_SPEED, (65 * turnDirection), 2);
+            a = robot.gyroPivot(-TURN_SPEED, (-65 * turnDirection)-a, 2);
 
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, -20, 3, P);

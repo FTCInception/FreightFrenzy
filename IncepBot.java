@@ -344,14 +344,27 @@ public class IncepBot {
         myLOpMode.sleep(wait);
     }
 
+    public void clawAttention( int wait) {
+        claw.setPosition(0.1812);
+        myLOpMode.sleep(wait);
+    }
+
     public void grabBlock() {
+        grabBlock(400);
+    }
+
+    public void grabBlock(int wait) {
         claw.setPosition(1);
-        myLOpMode.sleep(400);
+        myLOpMode.sleep(wait);
+    }
+
+    public void dropBlock(int wait) {
+        claw.setPosition(0);
+        myLOpMode.sleep(wait);
     }
 
     public void dropBlock() {
-        claw.setPosition(0);
-        //myLOpMode.sleep(250);
+        dropBlock(0);
     }
 
     public double fastEncoderStraight(double speed, double distance, double timeoutS, double P) {
