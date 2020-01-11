@@ -57,7 +57,7 @@ public class IncepAuto_Block_Red extends LinearOpMode {
     private static final double PIVOT_SPEED = 0.40;
     private static final double SQ = 70 / 3.0;        // Length of 3 squares / 3 in case we want to think that way
     private static final double[] blocks = {0.0, 28.0, 36.0, 44.0, 4.0, 12.0, 20.0};
-    private static final double dropZone = 83.0;  // was 82.0
+    private static final double dropZone = 84.0;  // was 82.0
     private static final double bridge = 71.0;
     private String className = this.getClass().getSimpleName().toLowerCase();
 
@@ -139,14 +139,15 @@ public class IncepAuto_Block_Red extends LinearOpMode {
 
         } else if (block == 1) {
             firstBlock=blocks[2];
-            secondBlock=blocks[1];
-            thirdBlock=blocks[3];
+            // FXIME -  This is crazy, but this particular block always seems off by 2 inches.
+            secondBlock=blocks[1]+3;
+            thirdBlock=blocks[3]+1;
             fourthBlock=blocks[0];
 
         } else {
             firstBlock=blocks[2];
-            secondBlock=blocks[1];
-            thirdBlock=blocks[3];
+            secondBlock=blocks[1]+3;
+            thirdBlock=blocks[3]+1;
             fourthBlock=blocks[0];
         }
 
