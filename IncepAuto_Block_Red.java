@@ -141,13 +141,13 @@ public class IncepAuto_Block_Red extends LinearOpMode {
             firstBlock=blocks[2];
             // FXIME -  This is crazy, but this particular block always seems off by 2 inches.
             secondBlock=blocks[1]+3;
-            thirdBlock=blocks[3]+1;
+            thirdBlock=blocks[3]+2;
             fourthBlock=blocks[0];
 
         } else {
             firstBlock=blocks[2];
             secondBlock=blocks[1]+3;
-            thirdBlock=blocks[3]+1;
+            thirdBlock=blocks[3]+2;
             fourthBlock=blocks[0];
         }
 
