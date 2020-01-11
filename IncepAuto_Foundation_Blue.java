@@ -111,10 +111,10 @@ public class IncepAuto_Foundation_Blue extends LinearOpMode {
 
         // Grab foundation a ways
         robot.straightA = a;
-        a = robot.fastEncoderDrive(DRIVE_SPEED,17, 17, 3, 0.05, d, d );
+        a = robot.fastEncoderDrive(DRIVE_SPEED,15, 15, 3, 0.05, d, d );
 
         // Rotate foundation a little more than 90 degrees
-        a = robot.gyroPivot(PIVOT_SPEED, (turnDirection * 110)-a, 6);
+        a = robot.gyroPivot(PIVOT_SPEED, (turnDirection * 110)-a, 10);
 
         // Push foundation back against the wall, also aligns the bot
         robot.fastEncoderDrive(DRIVE_SPEED,-22, -22,3, 0.0, d, d );
