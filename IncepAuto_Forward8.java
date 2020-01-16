@@ -55,9 +55,16 @@ public class IncepAuto_Forward8 extends LinearOpMode {
 
     private static final double     DRIVE_SPEED             = 0.9;
     private static final double     TURN_SPEED              = 0.65;
+    double a=0;
 
     @Override
     public void runOpMode() {
+
+        robot.logger.LOGLEVEL = robot.logger.LOGNONE ;
+
+        robot.logger.logD("IncepLog","  ");
+        robot.logger.logD("IncepLog","  ");
+        robot.logger.logD("IncepLog","Starting Auto");
 
         /*
          * Initialize the drive system variables.
@@ -74,7 +81,43 @@ public class IncepAuto_Forward8 extends LinearOpMode {
 
         sleep(24000);
 
-        robot.encoderStraight(DRIVE_SPEED, 24, 3);
+        robot.fastEncoderStraight(DRIVE_SPEED, 24, 3,0.06);
+
+        /*
+        a=robot.gyroRotate(TURN_SPEED,90-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,90-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,90-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,90-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
+
+        a=robot.gyroRotate(TURN_SPEED,360-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,360-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,360-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,360-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-360-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-360-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-360-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-360-a, 6);
+
+        sleep(5000);
+        */
+
+        /*
+        a = robot.fastEncoderStraight(DRIVE_SPEED, 72, 6, 0.06);
+        a = robot.gyroRotate(TURN_SPEED,90-a, 4);
+        a = robot.gyroRotate(TURN_SPEED,90-a, 4);
+        robot.straightA = -a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, 48, 6, 0.06);
+        a = robot.gyroRotate(TURN_SPEED,90-a, 4);
+        a = robot.gyroRotate(TURN_SPEED,90-a, 4);
+        */
+
+        robot.logger.logD("IncepLog","Done");
+        robot.logger.logD("IncepLog","  ");
+        robot.logger.logD("IncepLog","  ");
 
         telemetry.addData("Path", "Complete");
         telemetry.update();

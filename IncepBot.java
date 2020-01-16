@@ -90,19 +90,22 @@ public class IncepBot {
     static double KpL;
     static double KpR;
     private static final double CLOSE_ENOUGH = 15.0;
-    private static final double CLOSE_ENOUGH_DEGREE = 0.5;
+    private static final double CLOSE_ENOUGH_DEGREE = 2.0;
     private static final double RIGHT_ARC_COEFFICENT = 1.00;
     private static final double LEFT_ARC_COEFFICENT = 1.25;
-    private static final double IMU_CORR = 1.03;
+    private static final double IMU_CORR = 1.01;
     static final double RIGHT = 1;
     static final double LEFT = 0;
     BNO055IMU imu;
     private Orientation angles;
+    private Orientation lastAngles = new Orientation();
+    private double globalHeading = 0;
+    private boolean useIntegratedGyro = true;  // Controls whether we use raw gyro values or the integrated version we make.
     //ColorSensor colorSensor;
     private static final boolean DEBUG = false;
     double minUp = 0.0;
     double straightA = 0.0;
-
+    public BotLog logger = new BotLog();
 
     /* local OpMode members. */
     HardwareMap hwMap = null;
@@ -112,6 +115,7 @@ public class IncepBot {
     /* Constructor */
     public IncepBot() {
     }
+
     public void initIMU() {
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
@@ -198,8 +202,10 @@ public class IncepBot {
         //colorSensor = hwMap.colorSensor.get("color");
         //colorSensor.enableLed(false);
 
-        // Adjust our overall power based on a 12.5V battery
-        double volts = getBatteryVoltage();
+        // Adjust our overall power based on a 12.5V battery.
+        // Set some min and max to avoid anything crazy.
+        // This may need some more characterization and it may be battery specific.
+        double volts = Math.max(11.0,Math.min(13.4,getBatteryVoltage()));
         KpL = fKpL * (12.5 / volts);
         KpR = fKpR * (12.5 / volts);
 
@@ -207,6 +213,8 @@ public class IncepBot {
         myLOpMode.telemetry.addData("voltage", "%.1f, KpR: %.3f, KpL: %.3f", volts, KpR, KpL);
         composeTelemetry();
         myLOpMode.telemetry.update();
+
+        logger.logD("IncepLogCSV",String.format(",rt,heading,lEnc,rEnc,lPwr,rPwr"));
     }
 
     void composeTelemetry() {
@@ -575,6 +583,7 @@ public class IncepBot {
         double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         ElapsedTime     runtime = new ElapsedTime();
 
+        logger.logD("IncepLog",String.format("encoderDrive start"));
 
         // Ensure that the opmode is still active
         if (myLOpMode.opModeIsActive()) {
@@ -680,14 +689,69 @@ public class IncepBot {
 
             //sleep(500);   // optional pause after each move
         }
+
+        logger.logD("IncepLog",String.format("encoderDrive end"));
     }
 
     public double getHeading()
     {
         Orientation     gyroOrien;
+        double          a;
+
+        if(useIntegratedGyro) {
+            return getIntHeading();
+        } else {
+
+            gyroOrien = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+            a = AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle);
+            logger.logD("IncepLog", String.format(" getHeading: %f, (%f), %f, (%f), %f", a, AngleUnit.DEGREES.normalize(a), a * IMU_CORR, AngleUnit.DEGREES.normalize(a * IMU_CORR), AngleUnit.DEGREES.normalize(a) - AngleUnit.DEGREES.normalize(a * IMU_CORR)));
+
+            return (AngleUnit.DEGREES.normalize(AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle) * IMU_CORR));
+        }
+    }
+
+    // Reset the integrated heading tracker
+    public void resetIntHeading() {
+
+        lastAngles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        globalHeading = 0.0 ;
+    }
+
+    // Create an integrated heading tracker.  This is useful for turning since the gyro only report -180 <--> 180.
+    // We have some correction factors that need to be handled.
+    public double getIntHeading()
+    {
+        Orientation     gyroOrien;
+        double          a;
+        double          delta;
 
         gyroOrien = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-        return( AngleUnit.DEGREES.normalize(AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle)*IMU_CORR));
+
+        delta = AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle) - AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, lastAngles.firstAngle);
+
+        if (delta <= -180) {
+            delta += 360;
+        } else if (delta > 180) {
+            delta -= 360;
+        }
+
+        globalHeading += (delta * IMU_CORR);
+
+        lastAngles = gyroOrien;
+
+        logger.logD("IncepLog",String.format(" getIntHeading: %f, %f", delta*IMU_CORR, globalHeading));
+
+        return( globalHeading );
+    }
+
+    private double normalizeAngle( double degrees ) {
+
+        if(useIntegratedGyro) {
+            return(degrees);
+        } else {
+            return(AngleUnit.normalizeDegrees(degrees));
+        }
     }
 
     /*
@@ -709,7 +773,7 @@ public class IncepBot {
         double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         // This profile is for rotate
-        double[] speedRampDownR = {0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownR = {0.15, 0.17, 0.20, 0.25, 0.30, 0.40, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         // This profile is for the foundation movement
         double[] speedRampUpP = {0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         double[] speedRampDownP = {0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
@@ -718,16 +782,19 @@ public class IncepBot {
         double KsL = 1.0;
         double KsR = 1.0;
         double delta, sign=1.0;
+        double deltaRT=0.0,prevRT=0.0,rt = 0.0;
 
         // Get the current Heading
         startHeading = curHeading = getHeading();
         // Where we are headed
-        tgtHeading = AngleUnit.normalizeDegrees(curHeading + degrees) ;
+        tgtHeading = normalizeAngle(curHeading + degrees) ;
         // Initialize toGo
         toGo = Math.abs(degrees);
 
+        logger.logD("IncepLog",String.format("gyroTurn: start: %f, tgt: %f", startHeading, tgtHeading));
+
         if (DEBUG) {
-            myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f",degrees,curHeading,startHeading,tgtHeading,AngleUnit.normalizeDegrees(curHeading - tgtHeading));
+            myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f",degrees,curHeading,startHeading,tgtHeading,normalizeAngle(curHeading - tgtHeading));
             myLOpMode.telemetry.update();
             //myLOpMode.sleep(3000);
         }
@@ -807,7 +874,7 @@ public class IncepBot {
             // Don't set the speed out here because a 'pivot' where one side has a '0' distance
             // request would start moving too soon.
 
-            delta = AngleUnit.normalizeDegrees(curHeading - tgtHeading);
+            delta = normalizeAngle(curHeading - tgtHeading);
             if ( delta != 0) {
                 sign = delta/Math.abs(delta);
             }
@@ -816,23 +883,26 @@ public class IncepBot {
             // Use done to jump out of loop when you get close enough to the end
             // Keep looping while we are still active, and there is time left, and we haven't reached the target
             while (myLOpMode.opModeIsActive() &&
-                    (runtime.seconds() < timeoutS)) {
+                    ((rt=runtime.seconds()) < timeoutS)) {
+
+                deltaRT = rt-prevRT;
+                prevRT = rt;
 
                 // Check if we're done
                 // This code implements a soft start and soft stop.
                 curHeading = getHeading();
 
                 // Look to see if our delta is really close or if we over rotated already (sign changed on delta)
-                delta = AngleUnit.normalizeDegrees(curHeading - tgtHeading);
+                delta = normalizeAngle(curHeading - tgtHeading);
                 if (((Math.abs(delta)) < CLOSE_ENOUGH_DEGREE) || (delta/Math.abs(delta) != sign)) {
                         break;
                 }
 
                 // How much farther?
-                toGo = Math.min(toGo, Math.max(0, Math.abs(AngleUnit.normalizeDegrees(tgtHeading - curHeading))));
+                toGo = Math.min(toGo, Math.max(0, Math.abs(normalizeAngle(tgtHeading - curHeading))));
 
                 // Compute speed on acceleration and deceleration legs
-                spdUp = Math.min(speedRampUp[Math.min((int) (Math.abs(AngleUnit.normalizeDegrees(startHeading - curHeading)) / SOFT_D_UP_DEGREE), speedRampUp.length - 1)], maxPower);
+                spdUp = Math.min(speedRampUp[Math.min((int) (Math.abs(normalizeAngle(startHeading - curHeading)) / SOFT_D_UP_DEGREE), speedRampUp.length - 1)], maxPower);
                 spdDn = Math.min(speedRampDown[Math.min((int) (Math.abs(toGo) / SOFT_D_DOWN_DEGREE), speedRampDown.length - 1)], maxPower);
 
                 // Scale the final speed against the input power.
@@ -841,14 +911,17 @@ public class IncepBot {
                 // Only update the motors if we really need too
                 if (newSpeed != actSpeed ) {
 
+                    //logger.logD("IncepLog",String.format(" left pwr: %f: %f --> %f @ %f", deltaRT*1000, actSpeed * KpL * KsL, newSpeed * KpL * KsL, curHeading));
+                    //logger.logD("IncepLog",String.format("right pwr: %f: %f --> %f @ %f", deltaRT*1000, actSpeed * KpR * KsR, newSpeed * KpR * KsR, curHeading));
+
                     // Record the new base speed
                     actSpeed = newSpeed;
 
                     // Change and scale power, the direction is already baked into KsR and KsL
                     leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)));
-                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)));
                     rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)));
                     rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)));
+                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)));
                 }
 
                 if (DEBUG) {
@@ -857,6 +930,7 @@ public class IncepBot {
                     myLOpMode.telemetry.addData("gyro", "deg: %1.3f, curr: %1.3f, start: %1.3f, tgt: %1.3f",degrees,curHeading,startHeading,tgtHeading);
                     myLOpMode.telemetry.update();
                 }
+                logger.logD("IncepLogTurnCSV",String.format(",%f,%f,%f,%f,%f,%f", rt, getHeading(), 0.0, 0.0, Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR))));
             }
 
             // Stop all motion;
@@ -879,12 +953,14 @@ public class IncepBot {
             rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
             if (DEBUG) {
-                myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f", degrees, curHeading, startHeading, tgtHeading, AngleUnit.normalizeDegrees(curHeading - tgtHeading));
+                myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f", degrees, curHeading, startHeading, tgtHeading, normalizeAngle(curHeading - tgtHeading));
                 myLOpMode.telemetry.update();
                 myLOpMode.sleep(1000);
             }
         }
-        return(AngleUnit.normalizeDegrees(getHeading() - tgtHeading));
+        // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
+        logger.logD("IncepLog",String.format("turn done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
+        return(normalizeAngle(getHeading() - tgtHeading));
     }
 
 
@@ -949,12 +1025,16 @@ public class IncepBot {
         double tgtHeading, curHeading, deltaHeading;
         double KhL = 1.0;
         double KhR = 1.0;
+        double deltaRT=0.0,prevRT=0.0,rt = 0.0;
         // Steering proportional constant
         // disable gyro assisted straight for now -- we drive straighter without.
         //double P = 0.00;
 
         // Get the current Heading and update for the correction angle
-        tgtHeading = getHeading() - straightA;
+        curHeading = tgtHeading = getHeading();
+        logger.logD("IncepLog",String.format("fastEncodeDrive: tgt: %f, A: %f", tgtHeading, straightA));
+        tgtHeading = normalizeAngle(tgtHeading - straightA) ;
+
         // now clear the correction angle so it's never used again
         straightA = 0.0;
 
@@ -1012,8 +1092,11 @@ public class IncepBot {
 
             // Keep looping while we are still active, and there is time left, and we haven't reached the target
             while (myLOpMode.opModeIsActive() &&
-                    (runtime.seconds() < timeoutS) &&
+                    ((rt=runtime.seconds()) < timeoutS) &&
                     ( !doneL || !doneR)) {
+
+                deltaRT = rt-prevRT;
+                prevRT = rt;
 
                 // Check if we're done
                 // This code implements a soft start and soft stop.
@@ -1067,7 +1150,7 @@ public class IncepBot {
                 // Compute drift, negate for correction
                 if ((P != 0.0) && (leftInches == rightInches)) {
                     curHeading = getHeading();
-                    deltaHeading = -1.0 * AngleUnit.DEGREES.normalize(tgtHeading - curHeading);
+                    deltaHeading = -1.0 * normalizeAngle(tgtHeading - curHeading);
 
                     // If driving straight backwards, negate again
                     if (leftInches < 0 ) {
@@ -1076,22 +1159,32 @@ public class IncepBot {
                     // Never change the sign. Make the change proportional to the error
                     KhL = Math.max(0.0, (1.0 + (deltaHeading * P)));
                     KhR = Math.max(0.0, (1.0 - (deltaHeading * P)));
+
+                    //logger.logD("IncepLog",String.format("%f, tgt: %f, cur: %f, delta: %f",(deltaRT)*1000, tgtHeading, curHeading, deltaHeading));
+
+                } else {
+                    curHeading = getHeading();
+                    deltaHeading = -1.0 * normalizeAngle(tgtHeading - curHeading);
+                    //logger.logD("IncepLog",String.format("%f, tgt: %f",(deltaRT)*1000, tgtHeading));
+                    //logger.logD("IncepLog",String.format("%f, tgt: %f, cur: %f, delta: %f",(deltaRT)*1000, tgtHeading, curHeading, deltaHeading));
                 }
 
                 newSpeedL *= (KpL * KhL);
                 newSpeedR *= (KpR * KhR);
 
-                if (newSpeedL != actSpeedL ) {
-                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
-                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
-                    actSpeedL = newSpeedL;
-                }
+                if ((newSpeedL != actSpeedL ) || (newSpeedR != actSpeedR )) {
+                    //logger.logD("IncepLog",String.format("Left speed change: %f --> %f @ %f", actSpeedL, newSpeedL, curPosL));
+                    //logger.logD("IncepLog",String.format("Right speed change: %f --> %f @ %f", actSpeedR, newSpeedR, curPosR));
 
-                if (newSpeedR != actSpeedR ) {
+                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
                     rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
                     rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
+                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+                    actSpeedL = newSpeedL;
                     actSpeedR = newSpeedR;
                 }
+
+                logger.logD("IncepLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f", rt, deltaHeading, curPosL, curPosR, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
 
                 if (DEBUG) {
                     myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
@@ -1130,7 +1223,9 @@ public class IncepBot {
 
         }
         if (leftInches == rightInches) {
-            return (AngleUnit.normalizeDegrees(getHeading() - tgtHeading));
+            // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
+            logger.logD("IncepLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
+            return (normalizeAngle((getHeading() - tgtHeading)));
         } else {
             return(0.0);
         }
