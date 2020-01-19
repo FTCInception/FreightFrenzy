@@ -34,8 +34,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IntegratingGyroscope;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -48,6 +48,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 import java.util.Locale;
 
+import org.openftc.revextensions2.ExpansionHubEx;
+import org.openftc.revextensions2.ExpansionHubMotor;
+import org.openftc.revextensions2.RevBulkData;
 
 /**
  * Made by DaSchelling for Testing programs for team 12533...
@@ -63,25 +66,72 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
+    private static ExpansionHubEx expansionHub;
+    private static ExpansionHubMotor  l_f_motor, l_b_motor, r_f_motor, r_b_motor;
     private static Servo foundation1, foundation2, claw;
-    BNO055IMU imu;
-    Orientation angles;
-    IntegratingGyroscope gyro;
+    private BNO055IMU imu;
     //private ColorSensor colorSensor;
-
+    private BotLog logger = new BotLog();
 
     // Declare other variables
-    double speedModifier = 0.5;
-    int dirInvert = 1;
+    private double speedModifier = 0.5;
+    private int dirInvert = 1;
+    private boolean enableCSVLogging = false;
+    private Orientation angles;
+
+    private BNO055IMU initIMU(String imuName) {
+
+        BNO055IMU imu;
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+
+        parameters.mode                = BNO055IMU.SensorMode.IMU;
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.loggingEnabled      = false;
+
+        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
+        // on a Core Device Interface Module and named "imu".
+        imu = hardwareMap.get(BNO055IMU.class, imuName);
+
+        imu.initialize(parameters);
+
+        telemetry.addData("Mode", "IMU calibrating...");
+        telemetry.update();
+
+        // make sure the imu gyro is calibrated before continuing.
+        for (int i=0; (i<40 && !imu.isGyroCalibrated()); i++)
+        {
+            sleep(50);
+            idle();
+        }
+
+        return(imu);
+    }
+
+    double getHeading() {
+        Orientation angles;
+
+        angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+        return(Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)));
+    }
+
 
     @Override
     public void runOpMode() {
+        RevBulkData bulkData;
         double lFounSet[] = {1.0, 0.0};
         double rFounSet[] = {1.0, 0.0};
         double clawSet[] = {1.0, 0.0};
         boolean lBump1Prev=false, rBump1Prev=false;
         int lFounPos=0, rFounPos=0, clawPos=0;
+        double rt = 0.0, nextLog = 0.0;
+
+        if (enableCSVLogging) {
+            // Enable debug logging
+            logger.LOGLEVEL |= logger.LOGDEBUG;
+        }
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -90,10 +140,12 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
 
-        l_f_motor = hardwareMap.dcMotor.get("left_front");
-        l_b_motor = hardwareMap.dcMotor.get("left_back");
-        r_f_motor = hardwareMap.dcMotor.get("right_front");
-        r_b_motor = hardwareMap.dcMotor.get("right_back");
+        expansionHub = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 1");
+
+        l_f_motor = (ExpansionHubMotor) hardwareMap.dcMotor.get("left_front");
+        l_b_motor = (ExpansionHubMotor) hardwareMap.dcMotor.get("left_back");
+        r_f_motor = (ExpansionHubMotor) hardwareMap.dcMotor.get("right_front");
+        r_b_motor = (ExpansionHubMotor) hardwareMap.dcMotor.get("right_back");
 
 
         // Most robots need the motor on one side to be reversed to drive forward
@@ -107,28 +159,7 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
         foundation2 = hardwareMap.servo.get("foundation2");
         claw = hardwareMap.servo.get("claw");
 
-        // We are expecting the IMU to be attached to an I2C port on a Core Device Interface Module and named "imu".
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.loggingEnabled = true;
-        parameters.loggingTag     = "IMU";
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-        imu.initialize(parameters);
-
-        telemetry.addData("Mode", "calibrating...");
-        telemetry.update();
-
-        // make sure the imu gyro is calibrated before continuing.
-        while (!isStopRequested() && !imu.isGyroCalibrated())
-        {
-            sleep(50);
-            idle();
-        }
-
-        gyro = (IntegratingGyroscope)imu;
-
-        //colorSensor = hardwareMap.colorSensor.get("color");
-        //colorSensor.enableLed(true);
-        //colorSensor.enableLed(false);
+        imu = initIMU("imu");
 
         composeTelemetry();
         telemetry.log().add("Waiting for start...");
@@ -142,6 +173,11 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         //waitForStart();
         runtime.reset();
+
+        if (enableCSVLogging) {
+            // Lay down a header for our logging
+            logger.logD("TeleopTurnCSV", String.format(",rt,heading,lEnc,rEnc,lPwr,rPwr"));
+        }
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
@@ -159,18 +195,6 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
             // - This uses basic math to combine motions and is easier to drive straight.
             double drive = Math.cbrt(gamepad1.left_stick_y);
             double turn  =  Math.cbrt(gamepad1.right_stick_x);
-            /*
-            if (turn > 0) {
-                turn = Math.sqrt(turn);
-            } else {
-                turn = -1 * Math.sqrt(-turn);
-            }
-            if (drive > 0) {
-                drive = Math.sqrt(drive);
-            } else {
-                drive = -1 * Math.sqrt(-drive);
-            }
-            */
 
             //speed control
             if (gamepad1.x) {
@@ -220,27 +244,7 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
                 rBump1Prev = false;
             }
 
-            /*
-            // Old style controls
-            //foundation servo control
-            if(gamepad1.right_trigger > .5){
-                foundation1.setPosition(1);
-                foundation2.setPosition(1);
-            }
-            else if(gamepad1.right_trigger < .5){
-                foundation1.setPosition(0);
-                foundation2.setPosition(0);
-            }
-
-            //claw servo control
-            if(gamepad1.left_trigger > .5){
-                claw.setPosition(1.0);
-            }
-            else if(gamepad1.left_trigger < .5){
-                claw.setPosition(0);
-            }
-            */
-
+            // Create power settings
             l_f_motor_power   = Range.clip(((drive* dirInvert) - turn) * speedModifier, -1.0, 1.0) ;
             l_b_motor_power   = Range.clip(((drive* dirInvert) - turn) * speedModifier, -1.0, 1.0) ;
             r_f_motor_power   = Range.clip(((drive* dirInvert) + turn) * speedModifier, -1.0, 1.0) ;
@@ -251,6 +255,16 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
             l_b_motor.setPower(l_b_motor_power);
             r_f_motor.setPower(r_f_motor_power);
             r_b_motor.setPower(r_b_motor_power);
+
+            // Update the logger 10 times/second max
+            if (enableCSVLogging) {
+                rt = runtime.seconds();
+                if (rt > nextLog) {
+                    bulkData = expansionHub.getBulkInputData();
+                    logger.logD("TeleopTurnCSV", String.format(",%f,%f,%d,%d,%f,%f", rt, getHeading(), bulkData.getMotorCurrentPosition(l_f_motor), bulkData.getMotorCurrentPosition(r_f_motor), l_f_motor_power, r_f_motor_power));
+                    nextLog = rt + 0.1;
+                }
+            }
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());

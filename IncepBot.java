@@ -205,7 +205,7 @@ public class IncepBot {
         // Adjust our overall power based on a 12.5V battery.
         // Set some min and max to avoid anything crazy.
         // This may need some more characterization and it may be battery specific.
-        double volts = Math.max(11.0,Math.min(13.4,getBatteryVoltage()));
+        double volts = Math.max(11.0,Math.min(12.5,getBatteryVoltage()));
         KpL = fKpL * (12.5 / volts);
         KpR = fKpR * (12.5 / volts);
 
@@ -352,7 +352,7 @@ public class IncepBot {
         myLOpMode.sleep(wait);
     }
 
-    public void clawAttention( int wait) {
+    public void clawAttention(int wait) {
         claw.setPosition(0.1812);
         myLOpMode.sleep(wait);
     }
@@ -782,7 +782,7 @@ public class IncepBot {
         double KsL = 1.0;
         double KsR = 1.0;
         double delta, sign=1.0;
-        double deltaRT=0.0,prevRT=0.0,rt = 0.0;
+        double rt = 0.0;
 
         // Get the current Heading
         startHeading = curHeading = getHeading();
@@ -885,9 +885,6 @@ public class IncepBot {
             while (myLOpMode.opModeIsActive() &&
                     ((rt=runtime.seconds()) < timeoutS)) {
 
-                deltaRT = rt-prevRT;
-                prevRT = rt;
-
                 // Check if we're done
                 // This code implements a soft start and soft stop.
                 curHeading = getHeading();
@@ -910,9 +907,6 @@ public class IncepBot {
 
                 // Only update the motors if we really need too
                 if (newSpeed != actSpeed ) {
-
-                    //logger.logD("IncepLog",String.format(" left pwr: %f: %f --> %f @ %f", deltaRT*1000, actSpeed * KpL * KsL, newSpeed * KpL * KsL, curHeading));
-                    //logger.logD("IncepLog",String.format("right pwr: %f: %f --> %f @ %f", deltaRT*1000, actSpeed * KpR * KsR, newSpeed * KpR * KsR, curHeading));
 
                     // Record the new base speed
                     actSpeed = newSpeed;
@@ -980,7 +974,6 @@ public class IncepBot {
         return(fastEncoderDrive( speed, leftInches, rightInches, timeoutS,0.0 ));
     }
 
-
     public double fastEncoderDrive(double speed,
                                    double leftInches, double rightInches,
                                    double timeoutS, double P) {
@@ -1023,9 +1016,10 @@ public class IncepBot {
         double[] speedRampDown = down;
         ElapsedTime     runtime = new ElapsedTime();
         double tgtHeading, curHeading, deltaHeading;
+        // For gyro heading adjustments
         double KhL = 1.0;
         double KhR = 1.0;
-        double deltaRT=0.0,prevRT=0.0,rt = 0.0;
+        double rt = 0.0;
         // Steering proportional constant
         // disable gyro assisted straight for now -- we drive straighter without.
         //double P = 0.00;
@@ -1095,9 +1089,6 @@ public class IncepBot {
                     ((rt=runtime.seconds()) < timeoutS) &&
                     ( !doneL || !doneR)) {
 
-                deltaRT = rt-prevRT;
-                prevRT = rt;
-
                 // Check if we're done
                 // This code implements a soft start and soft stop.
                 if (!doneL) {
@@ -1147,11 +1138,11 @@ public class IncepBot {
                     }
                 }
 
+                curHeading = getHeading();
+                deltaHeading = -1.0 * normalizeAngle(tgtHeading - curHeading);
+
                 // Compute drift, negate for correction
                 if ((P != 0.0) && (leftInches == rightInches)) {
-                    curHeading = getHeading();
-                    deltaHeading = -1.0 * normalizeAngle(tgtHeading - curHeading);
-
                     // If driving straight backwards, negate again
                     if (leftInches < 0 ) {
                         deltaHeading *= -1.0;
@@ -1159,22 +1150,12 @@ public class IncepBot {
                     // Never change the sign. Make the change proportional to the error
                     KhL = Math.max(0.0, (1.0 + (deltaHeading * P)));
                     KhR = Math.max(0.0, (1.0 - (deltaHeading * P)));
-
-                    //logger.logD("IncepLog",String.format("%f, tgt: %f, cur: %f, delta: %f",(deltaRT)*1000, tgtHeading, curHeading, deltaHeading));
-
-                } else {
-                    curHeading = getHeading();
-                    deltaHeading = -1.0 * normalizeAngle(tgtHeading - curHeading);
-                    //logger.logD("IncepLog",String.format("%f, tgt: %f",(deltaRT)*1000, tgtHeading));
-                    //logger.logD("IncepLog",String.format("%f, tgt: %f, cur: %f, delta: %f",(deltaRT)*1000, tgtHeading, curHeading, deltaHeading));
                 }
 
                 newSpeedL *= (KpL * KhL);
                 newSpeedR *= (KpR * KhR);
 
                 if ((newSpeedL != actSpeedL ) || (newSpeedR != actSpeedR )) {
-                    //logger.logD("IncepLog",String.format("Left speed change: %f --> %f @ %f", actSpeedL, newSpeedL, curPosL));
-                    //logger.logD("IncepLog",String.format("Right speed change: %f --> %f @ %f", actSpeedR, newSpeedR, curPosR));
 
                     leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
                     rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));

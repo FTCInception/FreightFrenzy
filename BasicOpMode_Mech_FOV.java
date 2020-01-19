@@ -29,21 +29,28 @@
 
 package Inception.Skystone;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.IntegratingGyroscope;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.Func;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+
 import java.util.Locale;
 
+import org.openftc.revextensions2.ExpansionHubEx;
+import org.openftc.revextensions2.ExpansionHubMotor;
+import org.openftc.revextensions2.RevBulkData;
 
 /**
  * Made by DaSchelling for Testing programs for team 12533...
@@ -59,6 +66,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
+    private static ExpansionHubEx expansionHub1;
+    private static ExpansionHubEx expansionHub2;
     private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
     private static DcMotor l_in_motor, r_in_motor;
     private static DcMotor l_out_motor, r_out_motor;
@@ -67,15 +76,25 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
     BNO055IMU imu,imu2;
     Orientation angles,angles2;
-
-    double theta, r_speed, new_x, new_y;
-
     double MAX_OUTTAKE_POWER = 0.5;
     double MAX_INTAKE_POWER = 0.9;
 
+    private BotLog logger = new BotLog();
+    private boolean enableCSVLogging = false;
+
     // Declare other variables
-    double speedModifier = 0.5;
-    double adjustAngle = 0.0;
+    double in_pwr, out_pwr;
+
+    // Mech drive related variables
+    double theta, r_speed, new_x, new_y;
+    double[] speedModifier = new double[] {0.5,0.25};
+    double[] adjustAngle = new double[] {0.0,0.0};
+    double[] forward = new double[2], strafe = new double[2], rotate = new double[2], degrees = new double[2];
+    double l_f_motor_power;
+    double l_b_motor_power;
+    double r_f_motor_power;
+    double r_b_motor_power;
+
 
     // Declare other variables
 
@@ -109,8 +128,18 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         return(imu);
     }
 
+    double getHeading() {
+        Orientation angles;
+
+        angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+        return(Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)));
+    }
+
+
     @Override
     public void runOpMode() {
+        RevBulkData bulkData1, bulkData2;
         double fGrabSet[] = {1.0, 0.53};
         double bGrabSet[] = {0.30, 0.0};
         boolean lBump2Prev=false, rBump2Prev=false;
@@ -120,7 +149,12 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         double clawSet[] = {0.0, 1.0};
         boolean lBump1Prev=false, rBump1Prev=false;
         int lFounPos=0, rFounPos=0, clawPos=0;
+        double rt = 0.0, nextLog = 0.0;
 
+        if (enableCSVLogging) {
+            // Enable debug logging
+            logger.LOGLEVEL |= logger.LOGDEBUG;
+        }
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -128,6 +162,9 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
+
+        expansionHub1 = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 1");
+        expansionHub2 = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 2");
 
         l_f_motor = hardwareMap.dcMotor.get("left_front");
         l_b_motor = hardwareMap.dcMotor.get("left_back");
@@ -147,7 +184,6 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         l_out_motor = hardwareMap.dcMotor.get("right_out");
         r_out_motor = hardwareMap.dcMotor.get("left_out");
 
-
         imu = initIMU("imu");
         imu2 = initIMU("imu 1");
 
@@ -164,19 +200,19 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         r_out_motor.setDirection(DcMotorSimple.Direction.FORWARD);
 
         // Wait for the game to start (driver presses PLAY)
+        telemetry.addData("Status", "Waiting for start...");
+        telemetry.update();
+
         waitForStart();
         runtime.reset();
 
+        if (enableCSVLogging) {
+            // Lay down a header for our logging
+            logger.logD("MechFOVCSV", String.format(",rt,heading,lfEnc,lbEnc,rfEnc,rbEnc,lfPwr,lbPwr,rfPwr,rbPwr"));
+        }
+
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
-
-            // Setup a variable for each drive wheel to save power level for telemetry
-            double forward, strafe, rotate, degrees;
-            double in_pwr, out_pwr;
-            double l_f_motor_power;
-            double l_b_motor_power;
-            double r_f_motor_power;
-            double r_b_motor_power;
 
             // Begin controller 1 (driver)
             // Single button toggle for grabbers
@@ -206,37 +242,53 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             l_out_motor.setPower(out_pwr);
             r_out_motor.setPower(out_pwr);
 
-            // Begin controller 1 (driver)
-            //speed control
-            strafe = gamepad1.left_stick_x;
-            forward = -gamepad1.left_stick_y;
-            rotate = gamepad1.right_stick_x;
-
+            // Get the heading
             angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
             //angles2   = imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            degrees = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
+            degrees[1] = degrees[0] = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
 
+            // Get controller 1 (driver)
+            strafe[0] = gamepad1.left_stick_x;
+            forward[0] = -gamepad1.left_stick_y;
+            rotate[0] = gamepad1.right_stick_x;
+
+            // Get controller 2 (co-pilot)
+            strafe[1] = gamepad2.left_stick_x;
+            forward[1] = -gamepad2.left_stick_y;
+            rotate[1] = gamepad2.right_stick_x;
+
+            // Anyone asking to update the FOV for their controller?
             if (gamepad1.dpad_up) {
-                adjustAngle = degrees;
+                adjustAngle[0] = degrees[0];
             }
-            degrees = AngleUnit.DEGREES.normalize(degrees - adjustAngle);
 
-            CarToPol(strafe,forward);
-            theta -= degrees;
+            if (gamepad2.dpad_up) {
+                adjustAngle[1] = degrees[1];
+            }
+
+            // Compute the effective offset for each controller FOV
+            degrees[0] = AngleUnit.DEGREES.normalize(degrees[0] - adjustAngle[0]);
+            degrees[1] = AngleUnit.DEGREES.normalize(degrees[1] - adjustAngle[1]);
+
+            // New X/Y based on the polar rotation (see notebook) for controller 1
+            CarToPol(strafe[0],forward[0]);
+            theta -= degrees[0];
             PolToCar(r_speed);
-            strafe = new_x;
-            forward = new_y;
+            strafe[0] = new_x;
+            forward[0] = new_y;
 
-            l_f_motor_power   = Range.clip((forward + strafe + rotate) * speedModifier, -1.0, 1.0) ;
-            l_b_motor_power   = Range.clip((forward - strafe + rotate) * speedModifier, -1.0, 1.0) ;
-            r_f_motor_power   = Range.clip((forward - strafe - rotate) * speedModifier, -1.0, 1.0) ;
-            r_b_motor_power   = Range.clip((forward + strafe - rotate) * speedModifier, -1.0, 1.0) ;
+            // New X/Y based on the polar rotation (see notebook) for controller 2
+            CarToPol(strafe[1],forward[1]);
+            theta -= degrees[1];
+            PolToCar(r_speed);
+            strafe[1] = new_x;
+            forward[1] = new_y;
 
-            // Send calculated power to wheels
-            l_f_motor.setPower(l_f_motor_power);
-            l_b_motor.setPower(l_b_motor_power);
-            r_f_motor.setPower(r_f_motor_power);
-            r_b_motor.setPower(r_b_motor_power);
+            // This adds the requested powers from both controllers together scaled for each controller and FOV (clipped to 1.0)
+            l_f_motor_power   = Range.clip(((forward[0] + strafe[0] + rotate[0]) * speedModifier[0])+((forward[1] + strafe[1] + rotate[1]) * speedModifier[1]), -1.0, 1.0) ;
+            l_b_motor_power   = Range.clip(((forward[0] - strafe[0] + rotate[0]) * speedModifier[0])+((forward[1] - strafe[1] + rotate[1]) * speedModifier[1]), -1.0, 1.0) ;
+            r_f_motor_power   = Range.clip(((forward[0] - strafe[0] - rotate[0]) * speedModifier[0])+((forward[1] - strafe[1] - rotate[1]) * speedModifier[1]), -1.0, 1.0) ;
+            r_b_motor_power   = Range.clip(((forward[0] + strafe[0] - rotate[0]) * speedModifier[0])+((forward[1] + strafe[1] - rotate[1]) * speedModifier[1]), -1.0, 1.0) ;
 
             // Additional driver controls
             //speed control
@@ -246,16 +298,29 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             r_in_motor.setPower(in_pwr);
 
             if (gamepad1.x) {
-                speedModifier = 1;
+                speedModifier[0] = 1;
             }
             else if (gamepad1.y) {
-                speedModifier = 0.75;
+                speedModifier[0] = 0.75;
             }
             else if (gamepad1.b) {
-                speedModifier = .5;
+                speedModifier[0] = .5;
             }
             else if (gamepad1.a) {
-                speedModifier = 0.25;
+                speedModifier[0] = 0.25;
+            }
+
+            if (gamepad2.x) {
+                speedModifier[1] = 1;
+            }
+            else if (gamepad2.y) {
+                speedModifier[1] = 0.75;
+            }
+            else if (gamepad2.b) {
+                speedModifier[1] = .5;
+            }
+            else if (gamepad2.a) {
+                speedModifier[1] = 0.25;
             }
 
             // Single button toggle for foundation servos
@@ -284,10 +349,28 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 rBump1Prev = false;
             }
 
+            // Send calculated power to wheels
+            l_f_motor.setPower(l_f_motor_power);
+            l_b_motor.setPower(l_b_motor_power);
+            r_f_motor.setPower(r_f_motor_power);
+            r_b_motor.setPower(r_b_motor_power);
+
+            // Update the logger 10 times/second max
+            if (enableCSVLogging) {
+                rt = runtime.seconds();
+                if (rt > nextLog) {
+                    // FIXME -- bulk data read returning strange data here.
+                    bulkData1 = expansionHub1.getBulkInputData();
+                    bulkData2 = expansionHub2.getBulkInputData();
+                    logger.logD("MechFOVCSV", String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getHeading(), bulkData1.getMotorCurrentPosition(l_f_motor),bulkData1.getMotorCurrentPosition(l_b_motor), bulkData2.getMotorCurrentPosition(r_f_motor), bulkData2.getMotorCurrentPosition(r_b_motor), l_f_motor_power, l_b_motor_power, r_f_motor_power, r_b_motor_power));
+                    nextLog = rt + 0.1;
+                }
+            }
+
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
-            telemetry.addData("Polar", "Speed (%.2f), theta (%.2f)", forward, theta);
-            telemetry.addData("Gyro", degrees);
+            telemetry.addData("Polar", "Speed (%.2f), theta (%.2f)", forward[0], theta);
+            telemetry.addData("Gyro", degrees[0]);
             telemetry.update();
         }
     }
