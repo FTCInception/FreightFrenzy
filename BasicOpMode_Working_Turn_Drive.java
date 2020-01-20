@@ -48,9 +48,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 import java.util.Locale;
 
-import org.openftc.revextensions2.ExpansionHubEx;
-import org.openftc.revextensions2.ExpansionHubMotor;
-import org.openftc.revextensions2.RevBulkData;
+//import org.openftc.revextensions2.ExpansionHubEx;
+//import org.openftc.revextensions2.ExpansionHubMotor;
+//import org.openftc.revextensions2.RevBulkData;
 
 /**
  * Made by DaSchelling for Testing programs for team 12533...
@@ -66,8 +66,10 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    private static ExpansionHubEx expansionHub;
-    private static ExpansionHubMotor  l_f_motor, l_b_motor, r_f_motor, r_b_motor;
+//    private static ExpansionHubEx expansionHub;
+//    private static ExpansionHubMotor  l_f_motor, l_b_motor, r_f_motor, r_b_motor;
+
+    private static DcMotor  l_f_motor, l_b_motor, r_f_motor, r_b_motor;
     private static Servo foundation1, foundation2, claw;
     private BNO055IMU imu;
     //private ColorSensor colorSensor;
@@ -120,7 +122,7 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
 
     @Override
     public void runOpMode() {
-        RevBulkData bulkData;
+        //RevBulkData bulkData;
         double lFounSet[] = {1.0, 0.0};
         double rFounSet[] = {1.0, 0.0};
         double clawSet[] = {1.0, 0.0};
@@ -140,13 +142,16 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
 
-        expansionHub = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 1");
+        //expansionHub = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 1");
+        //l_f_motor = (ExpansionHubMotor) hardwareMap.dcMotor.get("left_front");
+        //l_b_motor = (ExpansionHubMotor) hardwareMap.dcMotor.get("left_back");
+        //r_f_motor = (ExpansionHubMotor) hardwareMap.dcMotor.get("right_front");
+        //r_b_motor = (ExpansionHubMotor) hardwareMap.dcMotor.get("right_back");
 
-        l_f_motor = (ExpansionHubMotor) hardwareMap.dcMotor.get("left_front");
-        l_b_motor = (ExpansionHubMotor) hardwareMap.dcMotor.get("left_back");
-        r_f_motor = (ExpansionHubMotor) hardwareMap.dcMotor.get("right_front");
-        r_b_motor = (ExpansionHubMotor) hardwareMap.dcMotor.get("right_back");
-
+        l_f_motor = hardwareMap.dcMotor.get("left_front");
+        l_b_motor = hardwareMap.dcMotor.get("left_back");
+        r_f_motor = hardwareMap.dcMotor.get("right_front");
+        r_b_motor = hardwareMap.dcMotor.get("right_back");
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
@@ -260,8 +265,12 @@ public class BasicOpMode_Working_Turn_Drive extends LinearOpMode {
             if (enableCSVLogging) {
                 rt = runtime.seconds();
                 if (rt > nextLog) {
-                    bulkData = expansionHub.getBulkInputData();
-                    logger.logD("TeleopTurnCSV", String.format(",%f,%f,%d,%d,%f,%f", rt, getHeading(), bulkData.getMotorCurrentPosition(l_f_motor), bulkData.getMotorCurrentPosition(r_f_motor), l_f_motor_power, r_f_motor_power));
+                    //bulkData = expansionHub.getBulkInputData();
+                    //logger.logD("TeleopTurnCSV", String.format(",%f,%f,%d,%d,%f,%f", rt, getHeading(), bulkData.getMotorCurrentPosition(l_f_motor), bulkData.getMotorCurrentPosition(r_f_motor), l_f_motor_power, r_f_motor_power));
+                    int lfPos = l_f_motor.getCurrentPosition();
+                    int rfPos = l_f_motor.getCurrentPosition();
+
+                    logger.logD("TeleopTurnCSV", String.format(",%f,%f,%d,%d,%f,%f", rt, getHeading(), lfPos, rfPos, l_f_motor_power, r_f_motor_power));
                     nextLog = rt + 0.1;
                 }
             }

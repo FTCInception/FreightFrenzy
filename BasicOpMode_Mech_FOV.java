@@ -48,9 +48,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 import java.util.Locale;
 
-import org.openftc.revextensions2.ExpansionHubEx;
-import org.openftc.revextensions2.ExpansionHubMotor;
-import org.openftc.revextensions2.RevBulkData;
+//import org.openftc.revextensions2.ExpansionHubEx;
+//import org.openftc.revextensions2.ExpansionHubMotor;
+//import org.openftc.revextensions2.RevBulkData;
 
 /**
  * Made by DaSchelling for Testing programs for team 12533...
@@ -66,8 +66,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    private static ExpansionHubEx expansionHub1;
-    private static ExpansionHubEx expansionHub2;
+    //private static ExpansionHubEx expansionHub1;
+    //private static ExpansionHubEx expansionHub2;
     private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
     private static DcMotor l_in_motor, r_in_motor;
     private static DcMotor l_out_motor, r_out_motor;
@@ -139,7 +139,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
     @Override
     public void runOpMode() {
-        RevBulkData bulkData1, bulkData2;
+        //RevBulkData bulkData1, bulkData2;
         double fGrabSet[] = {1.0, 0.53};
         double bGrabSet[] = {0.30, 0.0};
         boolean lBump2Prev=false, rBump2Prev=false;
@@ -163,8 +163,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
 
-        expansionHub1 = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 1");
-        expansionHub2 = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 2");
+        //expansionHub1 = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 1");
+        //expansionHub2 = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 2");
 
         l_f_motor = hardwareMap.dcMotor.get("left_front");
         l_b_motor = hardwareMap.dcMotor.get("left_back");
@@ -360,9 +360,16 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 rt = runtime.seconds();
                 if (rt > nextLog) {
                     // FIXME -- bulk data read returning strange data here.
-                    bulkData1 = expansionHub1.getBulkInputData();
-                    bulkData2 = expansionHub2.getBulkInputData();
-                    logger.logD("MechFOVCSV", String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getHeading(), bulkData1.getMotorCurrentPosition(l_f_motor),bulkData1.getMotorCurrentPosition(l_b_motor), bulkData2.getMotorCurrentPosition(r_f_motor), bulkData2.getMotorCurrentPosition(r_b_motor), l_f_motor_power, l_b_motor_power, r_f_motor_power, r_b_motor_power));
+                    //bulkData1 = expansionHub1.getBulkInputData();
+                    //bulkData2 = expansionHub2.getBulkInputData();
+                    //logger.logD("MechFOVCSV", String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getHeading(), bulkData1.getMotorCurrentPosition(l_f_motor),bulkData1.getMotorCurrentPosition(l_b_motor), bulkData2.getMotorCurrentPosition(r_f_motor), bulkData2.getMotorCurrentPosition(r_b_motor), l_f_motor_power, l_b_motor_power, r_f_motor_power, r_b_motor_power));
+
+                    int lfPos = l_f_motor.getCurrentPosition();
+                    int lbPos = l_f_motor.getCurrentPosition();
+                    int rfPos = l_f_motor.getCurrentPosition();
+                    int rbPos = l_f_motor.getCurrentPosition();
+
+                    logger.logD("MechFOVCSV", String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getHeading(), lfPos, lbPos, rfPos, rbPos, l_f_motor_power, l_b_motor_power, r_f_motor_power, r_b_motor_power));
                     nextLog = rt + 0.1;
                 }
             }
