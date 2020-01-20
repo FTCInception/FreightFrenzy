@@ -53,8 +53,8 @@ public class MechAuto_Cal extends LinearOpMode {
 
     private MechBot          robot   = new MechBot();   // Use a Pushbot's hardware
 
-    private static final double     DRIVE_SPEED             = 0.6;
-    private static final double     TURN_SPEED              = 0.4;
+    private static final double     DRIVE_SPEED             = 0.9;
+    private static final double     TURN_SPEED              = 0.5;
     double a=0;
 
     @Override
@@ -81,13 +81,22 @@ public class MechAuto_Cal extends LinearOpMode {
 
         //sleep(24000);
 
-        robot.fastEncoderStraight(DRIVE_SPEED, 96, 10,0.05);
-        sleep(1000);
+        /*
+        robot.fastEncoderStrafe(DRIVE_SPEED, 48, 10);
+        robot.fastEncoderStrafe(DRIVE_SPEED, -48, 10);
+        robot.fastEncoderStrafe(DRIVE_SPEED, 24, 10);
+        robot.fastEncoderStrafe(DRIVE_SPEED, -24, 10);
+        robot.fastEncoderStrafe(DRIVE_SPEED, 12, 10);
+        robot.fastEncoderStrafe(DRIVE_SPEED, -12, 10);
+        */
 
-        robot.gyroRotate(TURN_SPEED,180, 6);
+        //robot.fastEncoderStraight(DRIVE_SPEED, 96, 10,0.05);
+        //sleep(1000);
 
-        robot.fastEncoderStraight(DRIVE_SPEED, 96, 10,0.05);
-        sleep(1000);
+        //robot.gyroRotate(TURN_SPEED,180, 6);
+
+        //robot.fastEncoderStraight(DRIVE_SPEED, 96, 10,0.05);
+        //sleep(1000);
 
         /*
         robot.fastEncoderStraight(DRIVE_SPEED, -48, 10,0.05);
@@ -104,27 +113,39 @@ public class MechAuto_Cal extends LinearOpMode {
         */
 
 
-        /*
-        a=robot.gyroRotate(TURN_SPEED,90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
+/*
+        robot.gyroRotate(TURN_SPEED,90-a, 6);
+        robot.gyroRotate(TURN_SPEED,90-a, 6);
+        robot.gyroRotate(TURN_SPEED,90-a, 6);
+        robot.gyroRotate(TURN_SPEED,90-a, 6);
+        robot.gyroRotate(TURN_SPEED,-90-a, 6);
+        robot.gyroRotate(TURN_SPEED,-90-a, 6);
+        robot.gyroRotate(TURN_SPEED,-90-a, 6);
+        robot.gyroRotate(TURN_SPEED,-90-a, 6);
 
-        a=robot.gyroRotate(TURN_SPEED,360-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,360-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,360-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,360-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-360-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-360-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-360-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-360-a, 6);
+ */
 
-        sleep(5000);
-        */
+/*
+        robot.fastEncoderRotate(TURN_SPEED,90, 6);
+        robot.logger.logD("MechLog",String.format("Turn err %f, heading %f",a,robot.getHeading()));
+        robot.fastEncoderRotate(TURN_SPEED,90, 6);
+        robot.logger.logD("MechLog",String.format("Turn err %f, heading %f",a,robot.getHeading()));
+        robot.fastEncoderRotate(TURN_SPEED,90, 6);
+        robot.logger.logD("MechLog",String.format("Turn err %f, heading %f",a,robot.getHeading()));
+        robot.fastEncoderRotate(TURN_SPEED,90, 6);
+        robot.logger.logD("MechLog",String.format("Turn err %f, heading %f",a,robot.getHeading()));
+        robot.fastEncoderRotate(TURN_SPEED,-90, 6);
+        robot.logger.logD("MechLog",String.format("Turn err %f, heading %f",a,robot.getHeading()));
+        robot.fastEncoderRotate(TURN_SPEED,-90, 6);
+        robot.logger.logD("MechLog",String.format("Turn err %f, heading %f",a,robot.getHeading()));
+        robot.fastEncoderRotate(TURN_SPEED,-90, 6);
+        robot.logger.logD("MechLog",String.format("Turn err %f, heading %f",a,robot.getHeading()));
+        robot.fastEncoderRotate(TURN_SPEED,-90, 6);
+        robot.logger.logD("MechLog",String.format("Turn err %f, heading %f",a,robot.getHeading()));
+*/
+
+        //sleep(5000);
+
 
         /*
         a = robot.fastEncoderStraight(DRIVE_SPEED, 72, 6, 0.06);

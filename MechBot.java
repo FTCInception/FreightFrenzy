@@ -84,19 +84,19 @@ public class MechBot {
             (WHEEL_DIAMETER_INCHES * 3.14159);
     private static final double AXLE_LENGTH = 13.5;          // Width of robot through the pivot point (center wheels)
     // Multiply INCHES_PER_DEGREE by 1.75 to handle the sliding of the MECH wheel rollers?
-    private static final double INCHES_PER_DEGREE = 1.75 * ( (AXLE_LENGTH * 3.14159) / 360.0 );
+    private static final double INCHES_PER_DEGREE = 1.52 * ( (AXLE_LENGTH * 3.14159) / 360.0 );
     private static final double SOFT_D_UP = 50.0;
     private static final double SOFT_D_UP_DEGREE = 5;
     private static final double SOFT_D_DOWN = 70.0;
     private static final double SOFT_D_DOWN2 = 100.0;
-    private static final double SOFT_D_DOWN_DEGREE = 15;
+    private static final double SOFT_D_DOWN_DEGREE = 5;
     private static final double fKpL = 1.0;
     private static final double fKpR = 0.92;
     private static final double PIVOT_FACTOR = 2.05;
     static double KpL;
     static double KpR;
     private static final double CLOSE_ENOUGH = 15.0;
-    private static final double CLOSE_ENOUGH_DEGREE = 2.0;
+    private static final double CLOSE_ENOUGH_DEGREE = 3.0;
     private static final double RIGHT_ARC_COEFFICENT = 1.00;
     private static final double LEFT_ARC_COEFFICENT = 1.25;
     private static final double IMU_CORR = 1.01;
@@ -765,6 +765,42 @@ public class MechBot {
         }
     }
 
+    // Calling with an unknown accel/decel profile, try to find a good one for the caller.
+    public double gyroTurn(double degrees,
+                           double leftPower, double rightPower,
+                           double timeoutS) {
+
+        // This profile is a hold over from the straight commands
+        double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+
+        // This profile is for rotate
+        double[] speedRampUpR = {0.275, 0.325, 0.40, 0.475, 0.55, 0.60, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownR = {0.20, 0.20, 0.225, 0.225, 0.25, 0.25, 0.275, 0.275, 0.30, 0.30, 0.325, 0.325, 0.35, 0.35, 0.375, 0.40, 0.425, 0.45, 0.475, 0.5, 1.0};
+        //double[] speedRampDownR = {0.20, 0.20, 0.225, 0.225, 0.25, 0.25, 0.275, 0.275, 0.0, 0.35, 0.35, 0.375, 0.40, 1.0};
+        //double[] speedRampDownR = {0.20, 0.20, 0.225, 0.225, 0.1, 0.25, 0.1, 0.275, 0.1, 0.30, 0.1, 0.325, 0.1, 0.35, 0.375, 0.40, 1.0};
+
+
+        // This profile is for the foundation movement which is the only thing with Pivot right now.  Better to let foundation manage
+        // it special profile fro itself and build a general purpose pivot here.
+        double[] speedRampUpP = {0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownP = {0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
+
+        // If this is a rotate, use rotate profile
+        if (leftPower == -rightPower) {
+            speedRampUp = speedRampUpR;
+            speedRampDown = speedRampDownR;
+        }
+
+        // If this is a Pivot, use Pivot profile
+        if ((leftPower == 0) || (rightPower == 0) ) {
+            speedRampUp = speedRampUpP;
+            speedRampDown = speedRampDownP;
+        }
+
+        return(gyroTurn(degrees, leftPower, rightPower, timeoutS, speedRampUp, speedRampDown));
+    }
+
     /*
      *  Method to perfmorm an arbitrary turn with differential wheel power and gyro feedback
      *  Move will stop if any of three conditions occur:
@@ -773,27 +809,27 @@ public class MechBot {
      *  3) Driver stops the opmode running.
      */
     public double gyroTurn(double degrees,
-                         double leftPower, double rightPower,
-                         double timeoutS) {
+                           double leftPower, double rightPower,
+                           double timeoutS, double[] up, double[] down) {
         double toGo;
         double maxPower;
         double actSpeed=0.0;
         double newSpeed ;
         double spdUp, spdDn;
-        // This profile is a hold over from the straight commands
-        double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        // This profile is for rotate
-        double[] speedRampDownR = {0.20, 0.25, 0.30, 0.40, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        // This profile is for the foundation movement
-        double[] speedRampUpP = {0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDownP = {0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
+        double[] speedRampUp = up;
+        double[] speedRampDown = down;
         ElapsedTime runtime = new ElapsedTime();
         double tgtHeading, curHeading, startHeading;
         double KsL = 1.0;
         double KsR = 1.0;
         double delta, sign=1.0;
         double rt = 0.0;
+
+        // The gyro is still changing at this point. Try to dump values and understand why.
+        //for(int i=0; i<10; i++) {
+        //    logger.logD("MechLogfoostart", String.format("getHeading: %f", getHeading()));
+        //    myLOpMode.sleep(100);
+        //}
 
         // Get the current Heading
         startHeading = curHeading = getHeading();
@@ -812,17 +848,6 @@ public class MechBot {
 
         // FIXME: Let's assume the caller has made sure our left/right power will turn the same direction as our degrees for now
 
-        // If this is a rotate, use rotate profile
-        if (leftPower == -rightPower) {
-            speedRampDown = speedRampDownR;
-        }
-
-        // If this is a Pivot, use Pivot profile
-        if ((leftPower == 0) || (rightPower == 0) ) {
-            speedRampUp = speedRampUpP;
-            speedRampDown = speedRampDownP;
-        }
-
         // Ensure that the opmode is still active
         if (myLOpMode.opModeIsActive()) {
 
@@ -836,13 +861,6 @@ public class MechBot {
             rightFDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             leftBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             rightBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-            // The front wheels are slipping so they stop and fight the back.  Set them
-            // to FLOAT here to try to avoid that.  Not sure if this actually works
-            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-            //leftBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-            //rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
             // Initialize Power Ratio
             //init maxpower
@@ -935,7 +953,8 @@ public class MechBot {
                     myLOpMode.telemetry.addData("gyro", "deg: %1.3f, curr: %1.3f, start: %1.3f, tgt: %1.3f",degrees,curHeading,startHeading,tgtHeading);
                     myLOpMode.telemetry.update();
                 }
-                logger.logD("MechLogTurnCSV",String.format(",%f,%f,%f,%f,%f,%f,%f,%f,%f,%f", rt, getHeading(), 0.0, 0.0, 0.0, 0.0, Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR))));
+                // FIXME -- Read the front encoders only for logging
+                //logger.logD("MechLogTurnCSV",String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getHeading(), leftFDrive.getCurrentPosition(), leftBDrive.getCurrentPosition(), rightFDrive.getCurrentPosition(), rightBDrive.getCurrentPosition(), Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR))));
             }
 
             // Stop all motion;
@@ -943,13 +962,6 @@ public class MechBot {
             rightFDrive.setPower(0);
             leftBDrive.setPower(0);
             rightBDrive.setPower(0);
-
-            // The front wheels are slipping so they stop and fight the back.  Set them
-            // to FLOAT earlier, so reset to BRAKE here.
-            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            //leftBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            //rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             // Reset run mode
             leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -963,6 +975,13 @@ public class MechBot {
                 myLOpMode.sleep(1000);
             }
         }
+
+        // The gyro is still changing at this point. Try to dump values and understand why.
+        //for(int i=0; i<10; i++) {
+        //    Orientation gyroOrien = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        //    logger.logD("MechLogfooend", String.format("getHeading: x:%f, y:%f, z:%f", AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.thirdAngle), AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.secondAngle), AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle) ));
+        //    myLOpMode.sleep(100);
+        //}
         // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
         logger.logD("MechLog",String.format("turn done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
         return(normalizeAngle(getHeading() - tgtHeading));
@@ -973,14 +992,14 @@ public class MechBot {
                                    double inchesToLeft,
                                    double timeoutS) {
         double a;
-        double[] speedRampUp = {0.30, 0.35, 0.45, 0.55, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDown = {0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975, 1.0};
+        double[] speedRampUp = {0.35, 0.45, 0.55, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDown = {0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975, 1.0};
 
         invertMotorDirection(leftFDrive);
         invertMotorDirection(rightBDrive);
 
         // Default value of P is 0.0 (no gyro assist)
-        a = fastEncoderDrive( speed, inchesToLeft, inchesToLeft, timeoutS, 0.0 , speedRampUp, speedRampDown);
+        a = fastEncoderDrive( speed, inchesToLeft, inchesToLeft, timeoutS, 0.0 , speedRampUp, speedRampDown, 0.9);
 
         invertMotorDirection(rightBDrive);
         invertMotorDirection(leftFDrive);
@@ -1011,17 +1030,31 @@ public class MechBot {
 
         double[] speedRampUp = {0.20, 0.225, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         double[] speedRampDown = {0.10, 0.125, 0.125, 0.15, 0.175, 0.20, 0.225, 0.25, 0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDownT = {0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
 
-        // If we're not going straight, change the speed down profile to a turning-friendly version
-        if (leftInches != rightInches) {
+        double[] speedRampUpR = {0.325, 0.40, 0.475, 0.55, 0.60, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownR = {0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45, 0.475, 0.5, 1.0};
+
+        double[] speedRampUpT = {0.325, 0.40, 0.475, 0.55, 0.60, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownT = {0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45, 0.475, 0.5, 1.0};
+
+        if (leftInches == -rightInches) {
+            speedRampUp = speedRampUpR;
+            speedRampDown = speedRampDownR;
+        } else if (leftInches != rightInches) {
+            speedRampUp = speedRampUpT;
             speedRampDown = speedRampDownT;
         }
 
         return(fastEncoderDrive( speed, leftInches, rightInches, timeoutS, P, speedRampUp, speedRampDown ));
     }
 
-    /*
+
+    public double fastEncoderDrive(double speed,
+                                   double leftInches, double rightInches,
+                                   double timeoutS, double P, double[] up, double[] down) {
+        return (fastEncoderDrive(speed, leftInches, rightInches, timeoutS, P, up, down, 1.0));
+    }
+        /*
      *  Method to perfmorm a relative move, based on encoder counts.
      *  IMU gyro is used to help steer if we're going straight.
      *  Move will stop if any of three conditions occur:
@@ -1031,13 +1064,15 @@ public class MechBot {
      */
     public double fastEncoderDrive(double speed,
                                double leftInches, double rightInches,
-                               double timeoutS, double P, double[] up, double[] down) {
+                               double timeoutS, double P, double[] up, double[] down,
+                               double strafeCorrect) {
 
         int newLeftFTarget;
         int newRightFTarget;
         int newLeftBTarget;
         int newRightBTarget;
         double curPosL, curPosR;
+        double curPosLf, curPosRf;
         double toGoL, toGoR;
         double actSpeedL=0, actSpeedR=0, spdPosL=0, spdPosR=0, spdToGoL=0, spdToGoR=0;
         double newSpeedL, newSpeedR;
@@ -1051,9 +1086,6 @@ public class MechBot {
         double KhL = 1.0;
         double KhR = 1.0;
         double rt = 0.0;
-        // Steering proportional constant
-        // disable gyro assisted straight for now -- we drive straighter without.
-        //double P = 0.00;
 
         // Get the current Heading and update for the correction angle
         curHeading = tgtHeading = getHeading();
@@ -1062,11 +1094,6 @@ public class MechBot {
 
         // now clear the correction angle so it's never used again
         straightA = 0.0;
-
-        // If we're not going straight, change the speed down profile to a turning-friendly version
-        //if (leftInches != rightInches) {
-        //    speedRampDown = speedRampDownT;
-        //}
 
         // Ensure that the opmode is still active
         if (myLOpMode.opModeIsActive()) {
@@ -1091,10 +1118,10 @@ public class MechBot {
             //rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
             // Compute desired position
-            newLeftFTarget = (int)(leftInches * COUNTS_PER_INCH);
+            newLeftFTarget = (int)((leftInches * COUNTS_PER_INCH)*strafeCorrect);
             newRightFTarget = (int)(rightInches * COUNTS_PER_INCH);
             newLeftBTarget = (int)(leftInches * COUNTS_PER_INCH);
-            newRightBTarget = (int)(rightInches * COUNTS_PER_INCH);
+            newRightBTarget = (int)((rightInches * COUNTS_PER_INCH)*strafeCorrect);
 
             // Initialze toGo == target (maximum toGo)
             toGoL = Math.abs(newLeftBTarget);
@@ -1115,6 +1142,10 @@ public class MechBot {
             curPosL = leftBDrive.getCurrentPosition();
             curPosR = rightBDrive.getCurrentPosition();
 
+            // FIXME -- Read the front encoders only for logging
+            //curPosLf = leftFDrive.getCurrentPosition();
+            //curPosRf = rightFDrive.getCurrentPosition();
+
             // Keep looping while we are still active, and there is time left, and we haven't reached the target
             while (myLOpMode.opModeIsActive() &&
                     ((rt=runtime.seconds()) < timeoutS) &&
@@ -1125,10 +1156,14 @@ public class MechBot {
                 if (!doneL) {
                     spdPosL = curPosL = leftBDrive.getCurrentPosition();
                     toGoL = Math.min(toGoL, Math.max(0, Math.abs(newLeftBTarget - curPosL)));
+                    // FIXME -- Read the front encoders only for logging
+                    //curPosLf = leftFDrive.getCurrentPosition();
                 }
                 if (!doneR) {
                     spdPosR = curPosR = rightBDrive.getCurrentPosition();
                     toGoR  = Math.min(toGoR, Math.max(0,Math.abs(newRightBTarget - curPosR)));
+                    // FIXME -- Read the front encoders only for logging
+                    //curPosRf = rightFDrive.getCurrentPosition();
                 }
                 if (leftInches == rightInches) {
                     spdPosL = spdPosR = (curPosL + curPosR)/2;
@@ -1188,15 +1223,15 @@ public class MechBot {
 
                 if ((newSpeedL != actSpeedL ) || (newSpeedR != actSpeedR )) {
 
-                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, strafeCorrect*newSpeedL)));
                     rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
-                    rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
+                    rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, strafeCorrect*newSpeedR)));
                     leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
                     actSpeedL = newSpeedL;
                     actSpeedR = newSpeedR;
                 }
 
-                logger.logD("MechLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f,%f,%f,%f,%f", rt, deltaHeading, curPosL, curPosL, curPosR, curPosR, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
+                //logger.logD("MechLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f,%f,%f,%f,%f", rt, deltaHeading, curPosLf, curPosL, curPosRf, curPosR, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
 
                 if (DEBUG) {
                     myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
