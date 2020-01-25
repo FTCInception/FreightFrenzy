@@ -53,9 +53,10 @@ public class MechAuto_Cal extends LinearOpMode {
 
     private MechBot          robot   = new MechBot();   // Use a Pushbot's hardware
 
-    private static final double     DRIVE_SPEED             = 0.9;
-    private static final double     TURN_SPEED              = 0.5;
+    private static final double     DRIVE_SPEED             = 0.8;
+    private static final double     TURN_SPEED              = 0.65;
     double a=0;
+    double P=0.05;
 
     @Override
     public void runOpMode() {
@@ -75,25 +76,146 @@ public class MechAuto_Cal extends LinearOpMode {
         // Init the robot setting for Autonomous play
         robot.initAutonomous(this);
 
+        while (!isStarted()) {
+            sleep(250);
+            robot.getQHeading();
+        }
+
         // Wait for the game to start (driver presses PLAY)
-        waitForStart();
+        //waitForStart();
 
 
         //sleep(24000);
 
+
         /*
-        robot.fastEncoderStrafe(DRIVE_SPEED, 48, 10);
-        robot.fastEncoderStrafe(DRIVE_SPEED, -48, 10);
-        robot.fastEncoderStrafe(DRIVE_SPEED, 24, 10);
-        robot.fastEncoderStrafe(DRIVE_SPEED, -24, 10);
-        robot.fastEncoderStrafe(DRIVE_SPEED, 12, 10);
-        robot.fastEncoderStrafe(DRIVE_SPEED, -12, 10);
+        // Yeah, the encoder for one revolution is 537.6.
+        // Not 570 like we think documentation said.
+        robot.encoderTest(0.2,546,5);
+        robot.encoderTest(0.2,546,5);
+        robot.encoderTest(0.2,546,5);
+        robot.encoderTest(0.2,546,5);
+        robot.encoderTest(0.2,538*10,50);
+        */
+
+        /*
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,12, 2, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,12, 2, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,12, 2, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,12, 2, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-12, 2, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-12, 2, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-12, 2, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-12, 2, P );
+        robot.grabBlock(1000);
+        robot.dropBlock(500);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,24, 2, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,24, 2, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-24, 2, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-24, 2, P );
+        robot.grabBlock(1000);
+        robot.dropBlock(500);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,12, 5, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,36, 5, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-36, 5, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-12, 5, P );
+        robot.grabBlock(1000);
+        robot.dropBlock(500);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,48, 5, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-48, 5, P );
+        robot.grabBlock(1000);
+        robot.dropBlock(500);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,72, 5, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-72, 5, P );
+        robot.grabBlock(1000);
+        robot.dropBlock(500);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,96, 5, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-96, 5, P );
+        robot.grabBlock(1000);
+        robot.dropBlock(500);
+        sleep(10000);
+        */
+
+        /*
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,96, 5, P );
+        robot.grabBlock(1000);
+        robot.dropBlock(500);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-96, 5, P );
+        robot.grabBlock(1000);
+        robot.dropBlock(500);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,96, 5, P );
+        robot.grabBlock(1000);
+        robot.dropBlock(500);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-96, 5, P );
+        robot.grabBlock(1000);
+        robot.dropBlock(500);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,96, 5, P );
+        robot.grabBlock(1000);
+        robot.dropBlock(500);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-96, 5, P );
+        robot.grabBlock(1000);
+        robot.dropBlock(500);
+        sleep(5000);
+        */
+
+        /*
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED, -48, 10, P);
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED, 48, 10, P);
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED, -24, 10, P);
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED, 24, 10, P);
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED, -12, 10, P);
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED, 12, 10, P);
         */
 
         //robot.fastEncoderStraight(DRIVE_SPEED, 96, 10,0.05);
         //sleep(1000);
 
-        //robot.gyroRotate(TURN_SPEED,180, 6);
+        /*
+        a=robot.gyroRotate(TURN_SPEED,90-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,90-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,180-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,180-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,360-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-360-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-180-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-180-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
+        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
+        */
 
         //robot.fastEncoderStraight(DRIVE_SPEED, 96, 10,0.05);
         //sleep(1000);

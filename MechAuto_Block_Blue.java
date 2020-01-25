@@ -52,24 +52,19 @@ public class MechAuto_Block_Blue extends LinearOpMode {
 
     private MechBot robot = new MechBot();   // Use a Pushbot's hardware
 
-    private static final double DRIVE_SPEED = 0.4;
-    private static final double TURN_SPEED = 0.4;
+    private static final double DRIVE_SPEED = 0.8;
+    private static final double TURN_SPEED = 0.65;
     private static final double PIVOT_SPEED = 0.40;
     private static final double SQ = 70 / 3.0;        // Length of 3 squares / 3 in case we want to think that way
     private static final double[] blocks = {0.0, 28.0, 36.0, 44.0, 4.0, 12.0, 20.0};
     private static final double dropZone = 80.0;
-    private static final double bridge = 67.0;
+    private static final double bridge = 71.0;
     private String className = this.getClass().getSimpleName().toLowerCase();
 
     private IncepVision vision = new IncepVision();
     private int block;
     private double P = 0.05;
     private double a = 0;
-    double du[] = {0.25, 0.3, 0.4};
-    double dd[] = {0.25, 0.3, 0.35, 0.4};
-
-
-    //double d[] = {0.15,0.20, 0.25, 0.3, 0.35, 0.4};
 
     @Override
     public void runOpMode() {
@@ -79,19 +74,20 @@ public class MechAuto_Block_Blue extends LinearOpMode {
         double laneLengthWall;
         double laneAdjust1;
         double laneAdjust2;
+        int    ideals[]={0, 436, 220, 176};
 
+        //robot.logger.LOGLEVEL = robot.logger.LOGDEBUG ;
 
         // Init the robot and subsystems
         robot.init(hardwareMap);
         robot.initAutonomous(this);
-        //vision.initAutonomous(this);
+        vision.initAutonomous(this);
 
         // Wait until we're told to go and look for the block
         while (!isStarted()) {
-            //block = vision.getBlockNumber();
-            block = 1;
+            block = vision.getBlockNumber(ideals);
         }
-        //vision.shutdown();
+        vision.shutdown();
 
         // Red or blue alliance changes include:
         // Correction for block numbering
@@ -118,7 +114,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
         if (className.contains("wall")) {
             laneLength = laneLengthWall;
         } else {
-            laneLength = 8.0;
+            laneLength = 10.0;
         }
 
         // Wait for the game to start (driver presses PLAY)
@@ -126,36 +122,114 @@ public class MechAuto_Block_Blue extends LinearOpMode {
 
         // Choose the order we grab blocks in.
         if (block == 3) {
-            firstBlock=blocks[2];
-            secondBlock=blocks[3];
+            firstBlock=blocks[3];
+            secondBlock=blocks[6];
             thirdBlock=blocks[0];
             fourthBlock=blocks[0];
 
         } else if (block == 2) {
             firstBlock=blocks[2];
-            secondBlock=blocks[3];
+            secondBlock=blocks[5];
             thirdBlock=blocks[0];
             fourthBlock=blocks[0];
 
         } else if (block == 1) {
-            firstBlock=blocks[2];
+            firstBlock=blocks[1];
             secondBlock=blocks[3];
             thirdBlock=blocks[0];
             fourthBlock=blocks[0];
 
         } else {
-            firstBlock=blocks[2];
+            firstBlock=blocks[1];
             secondBlock=blocks[3];
             thirdBlock=blocks[0];
             fourthBlock=blocks[0];
         }
 
+
+        // Separate from wall
+        //robot.fastEncoderDrive(DRIVE_SPEED,10, 10, 2, P, du, du );
+        a=robot.fastEncoderStraight(DRIVE_SPEED,16, 3, P );
+        // Do 180
+        a=robot.gyroRotate(TURN_SPEED, 180-a, 4);
+
+        // 'a' is used as an adjustment angle throughout the following code
+        // Each step along the way has a target angle returns the delta to that
+        // angle after each operation.  We keep track of the err adjustment
+        // and ask the next move to handle it so the error shouldn't build.
+
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,-turnDirection*(firstBlock-blocks[3]), 3 );
+
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-17, 3, P );
+
+        robot.grabBlock(500);
+
+        // Backup and turn towards the drop zone
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,laneLength,4, P);
+
+        a=robot.gyroRotate(TURN_SPEED,(90 * turnDirection)-a, 4);
+
+        //go to drop zone
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,firstBlock - dropZone, 4, P);
+
+        robot.dropBlock(100);
+
+        //come back and go for next one
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,dropZone - secondBlock, 4, P);
+        a=robot.gyroRotate(TURN_SPEED,(-90 * turnDirection)-a, 4);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-(laneLength + 2 + laneAdjust1),4, P);
+
+        robot.grabBlock(500);
+
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,laneLength+2,4, P);
+        a=robot.gyroRotate(TURN_SPEED,(90 * turnDirection)-a, 4);
+
+        //go to drop zone
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED, secondBlock - dropZone, 4, P);
+
+        //drop block
+        robot.dropBlock(100);
+
+        if (thirdBlock != blocks[0]) {
+            //come back and go for next one
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, dropZone - thirdBlock, 4, P);
+            a = robot.gyroRotate(TURN_SPEED, (-90 * turnDirection)-a, 4);
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -(laneLength + 2 + laneAdjust2), 4, P);
+
+            robot.grabBlock(500);
+
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, laneLength + 2, 4, P);
+
+            a = robot.gyroRotate(TURN_SPEED, (90 * turnDirection)-a, 4);
+
+            //go to drop zone
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, thirdBlock - dropZone, 4, P);
+
+            //drop block
+            robot.dropBlock(100);
+        }
+
+        //Park under bridge
+        a=robot.fastEncoderStraight(DRIVE_SPEED,dropZone - bridge, 4, P);
+
+        // Extend for parking reach
+        robot.grabBlock(1000);
+    }
+}
+
         /*
-        // Strafe test
-        // robot.fastEncoderStrafe(DRIVE_SPEED, 20, 3);
-        // robot.fastEncoderStraight(DRIVE_SPEED, -10, 2);
-        // robot.fastEncoderStrafe(DRIVE_SPEED, -20, 3);
-        // robot.fastEncoderStraight(DRIVE_SPEED, 10, 2);
 
         // New intake-based auto
         a = robot.fastEncoderStraight(0.5, 36, 3, P);
@@ -164,12 +238,6 @@ public class MechAuto_Block_Blue extends LinearOpMode {
         a = robot.gyroRotate(TURN_SPEED,(-45 * turnDirection)-a, 4);
 
         a = robot.fastEncoderStraight(DRIVE_SPEED, 8, 1.2, P);
-
-
-        // FAIL to drive at an angle into the blocks
-        //a = robot.fastEncoderStraight(DRIVE_SPEED, 18, 3, P);
-        //a = robot.gyroRotate(TURN_SPEED,(-45 * turnDirection)-a, 4);
-        //a = robot.fastEncoderStraight(DRIVE_SPEED, 14, 3, P);
 
         robot.l_in_motor.setPower(-0.8);
         robot.r_in_motor.setPower(-0.8);
@@ -198,101 +266,3 @@ public class MechAuto_Block_Blue extends LinearOpMode {
         robot.l_in_motor.setPower(0);
         robot.r_in_motor.setPower(0);
         */
-
-        // Separate from foundation
-        robot.fastEncoderDrive(DRIVE_SPEED,10, 10, 2, P, du, du );
-        // Do 180
-        robot.gyroRotate(TURN_SPEED, 179, 4);
-
-        // 'a' is used as an adjustment angle throughout the following code
-        // Each step along the way has a target angle returns the delta to that
-        // angle after each operation.  We keep track of the err adjustment
-        // and ask the next move to handle it so the error shouldn't build.
-        if (firstBlock == blocks[3]) {
-            //a = robot.gyroPivot(-TURN_SPEED, (67 * turnDirection), 2);
-            //a = robot.gyroPivot(-TURN_SPEED, (-67 * turnDirection)-a, 2);
-
-            robot.straightA = a;
-            robot.fastEncoderDrive(DRIVE_SPEED,-14, -14, 2, P, du, du );
-        } else {
-            // This isn't right, but we're hard coding the blocks...
-            robot.straightA = a;
-            robot.fastEncoderDrive(DRIVE_SPEED,-14, -14, 2, P, du, du );
-        }
-
-        // This is backup code in case we need to fix broken vision for some reason.
-        // If block 1 is yellow, we better grab block 3 next (we're getting 2 now.
-        // This should reverse for red auto.
-        // Enable the LED, sample the color sensor automatically via telemetery update, turn off LED
-        //robot.colorSensor.enableLed(true);
-        //sleep(100);
-        //if (isColorSensorYellow) {
-        //   block = 3;
-        //}
-        //robot.colorSensor.enableLed(false);
-
-        robot.grabBlock(1000);
-
-        // Not sure why, bt
-        // Backup and turn towards the drop zone
-        robot.straightA = a;
-        robot.fastEncoderStraight(DRIVE_SPEED,laneLength,4, P);
-
-        robot.gyroRotate(TURN_SPEED,(80 * turnDirection)-a, 4);
-
-        //go to drop zone
-        robot.straightA = a;
-        robot.fastEncoderStraight(DRIVE_SPEED,firstBlock - dropZone, 4, P);
-
-        robot.dropBlock(500);
-
-        //come back and go for next one
-        robot.straightA = a;
-        robot.fastEncoderStraight(DRIVE_SPEED,dropZone - secondBlock, 4, P);
-        robot.gyroRotate(TURN_SPEED,(-80 * turnDirection)-a, 4);
-        robot.straightA = a;
-        robot.fastEncoderStraight(DRIVE_SPEED,-(laneLength + 2 + laneAdjust1),4, P);
-
-        robot.grabBlock(1000);
-
-        robot.straightA = a;
-        robot.fastEncoderStraight(DRIVE_SPEED,laneLength+2,4, P);
-        robot.gyroRotate(TURN_SPEED,(80 * turnDirection)-a, 4);
-
-        //go to drop zone
-        robot.straightA = a;
-        robot.fastEncoderStraight(DRIVE_SPEED, secondBlock - dropZone, 4, P);
-
-        //drop block
-        robot.dropBlock(500);
-
-        if (thirdBlock != blocks[0]) {
-            //come back and go for next one
-            robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, dropZone - thirdBlock, 4, P);
-            a = robot.gyroRotate(TURN_SPEED, (-90 * turnDirection)-a, 4);
-            robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -(laneLength + 2 + laneAdjust2), 4, P);
-
-            robot.grabBlock(1000);
-
-            robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, laneLength + 2, 4, P);
-
-            a = robot.gyroRotate(TURN_SPEED, (90 * turnDirection)-a, 4);
-
-            //go to drop zone
-            robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, thirdBlock - dropZone, 4, P);
-
-            //drop block
-            robot.dropBlock(500);
-        }
-
-        //Park under bridge
-        robot.fastEncoderStraight(DRIVE_SPEED,dropZone - bridge, 4, P);
-
-        // Extend for parking reach
-        robot.grabBlock(1000);
-    }
-}
