@@ -203,8 +203,16 @@ public class IncepVision {
     }
 
 
-        //below function returns skystone blocks
     public int getBlockNumber() {
+
+        int ideals[] = {0, 468, 252, 208};
+
+        return (getBlockNumber(ideals));
+    }
+
+
+    //below function returns skystone blocks
+    public int getBlockNumber( int[] ideals ) {
         int center;
         int ideal=0;
 
@@ -416,16 +424,21 @@ public class IncepVision {
             }
         }
 
+        // Experimentally determine ideal columns for each configuration
+        // just in case the referees don't setup the blocks in the center position.
         if (BlockNumber == 1) {
-            ideal = 468;
+            ideal = ideals[1];
         } else if (BlockNumber == 2) {
-            ideal = 252;
+            ideal = ideals[2];
         } else if (BlockNumber == 3) {
-            ideal = 208;
+            ideal = ideals[3];
         } else {
-            ideal = 0;
+            ideal = ideals[0];
         }
 
+        // Now create color ranges
+        // Our vision code only returns columns in 4 pixel alignments so +/-7 is really about as
+        // close as possible.  +/-15 is probably within 1 inch of center.
         if ( Math.abs(ideal - column) < 7 ) {
             botGrade = Color.GREEN;
         } else if ( Math.abs(ideal - column) < 15 ) {
@@ -434,6 +447,7 @@ public class IncepVision {
             botGrade = Color.RED;
         }
 
+        // Leveraged from sample code from MR Gyro example
         relativeLayout.post(new Runnable() {
             public void run() {
                 relativeLayout.setBackgroundColor(botGrade);
