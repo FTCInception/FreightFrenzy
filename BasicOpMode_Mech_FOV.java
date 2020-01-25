@@ -45,6 +45,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Quaternion;
 
 import java.util.Locale;
 
@@ -75,7 +76,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     private static Servo back_grabber, front_grabber, slide;
 
     BNO055IMU imu,imu2;
-    Orientation angles,angles2;
+    //Orientation angles,angles2;
     double MAX_OUTTAKE_POWER = 0.5;
     double MAX_INTAKE_POWER = 0.9;
 
@@ -136,6 +137,45 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         return(Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)));
     }
 
+    public double getQHeading()
+    {
+        Quaternion q = imu.getQuaternionOrientation();
+        q = q.normalized();
+
+        // This code was leveraged from here:
+        // http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
+
+        //double t=q.x*q.y + q.z*q.w;
+        //double h,a,b;
+        //double sqy = q.y * q.y;
+        double b;
+        double sqx = q.x * q.x;
+        double sqz = q.z * q.z;
+
+        // We only need 'b' here since our bot is only intending to rotate in one dimension
+        // We don't need to worry about singularities for Quaternion to Euler conversion
+        // Because of a single dimension of turning.
+        //h = Math.atan2(2 * q.y * q.w - 2 * q.x * q.z, 1 - 2 * sqy - 2 * sqz);
+        //a = Math.asin(2 * t);
+        b = Math.atan2(2 * q.x * q.w - 2 * q.y * q.z, 1 - 2 * sqx - 2 * sqz);
+
+        // This code is a way to compare our Quaternion vs Euler gyro readings
+        /*
+        Orientation gyroOrien = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        logger.logD("MechLog",String.format(" getQHeadingNorm: t:%f, h:%f(%f), a:%f(%f), b:%f(%f)",
+                     t,
+                     -(h/Math.PI)*180,
+                     AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.secondAngle),
+                     -(a/Math.PI)*180,
+                     AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.thirdAngle),
+                     -(b/Math.PI)*180,
+                     AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle)));
+         */
+
+        return (-(b/Math.PI)*180.0);
+    }
+
+
 
     @Override
     public void runOpMode() {
@@ -150,6 +190,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         boolean lBump1Prev=false, rBump1Prev=false;
         int lFounPos=0, rFounPos=0, clawPos=0;
         double rt = 0.0, nextLog = 0.0;
+        boolean dLeft1Prev=false;
+        double childLock=1.0;
 
         if (enableCSVLogging) {
             // Enable debug logging
@@ -214,7 +256,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
-            // Begin controller 1 (driver)
+            // Begin controller 2 (co-pilot)
             // Single button toggle for grabbers
             if (gamepad2.left_bumper) {
                 if(!lBump2Prev) {
@@ -243,9 +285,10 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             r_out_motor.setPower(out_pwr);
 
             // Get the heading
-            angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            //angles2   = imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            degrees[1] = degrees[0] = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
+            degrees[1] = degrees[0] = getQHeading();
+            //angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+            ////angles2   = imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+            //degrees[1] = degrees[0] = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
 
             // Get controller 1 (driver)
             strafe[0] = gamepad1.left_stick_x;
@@ -257,14 +300,31 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             forward[1] = -gamepad2.left_stick_y;
             rotate[1] = gamepad2.right_stick_x;
 
-            // Anyone asking to update the FOV for their controller?
+            // Anyone asking to update the FOV for their controller1?
             if (gamepad1.dpad_up) {
                 adjustAngle[0] = degrees[0];
             }
 
+            // Anyone asking to update the FOV for their controller2?
             if (gamepad2.dpad_up) {
                 adjustAngle[1] = degrees[1];
             }
+
+            // Toggle the child lock between 0.0 and 1.0
+            if (gamepad1.dpad_left) {
+                if (!dLeft1Prev) {
+                    if (childLock == 0.0) {
+                        childLock = 1.0;
+                    } else {
+                        childLock = 0.0;
+                    }
+                    dLeft1Prev = true;
+                }
+            } else {
+                dLeft1Prev = false;
+            }
+
+
 
             // Compute the effective offset for each controller FOV
             degrees[0] = AngleUnit.DEGREES.normalize(degrees[0] - adjustAngle[0]);
@@ -285,10 +345,10 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             forward[1] = new_y;
 
             // This adds the requested powers from both controllers together scaled for each controller and FOV (clipped to 1.0)
-            l_f_motor_power   = Range.clip(((forward[0] + strafe[0] + rotate[0]) * speedModifier[0])+((forward[1] + strafe[1] + rotate[1]) * speedModifier[1]), -1.0, 1.0) ;
-            l_b_motor_power   = Range.clip(((forward[0] - strafe[0] + rotate[0]) * speedModifier[0])+((forward[1] - strafe[1] + rotate[1]) * speedModifier[1]), -1.0, 1.0) ;
-            r_f_motor_power   = Range.clip(((forward[0] - strafe[0] - rotate[0]) * speedModifier[0])+((forward[1] - strafe[1] - rotate[1]) * speedModifier[1]), -1.0, 1.0) ;
-            r_b_motor_power   = Range.clip(((forward[0] + strafe[0] - rotate[0]) * speedModifier[0])+((forward[1] + strafe[1] - rotate[1]) * speedModifier[1]), -1.0, 1.0) ;
+            l_f_motor_power   = Range.clip(((forward[0] + strafe[0] + rotate[0]) * speedModifier[0])+((forward[1] + strafe[1] + rotate[1]) * speedModifier[1] * childLock), -1.0, 1.0) ;
+            l_b_motor_power   = Range.clip(((forward[0] - strafe[0] + rotate[0]) * speedModifier[0])+((forward[1] - strafe[1] + rotate[1]) * speedModifier[1] * childLock), -1.0, 1.0) ;
+            r_f_motor_power   = Range.clip(((forward[0] - strafe[0] - rotate[0]) * speedModifier[0])+((forward[1] - strafe[1] - rotate[1]) * speedModifier[1] * childLock), -1.0, 1.0) ;
+            r_b_motor_power   = Range.clip(((forward[0] + strafe[0] - rotate[0]) * speedModifier[0])+((forward[1] + strafe[1] - rotate[1]) * speedModifier[1] * childLock), -1.0, 1.0) ;
 
             // Additional driver controls
             //speed control
@@ -369,7 +429,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                     int rfPos = l_f_motor.getCurrentPosition();
                     int rbPos = l_f_motor.getCurrentPosition();
 
-                    logger.logD("MechFOVCSV", String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getHeading(), lfPos, lbPos, rfPos, rbPos, l_f_motor_power, l_b_motor_power, r_f_motor_power, r_b_motor_power));
+                    logger.logD("MechFOVCSV", String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getQHeading(), lfPos, lbPos, rfPos, rbPos, l_f_motor_power, l_b_motor_power, r_f_motor_power, r_b_motor_power));
                     nextLog = rt + 0.1;
                 }
             }
