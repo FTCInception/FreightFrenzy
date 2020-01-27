@@ -140,6 +140,6 @@ public class MechAuto_Foundation_Red extends LinearOpMode {
         robot.releaseFoundation(0);
 
         // Drive to the bridge along the wall
-        robot.fastEncoderStraight(DRIVE_SPEED,34,15, 0.05);
+        robot.fastEncoderStraight(DRIVE_SPEED,40,15, 0.05);
     }
 }
