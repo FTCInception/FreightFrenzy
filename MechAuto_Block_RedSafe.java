@@ -47,8 +47,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *
  */
 
-@Autonomous(name="Mech: Auto Block Red", group="MechBot")
-public class MechAuto_Block_Red extends LinearOpMode {
+@Autonomous(name="Mech: Auto Block RedSafe", group="MechBot")
+public class MechAuto_Block_RedSafe extends LinearOpMode {
 
     private MechBot robot = new MechBot();   // Use a Pushbot's hardware
 
@@ -132,18 +132,17 @@ public class MechAuto_Block_Red extends LinearOpMode {
             robot.KpL *= 1.05;
 
         } else if (block == 1) {
-            firstBlock=blocks[1];
-            secondBlock=blocks[4];
-            thirdBlock=blocks[0];
-            fourthBlock=blocks[0];
+            //This is the crazy one.  Not doing this is safe mode
+            //firstBlock=blocks[1];
+            //secondBlock=blocks[4];
+            //thirdBlock=blocks[0];
+            //fourthBlock=blocks[0];
 
-            /*
             // This is functioning single-skystone (2 blocks total)
-            firstBlock=blocks[1];
-            secondBlock=blocks[3];
+            firstBlock=blocks[3];
+            secondBlock=blocks[1];
             thirdBlock=blocks[0];
             fourthBlock=blocks[0];
-            */
 
         } else {
             firstBlock=blocks[3];

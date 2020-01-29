@@ -47,7 +47,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *
  */
 
-@Autonomous(name="Mech: Auto Block Blue", group="Mechbot")
+@Autonomous(name="Mech: Auto Block Blue", group="MechBot")
 public class MechAuto_Block_Blue extends LinearOpMode {
 
     private MechBot robot = new MechBot();   // Use a Pushbot's hardware
@@ -57,7 +57,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
     private static final double PIVOT_SPEED = 0.40;
     private static final double SQ = 70 / 3.0;        // Length of 3 squares / 3 in case we want to think that way
     private static final double[] blocks = {0.0, 28.0, 36.0, 44.0, 4.0, 12.0, 20.0};
-    private static final double dropZone = 80.0;
+    private static final double dropZone = 82.0;
     private static final double bridge = 71.0;
     private String className = this.getClass().getSimpleName().toLowerCase();
 
@@ -74,7 +74,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
         double laneLengthWall;
         double laneAdjust1;
         double laneAdjust2;
-        int    ideals[]={0, 400, 184, 140};
+        int    ideals[]={0, 412, 196, 152};
 
         //robot.logger.LOGLEVEL = robot.logger.LOGDEBUG ;
 
@@ -96,8 +96,6 @@ public class MechAuto_Block_Blue extends LinearOpMode {
         if (className.contains("blue")) {
             turnDirection = 1.0;
             laneLengthWall = 29;
-            laneAdjust1 = 1;
-            laneAdjust2 = 2;
         } else {
             if (block == 3) {
                 block = 1;
@@ -106,8 +104,6 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             }
             turnDirection = -1.0;
             laneLengthWall = 28;
-            laneAdjust1 = 1;
-            laneAdjust2 = 2;
         }
 
         // Wall or block lane -- only difference is a straight distance
@@ -138,24 +134,29 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             secondBlock=blocks[4];
             thirdBlock=blocks[0];
             fourthBlock=blocks[0];
+
             // This is a 3-block blue side auto
             /*
             firstBlock=blocks[1];
             secondBlock=blocks[3];
             thirdBlock=blocks[2];
             fourthBlock=blocks[0];
+            robot.KpR *= 1.1;
+            robot.KpL *= 1.1;
             */
         } else {
             firstBlock=blocks[1];
             secondBlock=blocks[3];
             thirdBlock=blocks[2];
             fourthBlock=blocks[0];
+            robot.KpR *= 1.1;
+            robot.KpL *= 1.1;
         }
 
 
         // Separate from wall
         //robot.fastEncoderDrive(DRIVE_SPEED,10, 10, 2, P, du, du );
-        a=robot.fastEncoderStraight(DRIVE_SPEED,16, 3, P );
+        a=robot.fastEncoderStraight(DRIVE_SPEED,18, 3, P );
         // Do 180
         a=robot.gyroRotate(TURN_SPEED, 180-a, 4);
 
@@ -165,10 +166,10 @@ public class MechAuto_Block_Blue extends LinearOpMode {
         // and ask the next move to handle it so the error shouldn't build.
 
         robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED,-turnDirection*(firstBlock-blocks[1]), 3 );
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,-turnDirection*(firstBlock-blocks[1]), 1.5 );
 
         robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-17, 3, P );
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-18, 3, P );
 
         robot.grabBlock(500);
 
@@ -182,7 +183,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
         robot.straightA = a;
         a=robot.fastEncoderStraight(DRIVE_SPEED,firstBlock - dropZone, 4, P);
 
-        robot.dropBlock(100);
+        robot.dropBlock(350);
 
         // This is the hard block against the wall
         if (secondBlock == blocks[4]) {
@@ -193,27 +194,27 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             robot.straightA = a;
 
             robot.straightA = a;
-            a = robot.fastEncoderStrafe(DRIVE_SPEED, 15, 1.75, P);
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, 15, 1.75);
 
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -(laneLength + 2 + laneAdjust1), 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -(laneLength + 2), 2.5, P);
 
             robot.grabBlock(500);
 
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, laneLength + 2, 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, laneLength + 2, 2.5, P);
 
             robot.straightA = a;
-            a = robot.fastEncoderStrafe(DRIVE_SPEED, -12, 4, P);
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, -12, 1.75);
 
             a = robot.gyroRotate(TURN_SPEED, (90 * turnDirection) - a, 4);
 
             //go to drop zone
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, 15 - dropZone, 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, 14 - dropZone, 4, P);
 
             //drop block
-            robot.dropBlock(100);
+            robot.dropBlock(350);
 
         } else {
             //come back and go for next one
@@ -221,7 +222,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             a=robot.fastEncoderStraight(DRIVE_SPEED,dropZone - secondBlock, 4, P);
             a=robot.gyroRotate(TURN_SPEED,(-90 * turnDirection)-a, 4);
             robot.straightA = a;
-            a=robot.fastEncoderStraight(DRIVE_SPEED,-(laneLength + 2 + laneAdjust1),4, P);
+            a=robot.fastEncoderStraight(DRIVE_SPEED,-(laneLength + 2),4, P);
 
             robot.grabBlock(500);
 
@@ -234,7 +235,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             a=robot.fastEncoderStraight(DRIVE_SPEED, secondBlock - dropZone, 4, P);
 
             //drop block
-            robot.dropBlock(100);
+            robot.dropBlock(350);
         }
 
         if (thirdBlock != blocks[0]) {
@@ -243,7 +244,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             a = robot.fastEncoderStraight(DRIVE_SPEED, dropZone - thirdBlock, 4, P);
             a = robot.gyroRotate(TURN_SPEED, (-90 * turnDirection)-a, 4);
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -(laneLength + 2 + laneAdjust2), 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -(laneLength + 2), 4, P);
 
             robot.grabBlock(500);
 
@@ -257,51 +258,13 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             a = robot.fastEncoderStraight(DRIVE_SPEED, thirdBlock - dropZone, 4, P);
 
             //drop block
-            robot.dropBlock(100);
+            robot.dropBlock(350);
         }
 
         //Park under bridge
         a=robot.fastEncoderStraight(DRIVE_SPEED,dropZone - bridge, 4, P);
 
-        // Extend for parking reach
-        robot.grabBlock(1000);
+        // Do not extend claw at the end, too much chance of damage
+        //robot.grabBlock(1000);
     }
 }
-
-        /*
-
-        // New intake-based auto
-        a = robot.fastEncoderStraight(0.5, 36, 3, P);
-        a = robot.fastEncoderStraight(DRIVE_SPEED, -8, 1.2, P);
-
-        a = robot.gyroRotate(TURN_SPEED,(-45 * turnDirection)-a, 4);
-
-        a = robot.fastEncoderStraight(DRIVE_SPEED, 8, 1.2, P);
-
-        robot.l_in_motor.setPower(-0.8);
-        robot.r_in_motor.setPower(-0.8);
-
-        sleep(250);
-
-        a = robot.fastEncoderDrive(DRIVE_SPEED, 4, 4,3, P, d, d);
-
-        robot.l_in_motor.setPower(-0.2);
-        robot.r_in_motor.setPower(-0.2);
-
-        a = robot.fastEncoderStraight(DRIVE_SPEED, -18, 3, P);
-
-        a = robot.gyroRotate(TURN_SPEED,(135 * turnDirection)-a, 4);
-
-        a = robot.fastEncoderStraight(DRIVE_SPEED, 36, 3, P);
-
-        robot.l_in_motor.setPower(0);
-        robot.r_in_motor.setPower(0);
-        sleep(500);
-        robot.l_in_motor.setPower(0.4);
-        robot.r_in_motor.setPower(0.4);
-
-        a = robot.fastEncoderStraight(DRIVE_SPEED, -36, 3, P);
-
-        robot.l_in_motor.setPower(0);
-        robot.r_in_motor.setPower(0);
-        */
