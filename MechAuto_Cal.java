@@ -30,6 +30,7 @@
 package Inception.Skystone;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 /**
@@ -48,6 +49,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  */
 
 @Autonomous(name="Mech: Auto Cal", group="Mechbot")
+@Disabled
 public class MechAuto_Cal extends LinearOpMode {
     /* Declare OpMode members. */
 
@@ -84,9 +86,42 @@ public class MechAuto_Cal extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         //waitForStart();
 
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 4 );
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 4 );
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 4 );
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 4 );
+
+        /*
+        double turnDirection = -1.0;
+
+        robot.foundation2.setPosition(0.35);
+        a=robot.gyroRotate(TURN_SPEED,(-90 * turnDirection)-a, 4);
+        robot.claw.setPosition(0.7);
+        sleep(500);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-(10 + 2),4, P);
+
+        a=robot.gyroTurn((145 * turnDirection)-a, TURN_SPEED/2.0, -TURN_SPEED, 4);
+        robot.claw.setPosition(0.25);
+
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-(10),4, P);
+        a=robot.gyroRotate(TURN_SPEED,(-55 * turnDirection)-a, 4);
+        robot.claw.setPosition(0.7);
+
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-68,4, P);
+        robot.dropBlock(100);
+
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,12,4, P);
+        // End funky stuff
+        */
 
         //sleep(24000);
-
 
         /*
         // Yeah, the encoder for one revolution is 537.6.
