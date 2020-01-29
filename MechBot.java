@@ -1212,7 +1212,7 @@ public class MechBot {
         invertMotorDirection(leftFDrive);
         invertMotorDirection(rightBDrive);
 
-        a = fastEncoderDrive( speed, inchesToLeft, inchesToLeft, timeoutS, P, speedRampUp, speedRampDown, 0.9);
+        a = fastEncoderDrive( speed, inchesToLeft, inchesToLeft, timeoutS, P, speedRampUp, speedRampDown, 0.93);
 
         invertMotorDirection(rightBDrive);
         invertMotorDirection(leftFDrive);
@@ -1495,17 +1495,10 @@ public class MechBot {
                     }
                 } else {
                     // left strafe steering seems to be working.  Not sure why we can't get right strafe steering working.
-                    if (leftInches > 0) {
-                        leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, strafeCorrect * newSpeedL * KpL * KhL)));
-                        rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR * KpR * KhR)));
-                        rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, strafeCorrect * newSpeedR * KpR * KhL)));
-                        leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL * KpL * KhR)));
-                    } else {
-                        leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, strafeCorrect * newSpeedL * KpL * KhR)));
-                        rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR * KpR * KhR)));
-                        rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, strafeCorrect * newSpeedR * KpR * KhL)));
-                        leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL * KpL * KhL)));
-                    }
+                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, strafeCorrect * newSpeedL * KpL * KhL)));
+                    rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR * KpR * KhR)));
+                    rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, strafeCorrect * newSpeedR * KpR * KhR)));
+                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL * KpL * KhL)));
                 }
 
                 //logger.logD("MechLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f", rt, deltaHeading, KhL, KhR, curPosLf, curPosL, curPosRf, curPosR, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
