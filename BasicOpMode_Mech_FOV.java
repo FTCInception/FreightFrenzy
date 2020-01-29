@@ -78,7 +78,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     BNO055IMU imu,imu2;
     //Orientation angles,angles2;
     double MAX_OUTTAKE_POWER = 1.0;
-    double MAX_INTAKE_POWER = 0.9;
+    double MAX_INTAKE_POWER = 1.0;
 
     private BotLog logger = new BotLog();
     private boolean enableCSVLogging = false;
@@ -95,7 +95,6 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     double l_b_motor_power;
     double r_f_motor_power;
     double r_b_motor_power;
-
 
     // Declare other variables
 
@@ -187,10 +186,6 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         boolean lBump2Prev=false, rBump2Prev=false, lTrigPrev=false;
         int fGrabPos=0, bGrabPos=0, slidePos=0;
 
-        // Elevator controls
-        double out_pos=0.0;
-        double rt = 0.0, prevRT=0.0, dRT=0.0, nextLog = 0.0;
-
         // Pilot toggles
         double lFounSet[] = {0.0, 0.9};
         double rFounSet[] = {1.0, 0.1};
@@ -200,9 +195,10 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         boolean dLeft1Prev=false;
         double childLock=1.0;
 
+        // Elevator controls
+        double rt = 0.0, nextLog = 0.0;
         int lPos, rPos;
         double lPwr=0, rPwr=0;
-
 
         if (enableCSVLogging) {
             // Enable debug logging
@@ -238,8 +234,16 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         l_out_motor = hardwareMap.dcMotor.get("right_out");
         r_out_motor = hardwareMap.dcMotor.get("left_out");
 
+        // Initialize all servos
+        claw.setPosition(clawSet[clawPos]);
+        foundation1.setPosition(lFounSet[lFounPos]);
+        foundation2.setPosition(rFounSet[rFounPos]);
+        slide.setPosition(slideSet[slidePos]);
+        back_grabber.setPosition(bGrabSet[bGrabPos]);
+        front_grabber.setPosition(fGrabSet[fGrabPos]);
+
         imu = initIMU("imu");
-        imu2 = initIMU("imu 1");
+        //imu2 = initIMU("imu 1");
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
@@ -252,6 +256,11 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         r_b_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         r_in_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         r_out_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+
+        r_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        l_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        r_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        l_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         r_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         l_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -369,7 +378,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
             // Anyone asking to update the FOV for their controller2?
             if (gamepad2.dpad_up) {
-                adjustAngle[1] = AngleUnit.normalizeDegrees(degrees[1]+180.0);
+                adjustAngle[1] = degrees[1];
             }
 
             // Toggle the child lock between 0.0 and 1.0
@@ -460,10 +469,14 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             // Single button toggle for claw servo
             // Right bumper for claw
             if (gamepad1.right_bumper) {
-                if (!rBump1Prev){
-                    clawPos++; clawPos %= 2;
-                    claw.setPosition(clawSet[clawPos]);
-                    rBump1Prev = true;
+                // The elevator interferes with the claw, don't use it
+                if (lPos < 15) {
+                    if (!rBump1Prev) {
+                        clawPos++;
+                        clawPos %= 2;
+                        claw.setPosition(clawSet[clawPos]);
+                        rBump1Prev = true;
+                    }
                 }
             } else {
                 rBump1Prev = false;
