@@ -30,6 +30,7 @@
 package Inception.Skystone;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 /**
@@ -48,6 +49,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  */
 
 @Autonomous(name="Incep: Auto Block Blue Wall", group="Incepbot")
+@Disabled
 public class IncepAuto_Block_Blue_Wall extends LinearOpMode {
 
     private IncepBot          robot   = new IncepBot();   // Use a Pushbot's hardware

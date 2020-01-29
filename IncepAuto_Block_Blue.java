@@ -31,6 +31,7 @@ package Inception.Skystone;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 /**
  * This file houses Autonomous code
@@ -48,6 +49,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  */
 
 @Autonomous(name="Incep: Auto Block Blue", group="Incepbot")
+@Disabled
 public class IncepAuto_Block_Blue extends LinearOpMode {
     /* Declare OpMode members. */
 

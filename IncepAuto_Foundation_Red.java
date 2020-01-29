@@ -49,6 +49,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *
  */
 @Autonomous(name="Incep: Auto Foundation Red", group="IncepBot")
+@Disabled
 public class IncepAuto_Foundation_Red extends LinearOpMode {
 
     /* Declare OpMode members. */

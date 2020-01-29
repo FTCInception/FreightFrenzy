@@ -30,6 +30,7 @@
 package Inception.Skystone;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 /**
@@ -47,7 +48,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *
  */
 
-@Autonomous(name="Incep: Auto Foward24", group="Incepbot")
+@Autonomous(name="Incep: Auto Forward24", group="Incepbot")
+@Disabled
 public class IncepAuto_Forward8 extends LinearOpMode {
     /* Declare OpMode members. */
 
@@ -60,7 +62,7 @@ public class IncepAuto_Forward8 extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-        robot.logger.LOGLEVEL = robot.logger.LOGNONE ;
+        robot.logger.LOGLEVEL = robot.logger.LOGDEBUG ;
 
         robot.logger.logD("IncepLog","  ");
         robot.logger.logD("IncepLog","  ");
@@ -81,17 +83,40 @@ public class IncepAuto_Forward8 extends LinearOpMode {
 
         sleep(24000);
 
-        robot.fastEncoderStraight(DRIVE_SPEED, 24, 3,0.06);
+        robot.fastEncoderStraight(DRIVE_SPEED, 8, 3,0.06);
 
         /*
+        robot.straightA=a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,48, 6, 0.05);
         a=robot.gyroRotate(TURN_SPEED,90-a, 6);
+        robot.straightA=a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,24, 6, 0.05);
         a=robot.gyroRotate(TURN_SPEED,90-a, 6);
+        robot.straightA=a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,48, 6, 0.05);
         a=robot.gyroRotate(TURN_SPEED,90-a, 6);
+        robot.straightA=a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,24, 6, 0.05);
         a=robot.gyroRotate(TURN_SPEED,90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
+
+        robot.fastEncoderStraight(DRIVE_SPEED,48, 6);
+        robot.fastEncoderStraight(DRIVE_SPEED,-48, 6);
+        robot.fastEncoderStraight(DRIVE_SPEED,24, 6);
+        robot.fastEncoderStraight(DRIVE_SPEED,-24, 6);
+
+        robot.encoderStraight(0.5,48, 6);
+        robot.encoderStraight(0.5,-48, 6);
+        robot.encoderStraight(0.5,24, 6);
+        robot.encoderStraight(0.5,-24, 6);
+
+        robot.encoderStraight(DRIVE_SPEED,48, 6);
+        robot.encoderRotate(TURN_SPEED,90, 6);
+        robot.encoderStraight(DRIVE_SPEED,24, 6);
+        robot.encoderRotate(TURN_SPEED,90, 6);
+        robot.encoderStraight(DRIVE_SPEED,48, 6);
+        robot.encoderRotate(TURN_SPEED,90, 6);
+        robot.encoderStraight(DRIVE_SPEED,24, 6);
+        robot.encoderRotate(TURN_SPEED,90, 6);
 
         a=robot.gyroRotate(TURN_SPEED,360-a, 6);
         a=robot.gyroRotate(TURN_SPEED,360-a, 6);
@@ -102,10 +127,6 @@ public class IncepAuto_Forward8 extends LinearOpMode {
         a=robot.gyroRotate(TURN_SPEED,-360-a, 6);
         a=robot.gyroRotate(TURN_SPEED,-360-a, 6);
 
-        sleep(5000);
-        */
-
-        /*
         a = robot.fastEncoderStraight(DRIVE_SPEED, 72, 6, 0.06);
         a = robot.gyroRotate(TURN_SPEED,90-a, 4);
         a = robot.gyroRotate(TURN_SPEED,90-a, 4);
