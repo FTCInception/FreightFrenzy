@@ -205,6 +205,8 @@ public class IncepBot {
         // Adjust our overall power based on a 12.5V battery.
         // Set some min and max to avoid anything crazy.
         // This may need some more characterization and it may be battery specific.
+        // Don't penalize us for being over 12.5V (just pickup a little extra speed)
+        // Scale the Proportional Power for L/R
         double volts = Math.max(11.0,Math.min(12.5,getBatteryVoltage()));
         KpL = fKpL * (12.5 / volts);
         KpR = fKpR * (12.5 / volts);
@@ -582,6 +584,7 @@ public class IncepBot {
         double[] speedRampUp = {0.20, 0.25, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         double[] speedRampDown = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         ElapsedTime     runtime = new ElapsedTime();
+        double rt = 0.0;
 
         logger.logD("IncepLog",String.format("encoderDrive start"));
 
@@ -632,7 +635,7 @@ public class IncepBot {
             // However, if you require that BOTH motors have finished their moves before the robot continues
             // onto the next step, use (isBusy() || isBusy()) in the loop test.
             while (myLOpMode.opModeIsActive() &&
-                    (runtime.seconds() < timeoutS) &&
+                    ((rt=runtime.seconds()) < timeoutS) &&
                     (leftBDrive.isBusy() && rightBDrive.isBusy() &&
                             ((Math.abs(newLeftBTarget  -  leftBDrive.getCurrentPosition()) > CLOSE_ENOUGH) ||
                                     (Math.abs(newRightBTarget - rightBDrive.getCurrentPosition()) > CLOSE_ENOUGH)))) {
@@ -924,7 +927,7 @@ public class IncepBot {
                     myLOpMode.telemetry.addData("gyro", "deg: %1.3f, curr: %1.3f, start: %1.3f, tgt: %1.3f",degrees,curHeading,startHeading,tgtHeading);
                     myLOpMode.telemetry.update();
                 }
-                logger.logD("IncepLogTurnCSV",String.format(",%f,%f,%f,%f,%f,%f", rt, getHeading(), 0.0, 0.0, Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR))));
+                //logger.logD("IncepLogGTurnCSV",String.format(",%f,%f,%d,%d,%f,%f", rt, getHeading(), leftFDrive.getCurrentPosition(), rightFDrive.getCurrentPosition(), Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR))));
             }
 
             // Stop all motion;
@@ -1165,7 +1168,7 @@ public class IncepBot {
                     actSpeedR = newSpeedR;
                 }
 
-                logger.logD("IncepLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f", rt, deltaHeading, curPosL, curPosR, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
+                //logger.logD("IncepLogFEDriveCSV",String.format(",%f,%f,%f,%f,%f,%f", rt, deltaHeading, curPosL, curPosR, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
 
                 if (DEBUG) {
                     myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
