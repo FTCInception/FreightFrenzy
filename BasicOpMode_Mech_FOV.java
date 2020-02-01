@@ -240,17 +240,6 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         l_out_motor = hardwareMap.dcMotor.get("right_out");
         r_out_motor = hardwareMap.dcMotor.get("left_out");
 
-        // Initialize all servos
-        claw.setPosition(clawSet[clawPos]);
-        foundation1.setPosition(lFounSet[lFounPos]);
-        foundation2.setPosition(rFounSet[rFounPos]);
-        slide.setPosition(slideSet[slidePos]);
-        back_grabber.setPosition(bGrabSet[bGrabPos]);
-        front_grabber.setPosition(fGrabSet[fGrabPos]);
-
-        imu = initIMU("imu");
-        //imu2 = initIMU("imu 1");
-
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
         l_f_motor.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -271,12 +260,32 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         r_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         l_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
+        imu = initIMU("imu");
+        //imu2 = initIMU("imu 1");
+
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Status", "Waiting for start...");
         telemetry.update();
 
         waitForStart();
         runtime.reset();
+
+        // Take up any slack in the spools
+        l_out_motor.setPower(0.20);
+        r_out_motor.setPower(0.20);
+
+        // Initialize all servos
+        claw.setPosition(clawSet[clawPos]);
+        foundation1.setPosition(lFounSet[lFounPos]);
+        foundation2.setPosition(rFounSet[rFounPos]);
+        slide.setPosition(slideSet[slidePos]);
+        back_grabber.setPosition(bGrabSet[bGrabPos]);
+        front_grabber.setPosition(fGrabSet[fGrabPos]);
+
+        sleep(500);
+
+        l_out_motor.setPower(0.0);
+        r_out_motor.setPower(0.0);
 
         if (enableCSVLogging) {
             // Lay down a header for our logging

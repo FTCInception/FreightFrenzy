@@ -208,6 +208,23 @@ public class MechBot {
             myLOpMode.idle();
         }
 
+        // Setup outtake motors and take up any slack just in case.
+        DcMotor l_out_motor = hwMap.dcMotor.get("right_out");
+        DcMotor r_out_motor = hwMap.dcMotor.get("left_out");
+        l_out_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        r_out_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+        r_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        l_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        l_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        r_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        l_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        r_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        l_out_motor.setPower(0.20);
+        r_out_motor.setPower(0.20);
+        myLOpMode.sleep(500);
+        l_out_motor.setPower(0.0);
+        r_out_motor.setPower(0.0);
+
         resetIntQHeading();
 
         //colorSensor = hwMap.colorSensor.get("color");
@@ -320,7 +337,6 @@ public class MechBot {
         rightBDrive = hwMap.get(DcMotor.class, "right_back");
         r_in_motor = hwMap.get(DcMotor.class, "right_in");
         l_in_motor = hwMap.get(DcMotor.class, "left_in");
-
 
         //leftArm    = hwMap.get(DcMotor.class, "left_arm");
         leftFDrive.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
