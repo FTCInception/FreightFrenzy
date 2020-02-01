@@ -224,6 +224,10 @@ public class MechBot {
         myLOpMode.sleep(500);
         l_out_motor.setPower(0.0);
         r_out_motor.setPower(0.0);
+        l_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        r_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        l_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        r_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         resetIntQHeading();
 
