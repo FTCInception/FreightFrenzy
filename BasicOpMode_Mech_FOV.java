@@ -91,6 +91,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     double[] speedModifier = new double[] {0.5,0.5};
     double[] adjustAngle = new double[] {0.0,0.0};
     double[] forward = new double[2], strafe = new double[2], rotate = new double[2], degrees = new double[2];
+    boolean[] FOD = new boolean[] {true,true};
+
     double l_f_motor_power;
     double l_b_motor_power;
     double r_f_motor_power;
@@ -185,6 +187,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         double slideSet[] = {0.22, 0.77};
         boolean lBump2Prev=false, rBump2Prev=false, lTrigPrev=false;
         int fGrabPos=0, bGrabPos=0, slidePos=0;
+        boolean dDown2Prev = false, dUp2Prev = false;
 
         // Pilot toggles
         double lFounSet[] = {0.0, 0.9};
@@ -194,11 +197,14 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         int lFounPos=0, rFounPos=0, clawPos=0;
         boolean dLeft1Prev=false;
         double childLock=1.0;
+        boolean dDown1Prev = false, dUp1Prev = false;
 
         // Elevator controls
         double rt = 0.0, nextLog = 0.0;
         int lPos, rPos;
         double lPwr=0, rPwr=0;
+
+        double maxPwr = 0.0;
 
         if (enableCSVLogging) {
             // Enable debug logging
@@ -259,8 +265,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
         r_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         l_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        r_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        l_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        r_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        l_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         r_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         l_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -334,8 +340,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             rPos = r_out_motor.getCurrentPosition();
 
             // Adjust the power to help if the encoders get out of whack
-            lPwr = Range.clip(out_pwr - ((lPos-rPos) / 75), 0.02, MAX_OUTTAKE_POWER);
-            rPwr = Range.clip(out_pwr + ((lPos-rPos) / 75),0.02, MAX_OUTTAKE_POWER);
+            lPwr = Range.clip(out_pwr - ((lPos-rPos) / 75.0), 0.02, MAX_OUTTAKE_POWER);
+            rPwr = Range.clip(out_pwr + ((lPos-rPos) / 75.0),0.02, MAX_OUTTAKE_POWER);
 
             // Limit the power at max height to avoid damage
             if ((lPos > 350) || (rPos > 350)) {
@@ -355,32 +361,6 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
             //logger.logD("MechFOVOuttake", String.format("%f, %f, %f, %f, %d, %d",runtime.seconds(), getQHeading(), lPwr, rPwr, l_out_motor.getCurrentPosition(), r_out_motor.getCurrentPosition()));
 
-            // Get the heading
-            degrees[1] = degrees[0] = getQHeading();
-            //angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            ////angles2   = imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            //degrees[1] = degrees[0] = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
-
-            // Get controller 1 (driver)
-            strafe[0] = gamepad1.left_stick_x;
-            forward[0] = -gamepad1.left_stick_y;
-            rotate[0] = gamepad1.right_stick_x;
-
-            // Get controller 2 (co-pilot)
-            strafe[1] = gamepad2.left_stick_x;
-            forward[1] = -gamepad2.left_stick_y;
-            rotate[1] = gamepad2.right_stick_x;
-
-            // Anyone asking to update the FOV for their controller1?
-            if (gamepad1.dpad_up) {
-                adjustAngle[0] = degrees[0];
-            }
-
-            // Anyone asking to update the FOV for their controller2?
-            if (gamepad2.dpad_up) {
-                adjustAngle[1] = degrees[1];
-            }
-
             // Toggle the child lock between 0.0 and 1.0
             if (gamepad1.dpad_left) {
                 if (!dLeft1Prev) {
@@ -395,37 +375,169 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 dLeft1Prev = false;
             }
 
+            //angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+            ////angles2   = imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+            //degrees[1] = degrees[0] = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
+
+            // Get the current robot heading
+            degrees[1] = degrees[0] = getQHeading();
+
+            // Read the controller 1 (driver) stick positions
+            strafe[0] = gamepad1.left_stick_x;
+            forward[0] = -gamepad1.left_stick_y;
+            rotate[0] = gamepad1.right_stick_x;
+
+            // Read the controller 2 (co-pilot) stick positions
+            strafe[1] = gamepad2.left_stick_x;
+            forward[1] = -gamepad2.left_stick_y;
+            rotate[1] = gamepad2.right_stick_x;
+
+            // Is controller asking to update the FOD heading of switch to FOD from traditional?
+            if (gamepad1.dpad_up) {
+                // If we detected dpad released since the last press
+                if (!dUp1Prev) {
+                    if (FOD[0]) {
+                        // If already in FOD, update the adjustment angle
+                        adjustAngle[0] = degrees[0];
+                    } else {
+                        // If in traditional drive, just switch to FOD only
+                        FOD[0] = true;
+                    }
+                    // Prevent this path again until the dpad is released
+                    dUp1Prev = true;
+                }
+            } else {
+                // Detected the dpad released
+                dUp1Prev = false;
+            }
+
+            // Is controller asking to update the FOD heading of switch to FOD from traditional?
+            if (gamepad2.dpad_up) {
+                // If we detected dpad released since the last press
+                if (!dUp2Prev) {
+                    if (FOD[1]) {
+                        // If already in FOD, update the adjustment angle
+                        adjustAngle[1] = degrees[1];
+                    } else {
+                        // If in traditional drive, just switch to FOD only
+                        FOD[1] = true;
+                    }
+                    // Prevent this path again until the dpad is released
+                    dUp2Prev = true;
+                }
+            } else {
+                // Detected the dpad released
+                dUp2Prev = false;
+            }
+
+            // Is controller asking to switch FOD mode?
+            if (gamepad1.dpad_down) {
+                // If we detected dpad released since the last press
+                if (!dDown1Prev) {
+                    // Invert FOD mode
+                    FOD[0] = ! FOD[0];
+                    // Prevent this path again until the dpad is released
+                    dDown1Prev = true;
+                }
+            } else {
+                // Detected the dpad released
+                dDown1Prev = false;
+            }
+
+            // Is controller asking to switch FOD mode?
+            if (gamepad2.dpad_down) {
+                // If we detected dpad released since the last press
+                if (!dDown2Prev) {
+                    // Invert FOD mode
+                    FOD[1] = ! FOD[1];
+                    // Prevent this path again until the dpad is released
+                    dDown2Prev = true;
+                }
+            } else {
+                // Detected the dpad released
+                dDown2Prev = false;
+            }
+
             // Compute the effective offset for each controller FOV
             degrees[0] = AngleUnit.DEGREES.normalize(degrees[0] - adjustAngle[0]);
             degrees[1] = AngleUnit.DEGREES.normalize(degrees[1] - adjustAngle[1]);
 
-            // New X/Y based on the polar rotation (see notebook) for controller 1
-            CarToPol(strafe[0],forward[0]);
-            theta -= degrees[0];
-            PolToCar(r_speed);
-            strafe[0] = new_x;
-            forward[0] = new_y;
+            // If FOD is enabled for this controller
+            if (FOD[0]) {
+                // Convert the X/Y Cartesion for strafe and forward into Polar
+                CarToPol(strafe[0], forward[0]);
+                // Rotate the Polar coordinates by the robot's heading
+                theta -= degrees[0];
+                // Convert the new Polar back into Cartesian
+                PolToCar(r_speed);
+                // Replace the strafe and forward power with translated values
+                strafe[0] = new_x;
+                forward[0] = new_y;
+                // Now the robot moves in orientation of the field
+            }
 
-            // New X/Y based on the polar rotation (see notebook) for controller 2
-            CarToPol(strafe[1],forward[1]);
-            theta -= degrees[1];
-            PolToCar(r_speed);
-            strafe[1] = new_x;
-            forward[1] = new_y;
+            // If FOD is enabled for this controller
+            if (FOD[1]) {
+                // Convert the X/Y Cartesion for strafe and forward into Polar
+                CarToPol(strafe[1], forward[1]);
+                // Rotate the Polar coordinates by the robot's heading
+                theta -= degrees[1];
+                // Convert the new Polar back into Cartesian
+                PolToCar(r_speed);
+                // Replace the strafe and forward power with translated values
+                strafe[1] = new_x;
+                forward[1] = new_y;
+                // Now the robot moves in orientation of the field
+            }
 
+            // This adds the powers from both controllers together scaled for each controller and FOV
+            l_f_motor_power = ((forward[0] + strafe[0] + rotate[0]) * speedModifier[0]) +
+                              ((forward[1] + strafe[1] + rotate[1]) * speedModifier[1] * childLock);
+            l_b_motor_power = ((forward[0] - strafe[0] + rotate[0]) * speedModifier[0]) +
+                              ((forward[1] - strafe[1] + rotate[1]) * speedModifier[1] * childLock);
+            r_f_motor_power = ((forward[0] - strafe[0] - rotate[0]) * speedModifier[0]) +
+                              ((forward[1] - strafe[1] - rotate[1]) * speedModifier[1] * childLock);
+            r_b_motor_power = ((forward[0] + strafe[0] - rotate[0]) * speedModifier[0]) +
+                              ((forward[1] + strafe[1] - rotate[1]) * speedModifier[1] * childLock);
+
+            // Find the largest power request ignoring sign
+            maxPwr = Math.max(Math.max(Math.max(Math.abs(l_f_motor_power), Math.abs(l_b_motor_power)),
+                                                Math.abs(r_f_motor_power)),Math.abs(r_b_motor_power));
+
+            // If this is greater than 1.0, need to scale everything back equally
+            // Max is now guaranteed positive which is good to reduce magnitude without changing sign
+            // Now the power is scaled and limited to range of {-1.0, 1.0)
+            if (maxPwr > 1.0) {
+                l_f_motor_power /= maxPwr;
+                l_b_motor_power /= maxPwr;
+                r_f_motor_power /= maxPwr;
+                r_b_motor_power /= maxPwr;
+            }
+
+            // Send calculated power to wheels
+            l_f_motor.setPower(l_f_motor_power);
+            l_b_motor.setPower(l_b_motor_power);
+            r_f_motor.setPower(r_f_motor_power);
+            r_b_motor.setPower(r_b_motor_power);
+
+            /*
+            // No scaling version of driving.
             // This adds the requested powers from both controllers together scaled for each controller and FOV (clipped to 1.0)
             l_f_motor_power   = Range.clip(((forward[0] + strafe[0] + rotate[0]) * speedModifier[0])+((forward[1] + strafe[1] + rotate[1]) * speedModifier[1] * childLock), -1.0, 1.0) ;
             l_b_motor_power   = Range.clip(((forward[0] - strafe[0] + rotate[0]) * speedModifier[0])+((forward[1] - strafe[1] + rotate[1]) * speedModifier[1] * childLock), -1.0, 1.0) ;
             r_f_motor_power   = Range.clip(((forward[0] - strafe[0] - rotate[0]) * speedModifier[0])+((forward[1] - strafe[1] - rotate[1]) * speedModifier[1] * childLock), -1.0, 1.0) ;
             r_b_motor_power   = Range.clip(((forward[0] + strafe[0] - rotate[0]) * speedModifier[0])+((forward[1] + strafe[1] - rotate[1]) * speedModifier[1] * childLock), -1.0, 1.0) ;
+            */
 
-            // Additional driver controls
-            //speed control
+            // Additional controls
+
+            // Intake power
             in_pwr = gamepad1.right_trigger * MAX_INTAKE_POWER;
             in_pwr -= gamepad1.left_trigger * MAX_INTAKE_POWER;
             l_in_motor.setPower(in_pwr);
             r_in_motor.setPower(in_pwr);
 
+            //speed control
             if (gamepad1.x) {
                 speedModifier[0] = 1;
             }
@@ -482,12 +594,6 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 rBump1Prev = false;
             }
 
-            // Send calculated power to wheels
-            l_f_motor.setPower(l_f_motor_power);
-            l_b_motor.setPower(l_b_motor_power);
-            r_f_motor.setPower(r_f_motor_power);
-            r_b_motor.setPower(r_b_motor_power);
-
             // Update the logger 10 times/second max
             if (enableCSVLogging) {
                 rt = runtime.seconds();
@@ -542,14 +648,12 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
         //theta to degrees
         theta = theta * 180 / 3.14159265358979323;
-
     }
 
     void PolToCar(double r) {
         theta = theta / 180 * 3.14159265358979323;
         new_x = r * Math.cos(theta);
         new_y = r * Math.sin(theta);
-
     }
 }
 
