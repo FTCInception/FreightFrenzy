@@ -139,14 +139,14 @@ public class MechAuto_Block_RedSafe extends LinearOpMode {
             //fourthBlock=blocks[0];
 
             // This is functioning single-skystone (2 blocks total)
-            firstBlock=blocks[3];
-            secondBlock=blocks[1];
+            firstBlock=blocks[1];
+            secondBlock=blocks[3];
             thirdBlock=blocks[0];
             fourthBlock=blocks[0];
 
         } else {
-            firstBlock=blocks[3];
-            secondBlock=blocks[1];
+            firstBlock=blocks[1];
+            secondBlock=blocks[3];
             thirdBlock=blocks[0];
             fourthBlock=blocks[0];
         }
