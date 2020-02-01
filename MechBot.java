@@ -1250,23 +1250,14 @@ public class MechBot {
         double[] speedRampDownT = {0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45, 0.475, 0.5, 1.0};
 
         // Long straight (default)
-        //double[] speedRampUp = {0.20, 0.225, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        //double[] speedRampUp = {0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95};
-        //double[] speedRampUp = {0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
         double[] speedRampUp = {0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
         double[] speedRampDown = {0.10, 0.125, 0.125, 0.15, 0.175, 0.20, 0.225, 0.25, 0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
 
         // Medium straight
-        //double[] speedRampUp24 = {0.20, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95};
-        //double[] speedRampDown24 = {0.10, 0.125, 0.175, 0.225, 0.275, 0.325, 0.375, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95};
-        //double[] speedRampUp24 = {0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
         double[] speedRampUp24 = {0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
         double[] speedRampDown24 = {0.10, 0.125, 0.175, 0.225, 0.275, 0.325, 0.375, 0.45,};
 
         // Short straight
-        //double[] speedRampUp12 = {0.20, 0.30, 0.45, 0.60, 0.75, 0.90};
-        //double[] speedRampDown12 = {0.10, 0.15, 0.225, 0.30, 0.375, 0.50, 0.65, 0.80, 0.95};
-        //double[] speedRampUp12 = {0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
         double[] speedRampUp12 = {0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
         double[] speedRampDown12 = {0.10, 0.15, 0.225, 0.35};
 
@@ -1414,18 +1405,16 @@ public class MechBot {
 
                 // Check if we're done
                 // This code implements a soft start and soft stop.
+                // Compute the distance gone and how far to go.
                 if (!doneL) {
                     spdPosL = curPosL = leftBDrive.getCurrentPosition();
                     toGoL = Math.min(toGoL, Math.max(0, Math.abs(newLeftBTarget - curPosL)));
-                    // FIXME -- Read the front encoders only for logging
-                    //curPosLf = leftFDrive.getCurrentPosition();
                 }
                 if (!doneR) {
                     spdPosR = curPosR = rightBDrive.getCurrentPosition();
                     toGoR  = Math.min(toGoR, Math.max(0,Math.abs(newRightBTarget - curPosR)));
-                    // FIXME -- Read the front encoders only for logging
-                    //curPosRf = rightFDrive.getCurrentPosition();
                 }
+                // Average them if driving straight to reduce twist/steer.
                 if (leftInches == rightInches) {
                     spdPosL = spdPosR = (curPosL + curPosR)/2;
                     toGoL = toGoR = (toGoL + toGoR)/2;
