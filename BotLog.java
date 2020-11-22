@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package Inception.Skystone;
+package Inception.UltimateGoal;
 
 import android.util.Log;
 
