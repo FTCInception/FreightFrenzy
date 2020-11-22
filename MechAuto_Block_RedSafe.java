@@ -31,6 +31,7 @@ package Inception.Skystone;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 /**
  * This file houses Autonomous code
@@ -48,6 +49,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  */
 
 @Autonomous(name="Mech: Auto Block RedSafe", group="MechBot")
+@Disabled
 public class MechAuto_Block_RedSafe extends LinearOpMode {
 
     private MechBot robot = new MechBot();   // Use a Pushbot's hardware

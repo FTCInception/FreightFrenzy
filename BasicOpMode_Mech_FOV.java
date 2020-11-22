@@ -70,6 +70,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     //private static ExpansionHubEx expansionHub1;
     //private static ExpansionHubEx expansionHub2;
     private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
+    private static DcMotor intake_motor;
+    private static DcMotor shoot1_motor, shoot2_motor;
     private static DcMotor l_in_motor, r_in_motor;
     private static DcMotor l_out_motor, r_out_motor;
     private static Servo foundation1, foundation2, claw;
@@ -78,6 +80,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     BNO055IMU imu,imu2;
     //Orientation angles,angles2;
     double MAX_OUTTAKE_POWER = 1.0;
+    double MAX_SHOOTER_POWER = 0.6;
     double MAX_INTAKE_POWER = 1.0;
 
     private BotLog logger = new BotLog();
@@ -97,6 +100,9 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     double l_b_motor_power;
     double r_f_motor_power;
     double r_b_motor_power;
+
+    double intake_power;
+    double shooter_power;
 
     // Declare other variables
 
@@ -227,38 +233,44 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         l_b_motor = hardwareMap.dcMotor.get("left_back");
         r_f_motor = hardwareMap.dcMotor.get("right_front");
         r_b_motor = hardwareMap.dcMotor.get("right_back");
-        l_in_motor = hardwareMap.dcMotor.get("right_in");
-        r_in_motor = hardwareMap.dcMotor.get("left_in");
+        intake_motor = hardwareMap.dcMotor.get("intake");
+        shoot1_motor = hardwareMap.dcMotor.get("shoot1");
+        shoot2_motor = hardwareMap.dcMotor.get("shoot2");
+        //Ult l_in_motor = hardwareMap.dcMotor.get("right_in");
+        //Ult r_in_motor = hardwareMap.dcMotor.get("left_in");
 
-        foundation1 = hardwareMap.servo.get("foundation1");
-        foundation2 = hardwareMap.servo.get("foundation2");
-        claw = hardwareMap.servo.get("claw");
+        //Ult foundation1 = hardwareMap.servo.get("foundation1");
+        //Ult foundation2 = hardwareMap.servo.get("foundation2");
+        //Ult claw = hardwareMap.servo.get("claw");
 
-        front_grabber = hardwareMap.servo.get("grabber1");
-        back_grabber = hardwareMap.servo.get("grabber2");
-        slide = hardwareMap.servo.get("slide");
-        l_out_motor = hardwareMap.dcMotor.get("right_out");
-        r_out_motor = hardwareMap.dcMotor.get("left_out");
+        //Ult front_grabber = hardwareMap.servo.get("grabber1");
+        //Ult back_grabber = hardwareMap.servo.get("grabber2");
+        //Ult slide = hardwareMap.servo.get("slide");
+        //Ult l_out_motor = hardwareMap.dcMotor.get("right_out");
+        //Ult r_out_motor = hardwareMap.dcMotor.get("left_out");
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
         l_f_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         l_b_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        l_in_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        l_out_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        //Ult l_in_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        //Ult l_out_motor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         r_f_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         r_b_motor.setDirection(DcMotorSimple.Direction.FORWARD);
-        r_in_motor.setDirection(DcMotorSimple.Direction.FORWARD);
-        r_out_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+        intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        shoot1_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+        shoot2_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+        //Ult r_in_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+        //Ult r_out_motor.setDirection(DcMotorSimple.Direction.FORWARD);
 
         r_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         l_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        r_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        l_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        r_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        l_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        r_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        l_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        //Ult r_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        //Ult l_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         imu = initIMU("imu");
         //imu2 = initIMU("imu 1");
@@ -271,21 +283,21 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         runtime.reset();
 
         // Take up any slack in the spools
-        l_out_motor.setPower(0.20);
-        r_out_motor.setPower(0.20);
+        //Ult l_out_motor.setPower(0.20);
+        //Ult r_out_motor.setPower(0.20);
 
         // Initialize all servos
-        claw.setPosition(clawSet[clawPos]);
-        foundation1.setPosition(lFounSet[lFounPos]);
-        foundation2.setPosition(rFounSet[rFounPos]);
-        slide.setPosition(slideSet[slidePos]);
-        back_grabber.setPosition(bGrabSet[bGrabPos]);
-        front_grabber.setPosition(fGrabSet[fGrabPos]);
+        //Ult claw.setPosition(clawSet[clawPos]);
+        //Ult foundation1.setPosition(lFounSet[lFounPos]);
+        //Ult foundation2.setPosition(rFounSet[rFounPos]);
+        //Ult slide.setPosition(slideSet[slidePos]);
+        //Ult back_grabber.setPosition(bGrabSet[bGrabPos]);
+        //Ult front_grabber.setPosition(fGrabSet[fGrabPos]);
 
         sleep(500);
 
-        l_out_motor.setPower(0.0);
-        r_out_motor.setPower(0.0);
+        //Ult l_out_motor.setPower(0.0);
+        //Ult r_out_motor.setPower(0.0);
 
         if (enableCSVLogging) {
             // Lay down a header for our logging
@@ -297,76 +309,76 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         // Now set power to 0 and reset encoders.
         // Now we want to let Rev Hub manage encoder position.
 
-        l_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        r_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //Ult l_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //Ult r_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        l_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        r_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        //Ult l_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        //Ult r_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
             // Begin controller 2 (co-pilot)
             // Single button toggle for grabbers
-            if (gamepad2.right_bumper) {
-                if(!lBump2Prev) {
-                    bGrabPos++; bGrabPos %= 2;
-                    back_grabber.setPosition(bGrabSet[bGrabPos]);
-                    lBump2Prev = true;
-                    //logger.logD("MechFOVbGrab", String.format("%f, %f",runtime.seconds(), bGrabSet[bGrabPos]));
-                }
-            } else {
-                lBump2Prev = false;
-            }
+            //Ult if (gamepad2.right_bumper) {
+            //Ult     if(!lBump2Prev) {
+            //Ult         bGrabPos++; bGrabPos %= 2;
+            //Ult         back_grabber.setPosition(bGrabSet[bGrabPos]);
+            //Ult         lBump2Prev = true;
+            //Ult         //logger.logD("MechFOVbGrab", String.format("%f, %f",runtime.seconds(), bGrabSet[bGrabPos]));
+            //Ult     }
+            //Ult } else {
+            //Ult     lBump2Prev = false;
+            //Ult }
 
-            if (gamepad2.left_bumper) {
-                if (!rBump2Prev){
-                    fGrabPos++; fGrabPos %= 2;
-                    front_grabber.setPosition(fGrabSet[fGrabPos]);
-                    rBump2Prev = true;
-                    //logger.logD("MechFOVfGrab", String.format("%f, %f",runtime.seconds(), fGrabSet[fGrabPos]));
-                }
-            } else {
-                rBump2Prev = false;
-            }
+            //Ult if (gamepad2.left_bumper) {
+            //Ult     if (!rBump2Prev){
+            //Ult         fGrabPos++; fGrabPos %= 2;
+            //Ult         front_grabber.setPosition(fGrabSet[fGrabPos]);
+            //Ult         rBump2Prev = true;
+            //Ult         //logger.logD("MechFOVfGrab", String.format("%f, %f",runtime.seconds(), fGrabSet[fGrabPos]));
+            //Ult     }
+            //Ult } else {
+            //Ult     rBump2Prev = false;
+            //Ult }
 
-            if (gamepad2.left_trigger > 0.9) {
-                if (!lTrigPrev){
-                    slidePos++; slidePos %= 2;
-                    slide.setPosition(slideSet[slidePos]);
-                    lTrigPrev = true;
-                    //logger.logD("MechFOVSlide", String.format("%f, %f",runtime.seconds(), slideSet[slidePos]));
-                }
-            } else if (gamepad2.left_trigger < 0.1) {
-                lTrigPrev = false;
-            }
+            //Ult if (gamepad2.left_trigger > 0.9) {
+            //Ult     if (!lTrigPrev){
+            //Ult         slidePos++; slidePos %= 2;
+            //Ult         slide.setPosition(slideSet[slidePos]);
+            //Ult         lTrigPrev = true;
+            //Ult         //logger.logD("MechFOVSlide", String.format("%f, %f",runtime.seconds(), slideSet[slidePos]));
+            //Ult     }
+            //Ult } else if (gamepad2.left_trigger < 0.1) {
+            //Ult     lTrigPrev = false;
+            //Ult }
 
             rt = runtime.seconds();
 
             // Use the rigth trigger for elevator power
-            out_pwr = gamepad2.right_trigger;
-            lPos = l_out_motor.getCurrentPosition();
-            rPos = r_out_motor.getCurrentPosition();
+            //Ult out_pwr = gamepad2.right_trigger;
+            //Ult lPos = l_out_motor.getCurrentPosition();
+            //Ult rPos = r_out_motor.getCurrentPosition();
 
             // Adjust the power to help if the encoders get out of whack
-            lPwr = Range.clip(out_pwr - ((lPos-rPos) / 75.0), 0.02, MAX_OUTTAKE_POWER);
-            rPwr = Range.clip(out_pwr + ((lPos-rPos) / 75.0),0.02, MAX_OUTTAKE_POWER);
+            //Ult lPwr = Range.clip(out_pwr - ((lPos-rPos) / 75.0), 0.02, MAX_OUTTAKE_POWER);
+            //Ult rPwr = Range.clip(out_pwr + ((lPos-rPos) / 75.0),0.02, MAX_OUTTAKE_POWER);
 
             // Limit the power at max height to avoid damage
-            if ((lPos > 350) || (rPos > 350)) {
-                lPwr = Range.clip(lPwr, 0, 0.38);
-                rPwr = Range.clip(rPwr, 0, 0.38);
-            }
+            //Ult if ((lPos > 350) || (rPos > 350)) {
+            //Ult     lPwr = Range.clip(lPwr, 0, 0.38);
+            //Ult     rPwr = Range.clip(rPwr, 0, 0.38);
+            //Ult }
 
             // At the bottom, with no power request, turn off motors to avoid heating and noise
-            if (((lPos < 9) || (rPos < 9)) && (out_pwr == 0)) {
-                lPwr = 0;
-                rPwr = 0;
-            }
+            //Ult if (((lPos < 9) || (rPos < 9)) && (out_pwr == 0)) {
+            //Ult     lPwr = 0;
+            //Ult     rPwr = 0;
+            //Ult }
 
             //out_pwr = gamepad2.right_trigger * MAX_OUTTAKE_POWER;
-            l_out_motor.setPower(lPwr);
-            r_out_motor.setPower(rPwr);
+            //Ult l_out_motor.setPower(lPwr);
+            //Ult r_out_motor.setPower(rPwr);
 
             //logger.logD("MechFOVOuttake", String.format("%f, %f, %f, %f, %d, %d",runtime.seconds(), getQHeading(), lPwr, rPwr, l_out_motor.getCurrentPosition(), r_out_motor.getCurrentPosition()));
 
@@ -541,10 +553,17 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             // Additional controls
 
             // Intake power
-            in_pwr = gamepad1.right_trigger * MAX_INTAKE_POWER;
-            in_pwr -= gamepad1.left_trigger * MAX_INTAKE_POWER;
-            l_in_motor.setPower(in_pwr);
-            r_in_motor.setPower(in_pwr);
+            //Ult in_pwr = gamepad1.right_trigger * MAX_INTAKE_POWER;
+            //Ult in_pwr -= gamepad1.left_trigger * MAX_INTAKE_POWER;
+            //Ult l_in_motor.setPower(in_pwr);
+            //Ult r_in_motor.setPower(in_pwr);
+
+            intake_power = gamepad1.right_trigger * MAX_INTAKE_POWER;
+            intake_motor.setPower(intake_power);
+
+            shooter_power = gamepad1.left_trigger * MAX_SHOOTER_POWER;
+            shoot1_motor.setPower(shooter_power);
+            shoot2_motor.setPower(shooter_power);
 
             //speed control
             if (gamepad1.x) {
@@ -575,33 +594,33 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
             // Single button toggle for foundation servos
             // Left Bumper for Foundation
-            if (gamepad1.left_bumper) {
-                if(!lBump1Prev) {
-                    lFounPos++; lFounPos %= 2;
-                    rFounPos++; rFounPos %= 2;
-                    foundation1.setPosition(lFounSet[lFounPos]);
-                    foundation2.setPosition(rFounSet[rFounPos]);
-                    lBump1Prev = true;
-                }
-            } else {
-                lBump1Prev = false;
-            }
+            //Ult if (gamepad1.left_bumper) {
+            //Ult     if(!lBump1Prev) {
+            //Ult         lFounPos++; lFounPos %= 2;
+            //Ult         rFounPos++; rFounPos %= 2;
+            //Ult         foundation1.setPosition(lFounSet[lFounPos]);
+            //Ult         foundation2.setPosition(rFounSet[rFounPos]);
+            //Ult         lBump1Prev = true;
+            //Ult     }
+            //Ult } else {
+            //Ult     lBump1Prev = false;
+            //Ult }
 
             // Single button toggle for claw servo
             // Right bumper for claw
-            if (gamepad1.right_bumper) {
-                // The elevator interferes with the claw, don't use it
-                if (lPos < 15) {
-                    if (!rBump1Prev) {
-                        clawPos++;
-                        clawPos %= 2;
-                        claw.setPosition(clawSet[clawPos]);
-                        rBump1Prev = true;
-                    }
-                }
-            } else {
-                rBump1Prev = false;
-            }
+            //Ult if (gamepad1.right_bumper) {
+            //Ult     // The elevator interferes with the claw, don't use it
+            //Ult     if (lPos < 15) {
+            //Ult         if (!rBump1Prev) {
+            //Ult             clawPos++;
+            //Ult             clawPos %= 2;
+            //Ult             claw.setPosition(clawSet[clawPos]);
+            //Ult             rBump1Prev = true;
+            //Ult         }
+            //Ult     }
+            //Ult } else {
+            //Ult     rBump1Prev = false;
+            //Ult }
 
             // Update the logger 10 times/second max
             if (enableCSVLogging) {
@@ -630,16 +649,16 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         }
 
         // Stop all power
-        l_out_motor.setPower(0.0);
-        r_out_motor.setPower(0.0);
-        l_in_motor.setPower(0.0);
-        r_in_motor.setPower(0.0);
+        //Ult l_out_motor.setPower(0.0);
+        //Ult r_out_motor.setPower(0.0);
+        //Ult l_in_motor.setPower(0.0);
+        //Ult r_in_motor.setPower(0.0);
         l_f_motor.setPower(0.0);
         l_b_motor.setPower(0.0);
         r_f_motor.setPower(0.0);
         r_b_motor.setPower(0.0);
-        l_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        r_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //Ult l_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //Ult r_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
     }
 

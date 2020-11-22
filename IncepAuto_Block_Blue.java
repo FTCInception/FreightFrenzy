@@ -49,7 +49,6 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
  */
 
 @Autonomous(name="Incep: Auto Block Blue", group="Incepbot")
-@Disabled
 public class IncepAuto_Block_Blue extends LinearOpMode {
     /* Declare OpMode members. */
 
