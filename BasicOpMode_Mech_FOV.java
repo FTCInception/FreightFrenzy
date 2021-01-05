@@ -74,17 +74,17 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     private static DcMotor shoot1_motor, shoot2_motor;
     private static DcMotor l_in_motor, r_in_motor;
     private static DcMotor l_out_motor, r_out_motor;
-    private static Servo foundation1, foundation2, claw;
+    private static Servo foundation1, foundation2, claw,lift,flicker;
     private static Servo back_grabber, front_grabber, slide;
 
     BNO055IMU imu,imu2;
     //Orientation angles,angles2;
     double MAX_OUTTAKE_POWER = 1.0;
-    double MAX_SHOOTER_POWER = 0.6;
+    double MAX_SHOOTER_POWER = 0.495;
     double MAX_INTAKE_POWER = 1.0;
 
     private BotLog logger = new BotLog();
-    private boolean enableCSVLogging = false;
+    private boolean enableCSVLogging = true;
 
     // Declare other variables
     double in_pwr, out_pwr;
@@ -94,7 +94,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     double[] speedModifier = new double[] {0.5,0.5};
     double[] adjustAngle = new double[] {0.0,0.0};
     double[] forward = new double[2], strafe = new double[2], rotate = new double[2], degrees = new double[2];
-    boolean[] FOD = new boolean[] {true,true};
+    boolean[] FOD = new boolean[] {false,false};
 
     double l_f_motor_power;
     double l_b_motor_power;
@@ -196,21 +196,38 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         boolean dDown2Prev = false, dUp2Prev = false;
 
         // Pilot toggles
+        double liftSet[] = {0.0, 0.3};
+        double flickerSet[] = {0.0, 1.0};
         double lFounSet[] = {0.0, 0.9};
         double rFounSet[] = {1.0, 0.1};
         double clawSet[] = {0.0, 1.0};
         boolean lBump1Prev=false, rBump1Prev=false;
-        int lFounPos=0, rFounPos=0, clawPos=0;
+        int lFounPos=0, rFounPos=0, clawPos=0,liftPos=0, flickerPos=0;
         boolean dLeft1Prev=false;
         double childLock=1.0;
         boolean dDown1Prev = false, dUp1Prev = false;
+        double currFlickerPos;
 
         // Elevator controls
-        double rt = 0.0, nextLog = 0.0;
+        double prt=0.0, rt = 0.0, nextLog = 0.0;
         int lPos, rPos;
         double lPwr=0, rPwr=0;
 
         double maxPwr = 0.0;
+
+        // https://en.wikipedia.org/wiki/Ziegler–Nichols_method
+        // Ku = 1/100; Tu = .5s @ 1200 RPM
+        // Need to mess with this some more I guess?
+        MiniPID pid= new MiniPID(0.10*(1.0/100.0),0.025*(1.0/100.0), 0.2*(1.0/100.0), 0.495/((3600.0*(28.0/1.5))/60.0));
+        pid.setOutputLimits(0.0,0.7);
+
+        double shoot2Pos, prevShoot2Pos=0.0;
+        double PIDrt, rps=0.0, prevPIDrt=0.0;
+        double nextPID=0.0, PIDTime = 0.1;
+        double shooterReq,prevShooterReq=0.0;
+        double shooterTarget = ((1200.0*(28.0/1.5))/60.0);
+        double shooterStep = ((50.0*(28.0/1.5))/60.0);
+        double iters=0.0;
 
         if (enableCSVLogging) {
             // Enable debug logging
@@ -242,6 +259,9 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         //Ult foundation1 = hardwareMap.servo.get("foundation1");
         //Ult foundation2 = hardwareMap.servo.get("foundation2");
         //Ult claw = hardwareMap.servo.get("claw");
+        //No lift: lift = hardwareMap.servo.get("lift");
+        flicker = hardwareMap.servo.get("flicker");
+
 
         //Ult front_grabber = hardwareMap.servo.get("grabber1");
         //Ult back_grabber = hardwareMap.servo.get("grabber2");
@@ -259,8 +279,12 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         r_f_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         r_b_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        shoot1_motor.setDirection(DcMotorSimple.Direction.FORWARD);
-        shoot2_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+
+        shoot1_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        shoot2_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        shoot1_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        shoot2_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
         //Ult r_in_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         //Ult r_out_motor.setDirection(DcMotorSimple.Direction.FORWARD);
 
@@ -293,6 +317,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         //Ult slide.setPosition(slideSet[slidePos]);
         //Ult back_grabber.setPosition(bGrabSet[bGrabPos]);
         //Ult front_grabber.setPosition(fGrabSet[fGrabPos]);
+        //No Lift: lift.setPosition(liftSet[liftPos]);
+        flicker.setPosition(flickerSet[0]);
 
         sleep(500);
 
@@ -301,7 +327,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
         if (enableCSVLogging) {
             // Lay down a header for our logging
-            logger.logD("MechFOVCSV", String.format(",rt,heading,lfEnc,lbEnc,rfEnc,rbEnc,lfPwr,lbPwr,rfPwr,rbPwr"));
+            //logger.logD("MechFOVCSV", String.format(",rt,heading,lfEnc,lbEnc,rfEnc,rbEnc,lfPwr,lbPwr,rfPwr,rbPwr"));
+            logger.logD("MechFOVCSV", String.format(",rt,shoot2Enc,shootPwr"));
         }
 
         // We need to run the motors at very low power and wait until the encoders stop counting.
@@ -353,9 +380,64 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             //Ult     lTrigPrev = false;
             //Ult }
 
+            prt = rt;
             rt = runtime.seconds();
+            if ((int)(prt/5.0) != (int)(rt/5.0)){
+                iters = 1;
+            } else{
+                iters += 1;
+            }
 
-            // Use the rigth trigger for elevator power
+            // Read the trigger value
+            shooterReq = gamepad1.left_trigger;
+            // If the request is non-zero, check PID
+            if ( shooterReq != 0 ) {
+                // Only check PID periodically, not every loop
+                if ( nextPID < rt ) {
+                    // Get current values
+                    PIDrt = rt;
+                    shoot2Pos = shoot2_motor.getCurrentPosition();
+
+                    // If we just went off to on, we should prime the values for math
+                    if (prevShooterReq == 0) {
+                        // Reset PID
+                        pid.reset();
+                        // Update current RPS rate
+                        prevPIDrt = PIDrt;
+                        prevShoot2Pos = shoot2Pos;
+                        shoot2Pos = shoot2_motor.getCurrentPosition();
+                        PIDrt = runtime.seconds();
+                    }
+
+                    // Compute current rev per second
+                    rps = (shoot2Pos - prevShoot2Pos) / (PIDrt - prevPIDrt);
+
+                    // Save current values for the next loop
+                    prevPIDrt = PIDrt;
+                    prevShoot2Pos = shoot2Pos;
+
+                    // Now adjust the power based on our PID
+                    shooter_power = pid.getOutput(rps, shooterReq * shooterTarget);
+
+                    // 'Schedule' the next PID check
+                    nextPID = rt + PIDTime;
+
+                    // Program the power (assume it changed)
+                    shoot1_motor.setPower(Math.max(-0.7, Math.min(0.7, shooter_power)));
+                    shoot2_motor.setPower(Math.max(-0.7, Math.min(0.7, shooter_power)));
+                }
+            } else {
+                // 'else' means no shooter power request.  If the power is currently non-0, set to '0'
+                if (shooter_power != 0) {
+                    shooter_power = 0;
+                    shoot1_motor.setPower(Math.max(-0.7, Math.min(0.7, shooter_power)));
+                    shoot2_motor.setPower(Math.max(-0.7, Math.min(0.7, shooter_power)));
+                }
+            }
+            // Recored the current request to handle special case for going off-on-off
+            prevShooterReq = shooterReq;
+
+            // Use the right trigger for elevator power
             //Ult out_pwr = gamepad2.right_trigger;
             //Ult lPos = l_out_motor.getCurrentPosition();
             //Ult rPos = r_out_motor.getCurrentPosition();
@@ -413,17 +495,12 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             forward[1] = -gamepad2.left_stick_y;
             rotate[1] = gamepad2.right_stick_x;
 
+
             // Is controller asking to update the FOD heading of switch to FOD from traditional?
             if (gamepad1.dpad_up) {
                 // If we detected dpad released since the last press
                 if (!dUp1Prev) {
-                    if (FOD[0]) {
-                        // If already in FOD, update the adjustment angle
-                        adjustAngle[0] = degrees[0];
-                    } else {
-                        // If in traditional drive, just switch to FOD only
-                        FOD[0] = true;
-                    }
+                    shooterTarget += shooterStep;
                     // Prevent this path again until the dpad is released
                     dUp1Prev = true;
                 }
@@ -432,31 +509,11 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 dUp1Prev = false;
             }
 
-            // Is controller asking to update the FOD heading of switch to FOD from traditional?
-            if (gamepad2.dpad_up) {
-                // If we detected dpad released since the last press
-                if (!dUp2Prev) {
-                    if (FOD[1]) {
-                        // If already in FOD, update the adjustment angle
-                        adjustAngle[1] = degrees[1];
-                    } else {
-                        // If in traditional drive, just switch to FOD only
-                        FOD[1] = true;
-                    }
-                    // Prevent this path again until the dpad is released
-                    dUp2Prev = true;
-                }
-            } else {
-                // Detected the dpad released
-                dUp2Prev = false;
-            }
-
             // Is controller asking to switch FOD mode?
             if (gamepad1.dpad_down) {
                 // If we detected dpad released since the last press
                 if (!dDown1Prev) {
-                    // Invert FOD mode
-                    FOD[0] = ! FOD[0];
+                    shooterTarget -= shooterStep;
                     // Prevent this path again until the dpad is released
                     dDown1Prev = true;
                 }
@@ -464,6 +521,52 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 // Detected the dpad released
                 dDown1Prev = false;
             }
+
+            // Is controller asking to changeupdate the FOD heading of switch to FOD from traditional?
+            //No lift: if (gamepad1.dpad_up) {
+            //No lift:     // If we detected dpad released since the last press
+            //No lift:     if (!dUp1Prev) {
+            //No lift:         lift.setPosition(liftSet[liftPos]);
+            //No lift:         // Prevent this path again until the dpad is released
+            //No lift:         dUp1Prev = true;
+            //No lift:     }
+            //No lift: } else {
+            //No lift:     // Detected the dpad released
+            //No lift:     dUp1Prev = false;
+            //No lift: }
+
+            //ULT // Is controller asking to update the FOD heading of switch to FOD from traditional?
+            //ULT if (gamepad1.dpad_up) {
+            //ULT     // If we detected dpad released since the last press
+            //ULT     if (!dUp1Prev) {
+            //ULT         if (FOD[0]) {
+            //ULT             // If already in FOD, update the adjustment angle
+            //ULT             adjustAngle[0] = degrees[0];
+            //ULT         } else {
+            //ULT             // If in traditional drive, just switch to FOD only
+            //ULT             FOD[0] = true;
+            //ULT         }
+            //ULT         // Prevent this path again until the dpad is released
+            //ULT         dUp1Prev = true;
+            //ULT     }
+            //ULT } else {
+            //ULT     // Detected the dpad released
+            //ULT     dUp1Prev = false;
+            //ULT }
+
+            //ULT // Is controller asking to switch FOD mode?
+            //ULT if (gamepad1.dpad_down) {
+            //ULT     // If we detected dpad released since the last press
+            //ULT     if (!dDown1Prev) {
+            //ULT         // Invert FOD mode
+            //ULT         FOD[0] = ! FOD[0];
+            //ULT         // Prevent this path again until the dpad is released
+            //ULT         dDown1Prev = true;
+            //ULT     }
+            //ULT } else {
+            //ULT     // Detected the dpad released
+            //ULT     dDown1Prev = false;
+            //ULT }
 
             // Is controller asking to switch FOD mode?
             if (gamepad2.dpad_down) {
@@ -558,12 +661,13 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             //Ult l_in_motor.setPower(in_pwr);
             //Ult r_in_motor.setPower(in_pwr);
 
-            intake_power = gamepad1.right_trigger * MAX_INTAKE_POWER;
+            //intake_power = (gamepad1.right_trigger - gamepad1.left_trigger) * MAX_INTAKE_POWER;
+            intake_power = (gamepad1.right_trigger) * MAX_INTAKE_POWER;
             intake_motor.setPower(intake_power);
 
-            shooter_power = gamepad1.left_trigger * MAX_SHOOTER_POWER;
-            shoot1_motor.setPower(shooter_power);
-            shoot2_motor.setPower(shooter_power);
+            //shooter_power = gamepad1.left_trigger * MAX_SHOOTER_POWER;
+            //shoot1_motor.setPower(shooter_power);
+            //shoot2_motor.setPower(shooter_power);
 
             //speed control
             if (gamepad1.x) {
@@ -591,6 +695,28 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             else if (gamepad2.a) {
                 speedModifier[1] = 0.35;
             }
+
+            // Just in case we got stuck in the middle somewhere, don't keep setting position forever.
+            currFlickerPos = ((flicker.getPosition()-flickerSet[0]) / (flickerSet[1]-flickerSet[0]));
+            if (gamepad1.left_bumper) {
+                if (currFlickerPos < 0.90){
+                    flicker.setPosition(flickerSet[1]);
+                }
+            } else {
+                if (currFlickerPos > 0.1){
+                    flicker.setPosition(flickerSet[0]);
+                }
+            }
+
+            //No lift: if (gamepad1.left_bumper) {
+            //No lift:     if (!lBump1Prev){
+            //No lift:         liftPos++; liftPos %= 2;
+            //No lift:         lift.setPosition(liftSet[liftPos]);
+            //No lift:         lBump1Prev = true;
+            //No lift:     }
+            //No lift: } else {
+            //No lift:     lBump1Prev = false;
+            //No lift: }
 
             // Single button toggle for foundation servos
             // Left Bumper for Foundation
@@ -631,20 +757,25 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                     //bulkData2 = expansionHub2.getBulkInputData();
                     //logger.logD("MechFOVCSV", String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getHeading(), bulkData1.getMotorCurrentPosition(l_f_motor),bulkData1.getMotorCurrentPosition(l_b_motor), bulkData2.getMotorCurrentPosition(r_f_motor), bulkData2.getMotorCurrentPosition(r_b_motor), l_f_motor_power, l_b_motor_power, r_f_motor_power, r_b_motor_power));
 
-                    int lfPos = l_f_motor.getCurrentPosition();
-                    int lbPos = l_f_motor.getCurrentPosition();
-                    int rfPos = l_f_motor.getCurrentPosition();
-                    int rbPos = l_f_motor.getCurrentPosition();
+                    //int lfPos = l_f_motor.getCurrentPosition();
+                    //int lbPos = l_f_motor.getCurrentPosition();
+                    //int rfPos = l_f_motor.getCurrentPosition();
+                    //int rbPos = l_f_motor.getCurrentPosition();
+                    int shoot2Posdbg = shoot2_motor.getCurrentPosition();
 
-                    logger.logD("MechFOVCSV", String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getQHeading(), lfPos, lbPos, rfPos, rbPos, l_f_motor_power, l_b_motor_power, r_f_motor_power, r_b_motor_power));
+                    logger.logD("MechFOVCSV", String.format(",%f,%d,%f", rt, shoot2Posdbg, shooter_power));
+                    //logger.logD("MechFOVCSV", String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getQHeading(), lfPos, lbPos, rfPos, rbPos, l_f_motor_power, l_b_motor_power, r_f_motor_power, r_b_motor_power));
                     nextLog = rt + 0.1;
                 }
             }
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
+            telemetry.addData("Iters", iters);
             telemetry.addData("Polar", "Speed (%.2f), theta (%.2f)", forward[0], theta);
             telemetry.addData("Gyro", degrees[0]);
+            telemetry.addData("Shooter:", "tgt: %.0f (%.0f) vs %.0f",(shooterTarget/(28.0/1.5))*60.0, (shooterTarget/(28.0/1.5))*60.0*shooterReq, (rps/(28.0/1.5))*60.0);
+
             telemetry.update();
         }
 
