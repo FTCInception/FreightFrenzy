@@ -32,6 +32,7 @@ package Inception.UltimateGoal;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
 
 /**
  * This file houses Autonomous code
@@ -46,17 +47,17 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
+ * @Disabled
  */
 
 @Autonomous(name="Mech: Auto Cal", group="Mechbot")
-@Disabled
 public class MechAuto_Cal extends LinearOpMode {
     /* Declare OpMode members. */
 
     private MechBot          robot   = new MechBot();   // Use a Pushbot's hardware
 
-    private static final double     DRIVE_SPEED             = 0.8;
-    private static final double     TURN_SPEED              = 0.65;
+    private static final double     DRIVE_SPEED             = 1.0;
+    private static final double     TURN_SPEED              = 0.8;
     double a=0;
     double P=0.05;
 
@@ -80,20 +81,38 @@ public class MechAuto_Cal extends LinearOpMode {
 
         while (!isStarted()) {
             sleep(250);
-            robot.getQHeading();
+            telemetry.addData("Heading", "%f", robot.getHeading());
+            telemetry.update();
         }
 
         // Wait for the game to start (driver presses PLAY)
         //waitForStart();
 
+        //robot.MotorCal(robot.leftFDrive, "lf", 1.0 );
+        //robot.MotorCal(robot.leftBDrive, "lb",1.0 );
+        //robot.MotorCal(robot.rightFDrive, "rf", 1.0 );
+        //robot.MotorCal(robot.rightBDrive, "rb", 1.0 );
+
         robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 4 );
+        a=robot.fastEncoderStraight(DRIVE_SPEED,72.0,60, P);
+        a=robot.gyroRotate(TURN_SPEED,(180)-a, 60);
         robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 4 );
+        a=robot.fastEncoderStraight(DRIVE_SPEED,72.0,60, P);
+        a=robot.gyroRotate(TURN_SPEED,(-180)-a, 60);
         robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 4 );
+        a=robot.fastEncoderStraight(DRIVE_SPEED,72.0,60, P);
+        a=robot.gyroRotate(TURN_SPEED,(180)-a, 60);
         robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 4 );
+        a=robot.fastEncoderStraight(DRIVE_SPEED,72.0,60, P);
+
+
+        //a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 4 );
+        //robot.straightA = a;
+        //a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 4 );
+        //robot.straightA = a;
+        //a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 4 );
+        //robot.straightA = a;
+        //a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 4 );
 
         /*
         double turnDirection = -1.0;

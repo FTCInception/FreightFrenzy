@@ -173,7 +173,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
         robot.straightA = a;
         a=robot.fastEncoderStraight(DRIVE_SPEED,-18, 3, P );
 
-        robot.grabBlock(500);
+        //robot.grabBlock(500);
 
         // Backup and turn towards the drop zone
         robot.straightA = a;
@@ -185,7 +185,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
         robot.straightA = a;
         a=robot.fastEncoderStraight(DRIVE_SPEED,firstBlock - dropZone, 4, P);
 
-        robot.dropBlock(350);
+        //robot.dropBlock(350);
 
         // This is the hard block against the wall
         if (secondBlock == blocks[4]) {
@@ -201,7 +201,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, -(laneLength + 2), 2.5, P);
 
-            robot.grabBlock(500);
+            //robot.grabBlock(500);
 
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, laneLength + 2, 2.5, P);
@@ -216,7 +216,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             a = robot.fastEncoderStraight(DRIVE_SPEED, 14 - dropZone, 4, P);
 
             //drop block
-            robot.dropBlock(350);
+            //robot.dropBlock(350);
 
         } else {
             //come back and go for next one
@@ -226,7 +226,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             robot.straightA = a;
             a=robot.fastEncoderStraight(DRIVE_SPEED,-(laneLength + 2),4, P);
 
-            robot.grabBlock(500);
+            //robot.grabBlock(500);
 
             robot.straightA = a;
             a=robot.fastEncoderStraight(DRIVE_SPEED,laneLength+2,4, P);
@@ -237,7 +237,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             a=robot.fastEncoderStraight(DRIVE_SPEED, secondBlock - dropZone, 4, P);
 
             //drop block
-            robot.dropBlock(350);
+            //robot.dropBlock(350);
         }
 
         if (thirdBlock != blocks[0]) {
@@ -248,7 +248,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, -(laneLength + 2), 4, P);
 
-            robot.grabBlock(500);
+            //robot.grabBlock(500);
 
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, laneLength + 2, 4, P);
@@ -260,7 +260,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
             a = robot.fastEncoderStraight(DRIVE_SPEED, thirdBlock - dropZone, 4, P);
 
             //drop block
-            robot.dropBlock(350);
+            //robot.dropBlock(350);
         }
 
         //Park under bridge
