@@ -94,6 +94,50 @@ public class MechAuto_Cal extends LinearOpMode {
         //robot.MotorCal(robot.rightBDrive, "rb", 1.0 );
 
         robot.straightA = a;
+        // Drive straight a while without any gyro correction
+        // Power adjust right/left to get a straight line
+        //a=robot.fastEncoderStraight(DRIVE_SPEED,96.0,60, 0);
+        //sleep(5000);
+
+        /*
+        // Now turn 4 full rotations and back with a pause to check for over/under rotation
+        // Check for drift as well (not sure how to fix drift.)
+        double turnSize=360.0*4.0;
+        robot.gyroRotate(TURN_SPEED,turnSize-a, 60);
+        telemetry.addData("Heading", "%f", robot.getHeading());
+        telemetry.update();
+
+        sleep(3000);
+
+        robot.gyroRotate(TURN_SPEED,-turnSize-a, 60);
+        telemetry.addData("Heading", "%f", robot.getHeading());
+        telemetry.update();
+        */
+
+        // 3-ring pickup test.
+        robot.intake_motor.setPower(1.0);
+        a=robot.fastEncoderStraight(DRIVE_SPEED,30.0,60, P);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(.2,9.0,60, P);
+        robot.straightA = a;
+        sleep(2000);
+        robot.intake_motor.setPower(0);
+
+        // Test strafe in  here
+        /*
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 4 );
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 4 );
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 4 );
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 4 );
+        */
+
+
+        // Now a bunch of junk to try different movements like short, medium, long, etc.
+        /*
+        robot.straightA = a;
         a=robot.fastEncoderStraight(DRIVE_SPEED,72.0,60, P);
         a=robot.gyroRotate(TURN_SPEED,(180)-a, 60);
         robot.straightA = a;
@@ -104,15 +148,7 @@ public class MechAuto_Cal extends LinearOpMode {
         a=robot.gyroRotate(TURN_SPEED,(180)-a, 60);
         robot.straightA = a;
         a=robot.fastEncoderStraight(DRIVE_SPEED,72.0,60, P);
-
-
-        //a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 4 );
-        //robot.straightA = a;
-        //a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 4 );
-        //robot.straightA = a;
-        //a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 4 );
-        //robot.straightA = a;
-        //a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 4 );
+        */
 
         /*
         double turnDirection = -1.0;
