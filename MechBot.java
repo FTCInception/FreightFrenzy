@@ -72,6 +72,7 @@ public class MechBot {
     public DcMotor rightFDrive = null;
     public DcMotor leftBDrive = null;
     public DcMotor rightBDrive = null;
+    public DcMotor intake_motor = null;
     public DcMotor l_in_motor = null;
     public DcMotor r_in_motor = null;
 
@@ -85,32 +86,48 @@ public class MechBot {
     private static final double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
             (WHEEL_DIAMETER_INCHES * 3.14159);
     private static final double AXLE_LENGTH = 17.0;          // Width of robot through the pivot point (center wheels)
+
+    // The gyro seems to be a teeny/tiny off, this is the correction factor
+    private static final double IMU_CORR = 1.00445;
     // Multiply INCHES_PER_DEGREE by 1.75 to handle the sliding of the MECH wheel rollers?
     private static final double INCHES_PER_DEGREE = 1.52 * ( (AXLE_LENGTH * 3.14159) / 360.0 );
+    // This controls the rate of increase or decrease of speed, expressed as endcoder counts or degrees
     private static final double SOFT_D_UP = 50.0;
     private static final double SOFT_D_UP_DEGREE = 5;
     private static final double SOFT_D_DOWN = 70.0;
-    private static final double SOFT_D_DOWN2 = 100.0;
+    private static final double SOFT_D_DOWN2 = 70.0;
     private static final double SOFT_D_DOWN_DEGREE = 5;
-    private static final double fKpL = 1.0;
-    private static final double fKpR = 1.0;
-    private static final double PIVOT_FACTOR = 2.05;
-    static double KpL;
-    static double KpR;
+    // This determines when we've reached the end point, when are we done?
     private static final double CLOSE_ENOUGH = 15.0;
     private static final double CLOSE_ENOUGH_DEGREE = 2.0;
+    // Once a side reaches the target, this controls the speed it continues to run
+    // at waiting on the other side.  We think this is better than '0'
+    private static final double WAIT_SPEED = 0.005;
+    // Staic ratio between left and right power for 'normal' driving
+    private static final double fKpL = 1.0;
+    private static final double fKpR = 0.997;
+    // Staic ratio between left and right power for 'strafe' driving
+    private static final double sKpL = 0.90;
+    private static final double sKpR = 1.0;
+    // Seems like we have slipping while strafing?
+    // This seems to match the 'right' side (front of bot).
+    // Maybe this is due to weight/balance issues?
+    private static final double STRAFE_DISTANCE_FACTOR = 0.90;
+
+    private static final double PIVOT_FACTOR = 2.05;
     private static final double RIGHT_ARC_COEFFICENT = 1.00;
     private static final double LEFT_ARC_COEFFICENT = 1.25;
-    private static final double IMU_CORR = 1.00;
     static final double RIGHT = 1;
     static final double LEFT = 0;
+
+    static double KpL;
+    static double KpR;
     BNO055IMU imu;
     private Orientation angles;
     private Orientation lastAngles = new Orientation();
     private double lastQ = 0;
     private double globalHeading = 0;
     private boolean useIntegratedGyro = true;  // Controls whether we use raw gyro values or the integrated version we make.
-    //ColorSensor colorSensor;
     private static final boolean DEBUG = false;
     double minUp = 0.0;
     double straightA = 0.0;
@@ -344,12 +361,16 @@ public class MechBot {
         rightBDrive = hwMap.get(DcMotor.class, "right_back");
         //r_in_motor = hwMap.get(DcMotor.class, "right_in");
         //l_in_motor = hwMap.get(DcMotor.class, "left_in");
+        intake_motor = hwMap.dcMotor.get("intake");
+
 
         //leftArm    = hwMap.get(DcMotor.class, "left_arm");
         leftFDrive.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
         leftBDrive.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
         rightFDrive.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
         rightBDrive.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
+        intake_motor.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
+
         //l_in_motor.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
         //r_in_motor.setDirection(DcMotor.Direction.FORWARD); // Set to REVERSE if using AndyMark motors
 
@@ -358,6 +379,7 @@ public class MechBot {
         rightFDrive.setPower(0);
         leftBDrive.setPower(0);
         rightBDrive.setPower(0);
+        intake_motor.setPower(0);
         //r_in_motor.setPower(0);
         //l_in_motor.setPower(0);
 
@@ -369,6 +391,8 @@ public class MechBot {
         rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        intake_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
         //l_in_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         //r_in_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
@@ -672,11 +696,12 @@ public class MechBot {
         double[] speedRampDown = {0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
 
         // This profile is for rotate
-        double[] speedRampUpR = {0.275, 0.325, 0.40, 0.475, 0.55, 0.60, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDownR = {0.20, 0.20, 0.225, 0.225, 0.25, 0.25, 0.275, 0.275, 0.30, 0.30, 0.325, 0.325, 0.35, 0.35, 0.375, 0.40, 0.425, 0.45, 0.475, 0.5, 1.0};
+        //ult double[] speedRampUpR = {0.275, 0.325, 0.40, 0.475, 0.55, 0.60, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        //ult double[] speedRampDownR = {0.20, 0.20, 0.225, 0.225, 0.25, 0.25, 0.275, 0.275, 0.30, 0.30, 0.325, 0.325, 0.35, 0.35, 0.375, 0.40, 0.425, 0.45, 0.475, 0.5, 1.0};
+        double[] speedRampUpR = {0.30, 0.45, 0.60, 0.75, 0.90, 1.0};
+        double[] speedRampDownR = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         //double[] speedRampDownR = {0.20, 0.20, 0.225, 0.225, 0.25, 0.25, 0.275, 0.275, 0.0, 0.35, 0.35, 0.375, 0.40, 1.0};
         //double[] speedRampDownR = {0.20, 0.20, 0.225, 0.225, 0.1, 0.25, 0.1, 0.275, 0.1, 0.30, 0.1, 0.325, 0.1, 0.35, 0.375, 0.40, 1.0};
-
 
         // This profile is for the foundation movement which is the only thing with Pivot right now.  Better to let foundation manage
         // it special profile fro itself and build a general purpose pivot here.
@@ -952,13 +977,15 @@ public class MechBot {
                                     double timeoutS,
                                     double P) {
         double a;
-        double[] speedRampUp = {0.35, 0.45, 0.55, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDown = {0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925, 0.95, 0.975, 1.0};
+
+        // Long straight (default)
+        double[] speedRampUp = {0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
+        double[] speedRampDown = {0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
 
         invertMotorDirection(leftFDrive);
         invertMotorDirection(rightBDrive);
 
-        a = fastEncoderDrive( speed, inchesToLeft, inchesToLeft, timeoutS, P, speedRampUp, speedRampDown, 0.93);
+        a = fastEncoderDrive2( speed, inchesToLeft, inchesToLeft, timeoutS, P, speedRampUp, speedRampDown, leftBDrive, rightBDrive, leftFDrive, rightFDrive);
 
         invertMotorDirection(rightBDrive);
         invertMotorDirection(leftFDrive);
@@ -1002,7 +1029,7 @@ public class MechBot {
         double[] speedRampUp = {0.40, 0.55, 0.70, 0.85, 1.0};
         //double[] speedRampDown = {0.10, 0.125, 0.125, 0.15, 0.175, 0.20, 0.225, 0.25, 0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         //double[] speedRampDown = {0.20, 0.225, 0.25, 0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDown = {0.10, 0.20, 0.25, 0.30, 0.40, 0.60, 0.80, 1.0};
+        double[] speedRampDown = {0.10, 0.25, 0.40, 0.55, 0.70, 0.85, 1.0};
         //double[] speedRampDown = {0.20, 0.30, 0.40, 0.60, 0.80, 1.0};
 
 
@@ -1056,13 +1083,7 @@ public class MechBot {
         return(fastEncoderDrive( speed, leftInches, rightInches, timeoutS, P, speedRampUp, speedRampDown ));
     }
 
-
-    public double fastEncoderDrive(double speed,
-                                   double leftInches, double rightInches,
-                                   double timeoutS, double P, double[] up, double[] down) {
-        return (fastEncoderDrive(speed, leftInches, rightInches, timeoutS, P, up, down, 1.0));
-    }
-        /*
+    /*
      *  Method to perfmorm a relative move, based on encoder counts.
      *  IMU gyro is used to help steer if we're going straight.
      *  Move will stop if any of three conditions occur:
@@ -1072,8 +1093,7 @@ public class MechBot {
      */
     public double fastEncoderDrive(double speed,
                                double leftInches, double rightInches,
-                               double timeoutS, double P, double[] up, double[] down,
-                               double strafeCorrect) {
+                               double timeoutS, double P, double[] up, double[] down) {
 
         int newLeftFTarget;
         int newRightFTarget;
@@ -1118,6 +1138,7 @@ public class MechBot {
             //leftBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             //rightBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
+            // FIXME -- Lets just run in this mode all the time and not keep programming the motors
             // We'll handle power/steering but let the PID try to maintain
             // a constant axle speed to overcome hub, motor, build variability.
             leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -1125,6 +1146,7 @@ public class MechBot {
             leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+            // FIXME -- Lets just run in this mode all the time and not keep programming the motors
             // Braking is good if we have gyro correct
             leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -1132,10 +1154,10 @@ public class MechBot {
             rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             // Compute desired position
-            newLeftFTarget = (int)((leftInches * COUNTS_PER_INCH)*strafeCorrect);
+            newLeftFTarget = (int)(leftInches * COUNTS_PER_INCH);
             newRightFTarget = (int)(rightInches * COUNTS_PER_INCH);
             newLeftBTarget = (int)(leftInches * COUNTS_PER_INCH);
-            newRightBTarget = (int)((rightInches * COUNTS_PER_INCH)*strafeCorrect);
+            newRightBTarget = (int)(rightInches * COUNTS_PER_INCH);
 
             // Initialze toGo == target (maximum toGo)
             toGoL = Math.abs(newLeftBTarget);
@@ -1190,7 +1212,7 @@ public class MechBot {
                     spdDnL = Math.min(speedRampDown[Math.min((int) (Math.abs(toGoL) / SOFT_D_DOWN2), speedRampDown.length-1)], speed);
 
                     // Use the minimum speed or 0
-                    newSpeedL = doneL ? 0.05 : Math.min(spdUpL, spdDnL);
+                    newSpeedL = doneL ? WAIT_SPEED : Math.min(spdUpL, spdDnL);
 
                     // Change power and steer
                     // Reverse stuff if driving backwards
@@ -1207,7 +1229,7 @@ public class MechBot {
                     spdDnR = Math.min(speedRampDown[Math.min((int)(Math.abs(toGoR)/SOFT_D_DOWN2),speedRampDown.length-1)],speed);
 
                     // Use the minimum speed or 0
-                    newSpeedR = doneR ? 0.05 : Math.min(spdUpR, spdDnR) ;
+                    newSpeedR = doneR ? WAIT_SPEED : Math.min(spdUpR, spdDnR) ;
 
                     // Change power and steer
                     // Reverse stuff if driving backwards
@@ -1230,26 +1252,17 @@ public class MechBot {
                     KhR = Math.max(0.0, (1.0 - (deltaHeading * P)));
                 }
 
-                // 1.0 == No strafing (or perfect suspension?)
-                if (strafeCorrect == 1.0) {
-                    newSpeedL *= (KpL * KhL);
-                    newSpeedR *= (KpR * KhR);
+                newSpeedL *= (KpL * KhL);
+                newSpeedR *= (KpR * KhR);
 
-                    if ((newSpeedL != actSpeedL) || (newSpeedR != actSpeedR)) {
+                if ((newSpeedL != actSpeedL) || (newSpeedR != actSpeedR)) {
 
-                        leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
-                        rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
-                        rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
-                        leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
-                        actSpeedL = newSpeedL;
-                        actSpeedR = newSpeedR;
-                    }
-                } else {
-                    // left strafe steering seems to be working.  Not sure why we can't get right strafe steering working.
-                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, strafeCorrect * newSpeedL * KpL * KhL)));
-                    rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR * KpR * KhR)));
-                    rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, strafeCorrect * newSpeedR * KpR * KhR)));
-                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL * KpL * KhL)));
+                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+                    rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
+                    rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
+                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+                    actSpeedL = newSpeedL;
+                    actSpeedR = newSpeedR;
                 }
 
                 logger.logD("MechLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f,%d,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f", rt, deltaHeading, KhL, KhR, curPosLf, curPosL, leftFDrive.getCurrentPosition(),leftBDrive.getCurrentPosition(), newLeftBTarget, curPosRf, curPosR, rightFDrive.getCurrentPosition(), rightBDrive.getCurrentPosition(), newRightBTarget, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
@@ -1275,6 +1288,7 @@ public class MechBot {
                 myLOpMode.telemetry.update();
             }
 
+            // FIXME -- Lets just run in this mode all the time and not keep programming the motors
             // Reset run mode
             leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -1283,6 +1297,11 @@ public class MechBot {
 
         }
         if (leftInches == rightInches) {
+            // FIXME -- do we really need to burn 500ms every move here?
+            //  Seems like the gyro is still moving a little here. We might consider switching to
+            //  using something like a 'heading' instead of a angular delta. Then we don't really
+            //  need to carry error forward, it's just known from the heading value.
+            //  Then we also don't need the delay here either.
             myLOpMode.sleep(500);
             // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
             logger.logD("MechLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
@@ -1291,6 +1310,238 @@ public class MechBot {
             return(0.0);
         }
     }
+
+    /*
+     *  Method to perfmorm a relative move, based on encoder counts.
+     *  IMU gyro is used to help steer if we're going straight.
+     *  Move will stop if any of three conditions occur:
+     *  1) Move gets to the desired position
+     *  2) Move runs out of time
+     *  3) Driver stops the opmode running.
+     */
+    public double fastEncoderDrive2(double speed,
+                                    double leftInches, double rightInches,
+                                    double timeoutS, double P, double[] up, double[] down,
+                                    DcMotor leftFDrive, DcMotor leftBDrive, DcMotor rightFDrive, DcMotor rightBDrive ) {
+
+        int newLeftFTarget;
+        int newRightFTarget;
+        int newLeftBTarget;
+        int newRightBTarget;
+        double curPosL, curPosR;
+        double curPosLf, curPosRf;
+        double toGoL, toGoR;
+        double actSpeedL=0, actSpeedR=0, spdPosL=0, spdPosR=0, spdToGoL=0, spdToGoR=0;
+        double newSpeedL, newSpeedR;
+        double spdUpL,spdDnL,spdUpR,spdDnR;
+        boolean doneL, doneR;
+        double[] speedRampUp = up;
+        double[] speedRampDown = down;
+        ElapsedTime     runtime = new ElapsedTime();
+        double tgtHeading, curHeading, deltaHeading;
+        // For gyro heading adjustments
+        double KhL = 1.0;
+        double KhR = 1.0;
+        double rt = 0.0;
+
+        // Get the current Heading and update for the correction angle
+        curHeading = tgtHeading = getHeading();
+        logger.logD("MechLog",String.format("fastEncodeDrive: tgt: %f, A: %f", tgtHeading, straightA));
+        tgtHeading = normalizeAngle(tgtHeading - straightA) ;
+
+        // now clear the correction angle so it's never used again
+        straightA = 0.0;
+
+        // Ensure that the opmode is still active
+        if (myLOpMode.opModeIsActive()) {
+
+            // Reset encoders
+            leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            rightFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            leftBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            rightBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+            // FIXME -- Lets just run in this mode all the time and not keep programming the motors
+            // We'll handle power/steering but let the PID try to maintain
+            // a constant axle speed to overcome hub, motor, build variability.
+            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            // FIXME -- Lets just run in this mode all the time and not keep programming the motors
+            // Braking is good if we have gyro correct
+            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            leftBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+            // Compute desired position
+            newLeftFTarget = (int)(leftInches * COUNTS_PER_INCH / STRAFE_DISTANCE_FACTOR);
+            newRightFTarget = (int)(rightInches * COUNTS_PER_INCH / STRAFE_DISTANCE_FACTOR);
+            newLeftBTarget = (int)(leftInches * COUNTS_PER_INCH / STRAFE_DISTANCE_FACTOR);
+            newRightBTarget = (int)(rightInches * COUNTS_PER_INCH / STRAFE_DISTANCE_FACTOR);
+
+            // Initialze toGo == target (maximum toGo)
+            toGoL = Math.abs(newLeftBTarget);
+            toGoR = Math.abs(newRightBTarget);
+
+            // reset the timeout time and start motion at the minimum speed.
+            runtime.reset();
+            speed = Math.abs(speed);
+
+            // Setting the starting speed is now handled inside the loop below on the first iteration.
+            // Don't set the speed out here because a 'pivot' where one side has a '0' distance
+            // request would start moving too soon.
+
+            // Initialize variables before the loop
+            doneL = doneR = false;
+            spdUpL = spdUpR = newSpeedL = newSpeedR = speedRampUp[0];
+            spdDnL = spdDnR = speedRampDown[0];
+            curPosL = leftBDrive.getCurrentPosition();
+            curPosR = rightBDrive.getCurrentPosition();
+
+            // FIXME -- Read the front encoders only for logging
+            curPosLf = leftFDrive.getCurrentPosition();
+            curPosRf = rightFDrive.getCurrentPosition();
+
+            // Keep looping while we are still active, and there is time left, and we haven't reached the target
+            while (myLOpMode.opModeIsActive() &&
+                    ((rt=runtime.seconds()) < timeoutS) &&
+                    ( !doneL || !doneR)) {
+
+                // Check if we're done
+                // This code implements a soft start and soft stop.
+                // Compute the distance gone and how far to go.
+                if (!doneL) {
+                    spdPosL = curPosL = leftBDrive.getCurrentPosition();
+                    toGoL = Math.min(toGoL, Math.max(0, Math.abs(newLeftBTarget - curPosL)));
+                }
+                if (!doneR) {
+                    spdPosR = curPosR = rightBDrive.getCurrentPosition();
+                    toGoR  = Math.min(toGoR, Math.max(0,Math.abs(newRightBTarget - curPosR)));
+                }
+                // Average them if driving straight to reduce twist/steer.
+                if (leftInches == rightInches) {
+                    spdPosL = spdPosR = (curPosL + curPosR)/2;
+                    toGoL = toGoR = (toGoL + toGoR)/2;
+                }
+
+                if (!doneL) {
+                    doneL = ((Math.abs(newLeftBTarget) - Math.abs(curPosL)) < CLOSE_ENOUGH);
+
+                    // Compute speed on acceleration and deceleration legs
+                    spdUpL = Math.max(Math.min(speedRampUp[Math.min((int) (Math.abs(spdPosL) / SOFT_D_UP), speedRampUp.length-1)], speed),minUp);
+                    spdDnL = Math.min(speedRampDown[Math.min((int) (Math.abs(toGoL) / SOFT_D_DOWN2), speedRampDown.length-1)], speed);
+
+                    // Use the minimum speed or 0
+                    newSpeedL = doneL ? WAIT_SPEED : Math.min(spdUpL, spdDnL);
+
+                    // Change power and steer
+                    // Reverse stuff if driving backwards
+                    if ( newLeftFTarget < 0 ) {
+                        newSpeedL *= -1.0;
+                    }
+                }
+
+                if (!doneR) {
+                    doneR = ((Math.abs(newRightBTarget) - Math.abs(curPosR)) < CLOSE_ENOUGH);
+
+                    // Compute speed on acceleration and deceleration legs
+                    spdUpR = Math.max(Math.min(speedRampUp[Math.min((int)(Math.abs(spdPosR)/SOFT_D_UP),speedRampUp.length-1)],speed),minUp);
+                    spdDnR = Math.min(speedRampDown[Math.min((int)(Math.abs(toGoR)/SOFT_D_DOWN2),speedRampDown.length-1)],speed);
+
+                    // Use the minimum speed or 0
+                    newSpeedR = doneR ? WAIT_SPEED : Math.min(spdUpR, spdDnR) ;
+
+                    // Change power and steer
+                    // Reverse stuff if driving backwards
+                    if ( newRightFTarget < 0 ) {
+                        newSpeedR *= -1.0;
+                    }
+                }
+
+                curHeading = getHeading();
+                deltaHeading = -1.0 * normalizeAngle(tgtHeading - curHeading);
+
+                // Compute drift, negate for correction
+                if ((P != 0.0) && (leftInches == rightInches)) {
+                    // If driving straight backwards, negate again
+                    if (leftInches < 0 ) {
+                        deltaHeading *= -1.0;
+                    }
+                    // Never change the sign. Make the change proportional to the error
+                    KhL = Math.max(0.0, (1.0 + (deltaHeading * P)));
+                    KhR = Math.max(0.0, (1.0 - (deltaHeading * P)));
+                }
+
+                newSpeedL *= (sKpL * KhL);
+                newSpeedR *= (sKpR * KhR);
+
+                if ((newSpeedL != actSpeedL) || (newSpeedR != actSpeedR)) {
+
+                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+                    // FIXME, rightF seems to be either ahead or behind by different amounts.
+                    //  Could this be due to shimming on the bearings and rubbing the outside
+                    //  screws?
+                    if (newRightFTarget > 0) {
+                        rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)) * 0.92);
+                    } else {
+                        rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)) * 0.97);
+                    }
+                    rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
+                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+                    actSpeedL = newSpeedL;
+                    actSpeedR = newSpeedR;
+                }
+
+                logger.logD("MechLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f,%d,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f", rt, deltaHeading, KhL, KhR, curPosLf, curPosL, leftFDrive.getCurrentPosition(),leftBDrive.getCurrentPosition(), newLeftBTarget, curPosRf, curPosR, rightFDrive.getCurrentPosition(), rightBDrive.getCurrentPosition(), newRightBTarget, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
+
+                if (DEBUG) {
+                    myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
+                    myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, newSpeedR, (int) curPosR, newRightBTarget, (int) toGoR);
+                    myLOpMode.telemetry.update();
+                }
+            }
+
+            // Stop all motion;
+            leftFDrive.setPower(0);
+            rightFDrive.setPower(0);
+            rightBDrive.setPower(0);
+            leftBDrive.setPower(0);
+
+            if (DEBUG) {
+                curPosL = leftBDrive.getCurrentPosition();
+                curPosR = rightBDrive.getCurrentPosition();
+                myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
+                myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, newSpeedR, (int) curPosR, newRightBTarget, (int) toGoR);
+                myLOpMode.telemetry.update();
+            }
+
+            // FIXME -- Lets just run in this mode all the time and not keep programming the motors
+            // Reset run mode
+            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        }
+        if (leftInches == rightInches) {
+            // FIXME -- do we really need to burn 500ms every move here?
+            //  Seems like the gyro is still moving a little here. We might consider switching to
+            //  using something like a 'heading' instead of a angular delta. Then we don't really
+            //  need to carry error forward, it's just known from the heading value.
+            //  Then we also don't need the delay here either.
+            myLOpMode.sleep(500);
+            // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
+            logger.logD("MechLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
+            return (normalizeAngle((getHeading() - tgtHeading)));
+        } else {
+            return(0.0);
+        }
+    }
+
+
 
 
     public void MotorCal( DcMotor motorToTest, String name, double K ) {

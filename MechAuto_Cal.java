@@ -59,7 +59,7 @@ public class MechAuto_Cal extends LinearOpMode {
     private static final double     DRIVE_SPEED             = 1.0;
     private static final double     TURN_SPEED              = 0.8;
     double a=0;
-    double P=0.05;
+    double P=0.1;
 
     @Override
     public void runOpMode() {
@@ -114,6 +114,7 @@ public class MechAuto_Cal extends LinearOpMode {
         telemetry.update();
         */
 
+        /*
         // 3-ring pickup test.
         robot.intake_motor.setPower(1.0);
         a=robot.fastEncoderStraight(DRIVE_SPEED,30.0,60, P);
@@ -122,17 +123,16 @@ public class MechAuto_Cal extends LinearOpMode {
         robot.straightA = a;
         sleep(2000);
         robot.intake_motor.setPower(0);
-
-        // Test strafe in  here
-        /*
-        a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 4 );
-        robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 4 );
-        robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 4 );
-        robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 4 );
         */
+
+        // Test strafe in here
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 60, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 60, P);
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 60, P );
+        robot.straightA = a;
+        a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 60, P );
 
 
         // Now a bunch of junk to try different movements like short, medium, long, etc.

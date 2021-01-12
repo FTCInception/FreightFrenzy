@@ -225,7 +225,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         double PIDrt, rps=0.0, prevPIDrt=0.0;
         double nextPID=0.0, PIDTime = 0.1;
         double shooterReq,prevShooterReq=0.0;
-        double shooterTarget = ((1200.0*(28.0/1.5))/60.0);
+        double shooterTarget = ((3600.0*(28.0/1.5))/60.0);
         double shooterStep = ((50.0*(28.0/1.5))/60.0);
         double iters=0.0;
 
