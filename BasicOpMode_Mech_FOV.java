@@ -218,7 +218,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         double maxPwr = 0.0;
 
         //wobble stuff
-        final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0;
+        final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0;
         //int wobbleTargets[] = {100, TOTAL_WOBBLE_TICKS/8*5, TOTAL_WOBBLE_TICKS/4, TOTAL_WOBBLE_TICKS/2};
         final int wobbleTargets[] = {(int)(5*WOBBLE_TICKS_PER_DEGREE),(int)(225*WOBBLE_TICKS_PER_DEGREE), (int)(90*WOBBLE_TICKS_PER_DEGREE), (int)(180*WOBBLE_TICKS_PER_DEGREE)};
         int wobblePos = 0;
