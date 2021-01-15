@@ -72,6 +72,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
     private static DcMotor intake_motor;
     private static DcMotor shoot1_motor, shoot2_motor;
+    private static DcMotor wobble_motor;
     private static DcMotor l_in_motor, r_in_motor;
     private static DcMotor l_out_motor, r_out_motor;
     private static Servo foundation1, foundation2, claw,lift,flicker;
@@ -101,6 +102,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     double r_f_motor_power;
     double r_b_motor_power;
 
+    double wobble_power;
     double intake_power;
     double shooter_power;
 
@@ -200,8 +202,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         double flickerSet[] = {0.0, 1.0};
         double lFounSet[] = {0.0, 0.9};
         double rFounSet[] = {1.0, 0.1};
-        double clawSet[] = {0.0, 1.0};
-        boolean lBump1Prev=false, rBump1Prev=false;
+        double clawSet[] = {1.0, 0.0};
+        boolean lBump1Prev=false, rBump1Prev=false, wobblePrev=false, clawPrev=false;
         int lFounPos=0, rFounPos=0, clawPos=0,liftPos=0, flickerPos=0;
         boolean dLeft1Prev=false;
         double childLock=1.0;
@@ -214,6 +216,17 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         double lPwr=0, rPwr=0;
 
         double maxPwr = 0.0;
+
+        //wobble stuff
+        final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0;
+        //int wobbleTargets[] = {100, TOTAL_WOBBLE_TICKS/8*5, TOTAL_WOBBLE_TICKS/4, TOTAL_WOBBLE_TICKS/2};
+        final int wobbleTargets[] = {(int)(5*WOBBLE_TICKS_PER_DEGREE),(int)(225*WOBBLE_TICKS_PER_DEGREE), (int)(90*WOBBLE_TICKS_PER_DEGREE), (int)(180*WOBBLE_TICKS_PER_DEGREE)};
+        int wobblePos = 0;
+        wobble_power = 0.6;
+
+        //claw stuff
+        double clawTarget = 0.0;
+        double clawStep = 0.05;
 
         // https://en.wikipedia.org/wiki/Ziegler–Nichols_method
         // Ku = 1/100; Tu = .5s @ 1200 RPM
@@ -253,12 +266,13 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         intake_motor = hardwareMap.dcMotor.get("intake");
         shoot1_motor = hardwareMap.dcMotor.get("shoot1");
         shoot2_motor = hardwareMap.dcMotor.get("shoot2");
+        wobble_motor = hardwareMap.dcMotor.get("wobble");
         //Ult l_in_motor = hardwareMap.dcMotor.get("right_in");
         //Ult r_in_motor = hardwareMap.dcMotor.get("left_in");
 
         //Ult foundation1 = hardwareMap.servo.get("foundation1");
         //Ult foundation2 = hardwareMap.servo.get("foundation2");
-        //Ult claw = hardwareMap.servo.get("claw");
+        claw = hardwareMap.servo.get("claw");
         //No lift: lift = hardwareMap.servo.get("lift");
         flicker = hardwareMap.servo.get("flicker");
 
@@ -279,6 +293,10 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         r_f_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         r_b_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        wobble_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        wobble_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         shoot1_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         shoot2_motor.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -434,8 +452,40 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                     shoot2_motor.setPower(Math.max(-0.7, Math.min(0.7, shooter_power)));
                 }
             }
+
             // Recored the current request to handle special case for going off-on-off
             prevShooterReq = shooterReq;
+
+            if (gamepad1.dpad_right) {
+                if(!clawPrev) {
+                    clawPos++; clawPos %= 2;
+                    claw.setPosition(clawSet[clawPos]);
+                    clawPrev = true;
+                }
+            } else {
+                clawPrev = false;
+            }
+
+            if(gamepad1.dpad_left){
+                if(!wobblePrev) {
+                    wobblePos++; wobblePos %= 4;
+                    wobble_motor.setTargetPosition(wobbleTargets[wobblePos]);
+                    wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    if(wobblePos == 0){
+                        wobble_motor.setPower(0.4);
+                    }else{
+                        wobble_motor.setPower(wobble_power);
+                    }
+                    wobblePrev = true;
+                }
+            } else {
+                wobblePrev = false;
+
+            }
+
+            if(wobble_motor.getCurrentPosition() <= (10.0*WOBBLE_TICKS_PER_DEGREE) && wobblePos == 0){
+                wobble_motor.setPower(0);
+            }
 
             // Use the right trigger for elevator power
             //Ult out_pwr = gamepad2.right_trigger;
@@ -465,6 +515,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             //logger.logD("MechFOVOuttake", String.format("%f, %f, %f, %f, %d, %d",runtime.seconds(), getQHeading(), lPwr, rPwr, l_out_motor.getCurrentPosition(), r_out_motor.getCurrentPosition()));
 
             // Toggle the child lock between 0.0 and 1.0
+            /*
             if (gamepad1.dpad_left) {
                 if (!dLeft1Prev) {
                     if (childLock == 0.0) {
@@ -477,6 +528,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             } else {
                 dLeft1Prev = false;
             }
+            */
 
             //angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
             ////angles2   = imu2.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
@@ -775,7 +827,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             telemetry.addData("Polar", "Speed (%.2f), theta (%.2f)", forward[0], theta);
             telemetry.addData("Gyro", degrees[0]);
             telemetry.addData("Shooter:", "tgt: %.0f (%.0f) vs %.0f",(shooterTarget/(28.0/1.5))*60.0, (shooterTarget/(28.0/1.5))*60.0*shooterReq, (rps/(28.0/1.5))*60.0);
-
+            telemetry.addData("Wobble", "Is busy: " + wobble_motor.isBusy() + "- Current Target: " + wobbleTargets[wobblePos] + "- Current Power: " + wobble_motor.getPower() + "- Current Pos: " + wobble_motor.getCurrentPosition()) ;
             telemetry.update();
         }
 
