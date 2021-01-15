@@ -75,6 +75,7 @@ public class MechBot {
     public DcMotor intake_motor = null;
     public DcMotor l_in_motor = null;
     public DcMotor r_in_motor = null;
+    public DcMotor wobble_motor = null;
 
     public Servo foundation1 = null;
     public Servo foundation2 = null;
@@ -119,6 +120,9 @@ public class MechBot {
     private static final double LEFT_ARC_COEFFICENT = 1.25;
     static final double RIGHT = 1;
     static final double LEFT = 0;
+
+    final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0;
+    final int wobbleTargets[] = {(int)(5*WOBBLE_TICKS_PER_DEGREE),(int)(225*WOBBLE_TICKS_PER_DEGREE), (int)(90*WOBBLE_TICKS_PER_DEGREE), (int)(180*WOBBLE_TICKS_PER_DEGREE)};
 
     static double KpL;
     static double KpR;
@@ -362,6 +366,8 @@ public class MechBot {
         //r_in_motor = hwMap.get(DcMotor.class, "right_in");
         //l_in_motor = hwMap.get(DcMotor.class, "left_in");
         intake_motor = hwMap.dcMotor.get("intake");
+        wobble_motor = hwMap.dcMotor.get("wobble");
+        claw = hwMap.servo.get("claw");
 
 
         //leftArm    = hwMap.get(DcMotor.class, "left_arm");
@@ -370,6 +376,10 @@ public class MechBot {
         rightFDrive.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
         rightBDrive.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
         intake_motor.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
+        wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        wobble_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        wobble_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
 
         //l_in_motor.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
         //r_in_motor.setDirection(DcMotor.Direction.FORWARD); // Set to REVERSE if using AndyMark motors
@@ -1541,7 +1551,15 @@ public class MechBot {
         }
     }
 
-
+    public void setWobblePosition(int wobblePos, double power){
+        wobble_motor.setTargetPosition(wobbleTargets[wobblePos]);
+        wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        if(wobblePos == 0){
+            wobble_motor.setPower(0.4);
+        }else{
+            wobble_motor.setPower(power);
+        }
+    }
 
 
     public void MotorCal( DcMotor motorToTest, String name, double K ) {
