@@ -131,7 +131,23 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             robot.straightA = a;
             a = robot.fastEncoderStrafe(DRIVE_SPEED, 30, 6, P);
 
-            sleep(3000);
+            // Shoot sequence
+            robot.shoot1_motor.setPower(0.475);
+            robot.shoot2_motor.setPower(0.475);
+            sleep(500);
+            robot.flicker.setPosition(1.0);
+            sleep(500);
+            robot.flicker.setPosition(0.0);
+            sleep(750);
+            robot.flicker.setPosition(1.0);
+            sleep(500);
+            robot.flicker.setPosition(0.0);
+            sleep(750);
+            robot.flicker.setPosition(1.0);
+            sleep(500);
+            robot.shoot1_motor.setPower(0.0);
+            robot.shoot2_motor.setPower(0.0);
+            robot.flicker.setPosition(0.0);
 
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, 15, 1, P);
