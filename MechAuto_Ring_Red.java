@@ -122,7 +122,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, 50, 4, P);
 
-            robot.intake_motor.setPower(0.2);
+            robot.intake_motor.setPower(0.4);
             sleep(400);
             robot.intake_motor.setPower(0);
 
@@ -144,7 +144,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, 24, 4, P);
 
-            robot.intake_motor.setPower(0.2);
+            robot.intake_motor.setPower(0.4);
             sleep(400);
             robot.intake_motor.setPower(0);
 
@@ -163,7 +163,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, 96, 4, P);
 
-            robot.intake_motor.setPower(0.2);
+            robot.intake_motor.setPower(0.4);
             sleep(400);
             robot.intake_motor.setPower(0);
 

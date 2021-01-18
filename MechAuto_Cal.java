@@ -125,6 +125,7 @@ public class MechAuto_Cal extends LinearOpMode {
         robot.intake_motor.setPower(0);
         */
 
+        /*
         // Test strafe in here
         a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 60, P );
         robot.straightA = a;
@@ -133,7 +134,7 @@ public class MechAuto_Cal extends LinearOpMode {
         a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 60, P );
         robot.straightA = a;
         a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 60, P );
-
+        */
 
         // Now a bunch of junk to try different movements like short, medium, long, etc.
         /*

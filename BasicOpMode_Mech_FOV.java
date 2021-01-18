@@ -268,21 +268,33 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         l_b_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
         r_f_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
         r_b_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        l_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        l_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        r_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        r_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        l_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        l_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        r_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         intake_motor = hardwareMap.dcMotor.get("intake");
         intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         intake_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         intake_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        // The wobble must be left alone here.  If we mess with it, we will potentially
-        // lose our '0' position set at the start of auto.
+        // The wobble keeps it's encoder value from auto, this shoudl allow us to get back to '0' position
+        // in case something bad happened.  DO NOT STOP_AND_RESET_ENCODER here to preserve the '0' postion.
         wobble_motor = hardwareMap.get(DcMotorEx.class,"wobble");
         wobble_motor.setPower(0.0);
-        //wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        //wobble_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //wobble_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //wobble_motor.setTargetPosition(0);
-        //wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        wobble_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        if (wobble_motor.getMode() != DcMotor.RunMode.RUN_TO_POSITION) {
+            // We already set power to 0 so it should be safe to set a target position
+            // so we can then put ourselves into RUN_TO_POSITION mode.
+            wobble_motor.setTargetPosition(0);
+            wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        }
         wobble_motor.setPositionPIDFCoefficients(5.0);
         wobble_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
 
@@ -292,6 +304,10 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         shoot2_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         shoot1_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         shoot2_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         // These PIDF values seem pretty good.
         //PIDFCoefficients pidFNew = new PIDFCoefficients(125.0, 2.5, 5.0, 4.0);
         // Raising 'F' increases overshoot a lot

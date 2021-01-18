@@ -29,6 +29,7 @@
 
 package Inception.UltimateGoal;
 
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -68,18 +69,11 @@ import java.util.Locale;
  */
 public class MechBot {
     /* Public OpMode members. */
-    public DcMotor leftFDrive = null;
-    public DcMotor rightFDrive = null;
-    public DcMotor leftBDrive = null;
-    public DcMotor rightBDrive = null;
-    public DcMotor intake_motor = null;
-    public DcMotor l_in_motor = null;
-    public DcMotor r_in_motor = null;
-    public DcMotor wobble_motor = null;
-
-    public Servo foundation1 = null;
-    public Servo foundation2 = null;
-    public Servo claw = null;
+    public DcMotorEx l_f_motor, l_b_motor, r_f_motor, r_b_motor;
+    public DcMotor intake_motor;
+    public DcMotorEx shoot1_motor, shoot2_motor;
+    public DcMotorEx wobble_motor;
+    public Servo claw=null,flicker=null;
 
     private static final double COUNTS_PER_MOTOR_REV = (537.6);         // eg: TETRIX Motor Encoder
     private static final double DRIVE_GEAR_REDUCTION = (10.0/10.0);     // This is < 1.0 if geared UP
@@ -138,7 +132,7 @@ public class MechBot {
     public BotLog logger = new BotLog();
 
     /* local OpMode members. */
-    HardwareMap hwMap = null;
+    HardwareMap hardwareMap = null;
     private ElapsedTime period = new ElapsedTime();
     private static LinearOpMode myLOpMode;
 
@@ -157,7 +151,7 @@ public class MechBot {
 
         // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
         // on a Core Device Interface Module and named "imu".
-        imu = hwMap.get(BNO055IMU.class, "imu");
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
 
         imu.initialize(parameters);
 
@@ -174,7 +168,7 @@ public class MechBot {
 
     public double getBatteryVoltage() {
         double result = Double.POSITIVE_INFINITY;
-        for (VoltageSensor sensor : hwMap.voltageSensor) {
+        for (VoltageSensor sensor : hardwareMap.voltageSensor) {
             double voltage = sensor.getVoltage();
             if (voltage > 0) {
                 result = Math.min(result, voltage);
@@ -186,26 +180,29 @@ public class MechBot {
     public void initAutonomous(LinearOpMode lOpMode) {
         myLOpMode = lOpMode;
         // Send telemetry message to signify robot waiting;
-        myLOpMode.telemetry.addData("Status", "Resetting Encoders");    //
+        myLOpMode.telemetry.addData("Status", "Resetting Encoders");
+        myLOpMode.telemetry.addData("Status", "Zeroing wobble arm");
         myLOpMode.telemetry.update();
 
-        leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        rightFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        leftBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        rightBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        // Reset encoders 
+        l_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        l_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        r_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        r_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        l_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        l_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        r_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-        // Send telemetry message to indicate successful Encoder reset
-        myLOpMode.telemetry.addData("Path0", "Starting at LF:%7d, RF:%7d, LB:%7d, RB:%7d",
-                leftFDrive.getCurrentPosition(),
-                rightFDrive.getCurrentPosition(),
-                leftBDrive.getCurrentPosition(),
-                rightBDrive.getCurrentPosition());
-
+        // Run the wobble arm for a teeny little bit at low power just to take out and slack...
+        wobble_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        wobble_motor.setPower(-0.033);
+        myLOpMode.sleep(500);
+        wobble_motor.setPower(0.0);
+        wobble_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        wobble_motor.setTargetPosition(0);
+        wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
 
         parameters.mode                = BNO055IMU.SensorMode.IMU;
@@ -215,7 +212,7 @@ public class MechBot {
 
         // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
         // on a Core Device Interface Module and named "imu".
-        imu = hwMap.get(BNO055IMU.class, "imu");
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
 
         imu.initialize(parameters);
 
@@ -229,30 +226,9 @@ public class MechBot {
             myLOpMode.idle();
         }
 
-        // Setup outtake motors and take up any slack just in case.
-        //DcMotor l_out_motor = hwMap.dcMotor.get("right_out");
-        //DcMotor r_out_motor = hwMap.dcMotor.get("left_out");
-        //l_out_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        //r_out_motor.setDirection(DcMotorSimple.Direction.FORWARD);
-        //r_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //l_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //l_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //r_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //l_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        //r_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        //l_out_motor.setPower(0.20);
-        //r_out_motor.setPower(0.20);
-        //myLOpMode.sleep(500);
-        //l_out_motor.setPower(0.0);
-        //r_out_motor.setPower(0.0);
-        //l_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //r_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //l_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        //r_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
         resetIntHeading();
 
-        //colorSensor = hwMap.colorSensor.get("color");
+        //colorSensor = hardwareMap.colorSensor.get("color");
         //colorSensor.enableLed(false);
 
         // Adjust our overall power based on a 12.5V battery.
@@ -356,65 +332,91 @@ public class MechBot {
         /* Initialize standard Hardware interfaces */
     public void init(HardwareMap ahwMap) {
         // Save reference to Hardware map
-        hwMap = ahwMap;
+        hardwareMap = ahwMap;
 
-        // Define and Initialize Motors
-        leftFDrive  = hwMap.get(DcMotor.class, "left_front");
-        rightFDrive = hwMap.get(DcMotor.class, "right_front");
-        leftBDrive  = hwMap.get(DcMotor.class, "left_back");
-        rightBDrive = hwMap.get(DcMotor.class, "right_back");
-        //r_in_motor = hwMap.get(DcMotor.class, "right_in");
-        //l_in_motor = hwMap.get(DcMotor.class, "left_in");
-        intake_motor = hwMap.dcMotor.get("intake");
-        wobble_motor = hwMap.dcMotor.get("wobble");
-        claw = hwMap.servo.get("claw");
+        // Initialize the hardware variables. Note that the strings used here as parameters
+        // to 'get' must correspond to the names assigned during the robot configuration
+        // step (using the FTC Robot Controller app on the phone).
 
+        //expansionHub1 = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 1");
+        //expansionHub2 = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 2");
 
-        //leftArm    = hwMap.get(DcMotor.class, "left_arm");
-        leftFDrive.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
-        leftBDrive.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
-        rightFDrive.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
-        rightBDrive.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
-        intake_motor.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
+        // Most robots need the motor on one side to be reversed to drive forward
+        // Reverse the motor that runs backwards when connected directly to the battery
+        l_f_motor = hardwareMap.get(DcMotorEx.class,"left_front");
+        l_b_motor = hardwareMap.get(DcMotorEx.class,"left_back");
+        r_f_motor = hardwareMap.get(DcMotorEx.class,"right_front");
+        r_b_motor = hardwareMap.get(DcMotorEx.class,"right_back");
+        l_f_motor.setPower(0.0);
+        l_b_motor.setPower(0.0);
+        r_f_motor.setPower(0.0);
+        r_b_motor.setPower(0.0);
+        l_f_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        l_b_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        r_f_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+        r_b_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+        l_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        l_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        r_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        r_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        l_f_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        l_b_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        r_f_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        r_b_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        l_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        l_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        r_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        r_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        l_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        l_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        r_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        intake_motor = hardwareMap.dcMotor.get("intake");
+        intake_motor.setPower(0.0);
+        intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        intake_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        intake_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        // Zero out the wobble motor in the auto init
+        wobble_motor = hardwareMap.get(DcMotorEx.class,"wobble");
+        wobble_motor.setPower(0.0);
         wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         wobble_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        wobble_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        wobble_motor.setTargetPosition(0);
+        wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        wobble_motor.setPositionPIDFCoefficients(5.0);
+        wobble_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
 
+        shoot1_motor = hardwareMap.get(DcMotorEx.class,"shoot1");
+        shoot2_motor = hardwareMap.get(DcMotorEx.class,"shoot2");
+        shoot1_motor.setPower(0.0);
+        shoot2_motor.setPower(0.0);
+        shoot1_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        shoot2_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        shoot1_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        shoot2_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        //l_in_motor.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
-        //r_in_motor.setDirection(DcMotor.Direction.FORWARD); // Set to REVERSE if using AndyMark motors
+        // These PIDF values seem pretty good.
+        //PIDFCoefficients pidFNew = new PIDFCoefficients(125.0, 2.5, 5.0, 4.0);
+        // Raising 'F' increases overshoot a lot
+        // Raising 'I' increases overshoot a lot
+        // 'P' is in a sweet-spot, could go down to 75 and still be OK
+        // 'D' didn't make a ton of different, not sure that is tuned properly
+        // Quick spin-up and recovery.  There may be a little overshoot just after a shot.
+        shoot1_motor.setVelocityPIDFCoefficients(125.0, 2.5, 5.0, 4.0);
+        shoot2_motor.setVelocityPIDFCoefficients(125.0, 2.5, 5.0, 4.0);
 
-        // Set all motors to zero power
-        leftFDrive.setPower(0);
-        rightFDrive.setPower(0);
-        leftBDrive.setPower(0);
-        rightBDrive.setPower(0);
-        intake_motor.setPower(0);
-        //r_in_motor.setPower(0);
-        //l_in_motor.setPower(0);
+        claw = hardwareMap.servo.get("claw");
+        claw.setPosition(1.0);
 
-        //leftArm.setPower(0);
-
-        // Set all motors to run without encoders.
-        // May want to use RUN_USING_ENCODERS if encoders are installed.
-        leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        intake_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-        //l_in_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        //r_in_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-        //leftArm.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        // Define and initialize ALL installed servos.
-        //foundation1  = hwMap.get(Servo.class, "foundation1");
-        //foundation2  = hwMap.get(Servo.class, "foundation2");
-        //claw = hwMap.get(Servo.class, "claw");
-        //foundation1.setPosition(0);
-        //foundation2.setPosition(1);
-        //claw.setPosition(0);
+        flicker = hardwareMap.servo.get("flicker");
+        flicker.setPosition(0.0);
     }
 
     //Used to change motor direction before and after strafing.
@@ -424,12 +426,6 @@ public class MechBot {
         } else {
             motor.setDirection(DcMotor.Direction.FORWARD);
         }
-    }
-
-    public void grabWobble(int wait) {
-        foundation1.setPosition(0.9);
-        foundation2.setPosition(0.1);
-        myLOpMode.sleep(wait);
     }
 
     public double fastEncoderStraight(double speed, double distance, double timeoutS, double P) {
@@ -498,20 +494,20 @@ public class MechBot {
 
         // Define inner and outer motors
         if (LorR == RIGHT) {
-            OFDrive = leftFDrive ;
-            OBDrive = leftBDrive ;
-            IFDrive = rightFDrive ;
-            IBDrive = rightBDrive ;
+            OFDrive = l_f_motor ;
+            OBDrive = l_b_motor ;
+            IFDrive = r_f_motor ;
+            IBDrive = r_b_motor ;
             KpO = KpL ;
             KpI = KpR ;
             InnerDist *= RIGHT_ARC_COEFFICENT ;
             OuterDist *= RIGHT_ARC_COEFFICENT ;
             tgtPos *= RIGHT_ARC_COEFFICENT ;
         } else {
-            OFDrive = rightFDrive ;
-            OBDrive = rightBDrive ;
-            IFDrive = leftFDrive ;
-            IBDrive = leftBDrive ;
+            OFDrive = r_f_motor ;
+            OBDrive = r_b_motor ;
+            IFDrive = l_f_motor ;
+            IBDrive = l_b_motor ;
             KpO = KpR ;
             KpI = KpL ;
             //KpO = 1.0 ;
@@ -583,16 +579,16 @@ public class MechBot {
             }
 
             // Stop all motion;
-            leftFDrive.setPower(0);
-            rightFDrive.setPower(0);
-            leftBDrive.setPower(0);
-            rightBDrive.setPower(0);
+            l_f_motor.setPower(0);
+            r_f_motor.setPower(0);
+            l_b_motor.setPower(0);
+            r_b_motor.setPower(0);
 
             // Turn off RUN_WITHOUT_ENCODERS
-            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            r_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
             //sleep(500);   // optional pause after each move
         }
@@ -600,15 +596,15 @@ public class MechBot {
 
 
     /**
-            leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            leftFDrive.setTargetPosition(ticks);
+            l_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            l_f_motor.setTargetPosition(ticks);
             // Turn On RUN_TO_POSITION
-            leftFDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            l_f_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            l_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             // reset the timeout time and start motion at the minimum speed.
             runtime.reset();
-            leftFDrive.setPower(speed);
+            l_f_motor.setPower(speed);
 
             // keep looping while we are still active, and there is time left, and both motors are running.
             // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
@@ -618,19 +614,19 @@ public class MechBot {
             // onto the next step, use (isBusy() || isBusy()) in the loop test.
             while (myLOpMode.opModeIsActive() &&
                     (runtime.seconds() < timeoutS) &&
-                    (leftBDrive.isBusy() && rightBDrive.isBusy())) {
+                    (l_b_motor.isBusy() && r_b_motor.isBusy())) {
 
             }
 
             // Stop all motion;
-            leftFDrive.setPower(0);
+            l_f_motor.setPower(0);
 
             // Turn off RUN_TO_POSITION
-            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             }
 
         myLOpMode.sleep(500);
-        logger.logD("MechLog",String.format("encoderTest end: %d, %d",leftBDrive.getCurrentPosition(),rightBDrive.getCurrentPosition()));
+        logger.logD("MechLog",String.format("encoderTest end: %d, %d",l_b_motor.getCurrentPosition(),r_b_motor.getCurrentPosition()));
     }
     **/
 
@@ -783,21 +779,21 @@ public class MechBot {
         // Ensure that the opmode is still active
         if (myLOpMode.opModeIsActive()) {
 
-            leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            rightFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            leftBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            rightBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            l_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            r_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            l_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            r_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
             // We'll handle the power/speed/encoders
-            leftFDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            rightFDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            leftBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            rightBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            l_f_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            r_f_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            l_b_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            r_b_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            leftBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            l_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            r_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            l_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            r_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             // Initialize Power Ratio
             //init maxpower
@@ -878,10 +874,10 @@ public class MechBot {
                     actSpeed = newSpeed;
 
                     // Change and scale power, the direction is already baked into KsR and KsL
-                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)));
-                    rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)));
-                    rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)));
-                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)));
+                    l_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)));
+                    r_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)));
+                    r_b_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)));
+                    l_b_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)));
                 }
 
                 if (DEBUG) {
@@ -915,20 +911,20 @@ public class MechBot {
                 logger.logD("MechLogfooTurn", String.format("quat: h:%f, a:%f, b:%f", (h/Math.PI)*180, (a/Math.PI)*180, (b/Math.PI)*180 ));
                 logger.logD("MechLogfooTurn", String.format("getHeading: x:%f, y:%f, z:%f", AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.thirdAngle), AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.secondAngle), AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle) ));
                 */
-                //logger.logD("MechLogfooTurnCSV",String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getHeading(), leftFDrive.getCurrentPosition(), leftBDrive.getCurrentPosition(), rightFDrive.getCurrentPosition(), rightBDrive.getCurrentPosition(), Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR))));
+                //logger.logD("MechLogfooTurnCSV",String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getHeading(), l_f_motor.getCurrentPosition(), l_b_motor.getCurrentPosition(), r_f_motor.getCurrentPosition(), r_b_motor.getCurrentPosition(), Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR))));
             }
 
             // Stop all motion;
-            leftFDrive.setPower(0);
-            rightFDrive.setPower(0);
-            leftBDrive.setPower(0);
-            rightBDrive.setPower(0);
+            l_f_motor.setPower(0);
+            r_f_motor.setPower(0);
+            l_b_motor.setPower(0);
+            r_b_motor.setPower(0);
 
             // Reset run mode
-            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            r_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
             if (DEBUG) {
                 myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f", degrees, curHeading, startHeading, tgtHeading, normalizeAngle(curHeading - tgtHeading));
@@ -962,7 +958,7 @@ public class MechBot {
             }
             logger.logD("MechLogfooend", String.format("quat: h:%f, a:%f, b:%f", (h/Math.PI)*180, (a/Math.PI)*180, (b/Math.PI)*180 ));
             logger.logD("MechLogfooend", String.format("getHeading: x:%f, y:%f, z:%f", AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.thirdAngle), AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.secondAngle), AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle) ));
-            logger.logD("MechLogfooTurnCSV",String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", runtime.seconds(), getHeading(), leftFDrive.getCurrentPosition(), leftBDrive.getCurrentPosition(), rightFDrive.getCurrentPosition(), rightBDrive.getCurrentPosition(), 0.0,0.0,0.0,0.0));
+            logger.logD("MechLogfooTurnCSV",String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", runtime.seconds(), getHeading(), l_f_motor.getCurrentPosition(), l_b_motor.getCurrentPosition(), r_f_motor.getCurrentPosition(), r_b_motor.getCurrentPosition(), 0.0,0.0,0.0,0.0));
             myLOpMode.sleep(100);
         }
         */
@@ -992,13 +988,13 @@ public class MechBot {
         double[] speedRampUp = {0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
         double[] speedRampDown = {0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
 
-        invertMotorDirection(leftFDrive);
-        invertMotorDirection(rightBDrive);
+        invertMotorDirection(l_f_motor);
+        invertMotorDirection(r_b_motor);
 
-        a = fastEncoderDrive2( speed, inchesToLeft, inchesToLeft, timeoutS, P, speedRampUp, speedRampDown, leftBDrive, rightBDrive, leftFDrive, rightFDrive);
+        a = fastEncoderDrive2( speed, inchesToLeft, inchesToLeft, timeoutS, P, speedRampUp, speedRampDown, l_b_motor, r_b_motor, l_f_motor, r_f_motor);
 
-        invertMotorDirection(rightBDrive);
-        invertMotorDirection(leftFDrive);
+        invertMotorDirection(r_b_motor);
+        invertMotorDirection(l_f_motor);
 
         return( a ) ;
 
@@ -1137,31 +1133,31 @@ public class MechBot {
         if (myLOpMode.opModeIsActive()) {
 
             // Reset encoders
-            leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            rightFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            leftBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            rightBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            l_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            r_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            l_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            r_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
             // We'll handle the power/speed/encoders
-            //leftFDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            //rightFDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            //leftBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            //rightBDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            //l_f_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            //r_f_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            //l_b_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            //r_b_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
             // FIXME -- Lets just run in this mode all the time and not keep programming the motors
             // We'll handle power/steering but let the PID try to maintain
             // a constant axle speed to overcome hub, motor, build variability.
-            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            r_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
             // FIXME -- Lets just run in this mode all the time and not keep programming the motors
             // Braking is good if we have gyro correct
-            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            leftBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            l_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            r_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            l_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            r_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             // Compute desired position
             newLeftFTarget = (int)(leftInches * COUNTS_PER_INCH);
@@ -1185,12 +1181,12 @@ public class MechBot {
             doneL = doneR = false;
             spdUpL = spdUpR = newSpeedL = newSpeedR = speedRampUp[0];
             spdDnL = spdDnR = speedRampDown[0];
-            curPosL = leftBDrive.getCurrentPosition();
-            curPosR = rightBDrive.getCurrentPosition();
+            curPosL = l_b_motor.getCurrentPosition();
+            curPosR = r_b_motor.getCurrentPosition();
 
             // FIXME -- Read the front encoders only for logging
-            curPosLf = leftFDrive.getCurrentPosition();
-            curPosRf = rightFDrive.getCurrentPosition();
+            curPosLf = l_f_motor.getCurrentPosition();
+            curPosRf = r_f_motor.getCurrentPosition();
 
             // Keep looping while we are still active, and there is time left, and we haven't reached the target
             while (myLOpMode.opModeIsActive() &&
@@ -1201,11 +1197,11 @@ public class MechBot {
                 // This code implements a soft start and soft stop.
                 // Compute the distance gone and how far to go.
                 if (!doneL) {
-                    spdPosL = curPosL = leftBDrive.getCurrentPosition();
+                    spdPosL = curPosL = l_b_motor.getCurrentPosition();
                     toGoL = Math.min(toGoL, Math.max(0, Math.abs(newLeftBTarget - curPosL)));
                 }
                 if (!doneR) {
-                    spdPosR = curPosR = rightBDrive.getCurrentPosition();
+                    spdPosR = curPosR = r_b_motor.getCurrentPosition();
                     toGoR  = Math.min(toGoR, Math.max(0,Math.abs(newRightBTarget - curPosR)));
                 }
                 // Average them if driving straight to reduce twist/steer.
@@ -1267,15 +1263,15 @@ public class MechBot {
 
                 if ((newSpeedL != actSpeedL) || (newSpeedR != actSpeedR)) {
 
-                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
-                    rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
-                    rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
-                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+                    l_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+                    r_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
+                    r_b_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
+                    l_b_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
                     actSpeedL = newSpeedL;
                     actSpeedR = newSpeedR;
                 }
 
-                logger.logD("MechLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f,%d,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f", rt, deltaHeading, KhL, KhR, curPosLf, curPosL, leftFDrive.getCurrentPosition(),leftBDrive.getCurrentPosition(), newLeftBTarget, curPosRf, curPosR, rightFDrive.getCurrentPosition(), rightBDrive.getCurrentPosition(), newRightBTarget, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
+                logger.logD("MechLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f,%d,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f", rt, deltaHeading, KhL, KhR, curPosLf, curPosL, l_f_motor.getCurrentPosition(),l_b_motor.getCurrentPosition(), newLeftBTarget, curPosRf, curPosR, r_f_motor.getCurrentPosition(), r_b_motor.getCurrentPosition(), newRightBTarget, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
 
                 if (DEBUG) {
                     myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
@@ -1285,14 +1281,14 @@ public class MechBot {
             }
 
             // Stop all motion;
-            leftFDrive.setPower(0);
-            rightFDrive.setPower(0);
-            rightBDrive.setPower(0);
-            leftBDrive.setPower(0);
+            l_f_motor.setPower(0);
+            r_f_motor.setPower(0);
+            r_b_motor.setPower(0);
+            l_b_motor.setPower(0);
 
             if (DEBUG) {
-                curPosL = leftBDrive.getCurrentPosition();
-                curPosR = rightBDrive.getCurrentPosition();
+                curPosL = l_b_motor.getCurrentPosition();
+                curPosR = r_b_motor.getCurrentPosition();
                 myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
                 myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, newSpeedR, (int) curPosR, newRightBTarget, (int) toGoR);
                 myLOpMode.telemetry.update();
@@ -1300,10 +1296,10 @@ public class MechBot {
 
             // FIXME -- Lets just run in this mode all the time and not keep programming the motors
             // Reset run mode
-            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            r_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         }
         if (leftInches == rightInches) {
@@ -1332,7 +1328,7 @@ public class MechBot {
     public double fastEncoderDrive2(double speed,
                                     double leftInches, double rightInches,
                                     double timeoutS, double P, double[] up, double[] down,
-                                    DcMotor leftFDrive, DcMotor leftBDrive, DcMotor rightFDrive, DcMotor rightBDrive ) {
+                                    DcMotor l_f_motor, DcMotor l_b_motor, DcMotor r_f_motor, DcMotor r_b_motor ) {
 
         int newLeftFTarget;
         int newRightFTarget;
@@ -1366,25 +1362,25 @@ public class MechBot {
         if (myLOpMode.opModeIsActive()) {
 
             // Reset encoders
-            leftFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            rightFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            leftBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            rightBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            l_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            r_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            l_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            r_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
             // FIXME -- Lets just run in this mode all the time and not keep programming the motors
             // We'll handle power/steering but let the PID try to maintain
             // a constant axle speed to overcome hub, motor, build variability.
-            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            r_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
             // FIXME -- Lets just run in this mode all the time and not keep programming the motors
             // Braking is good if we have gyro correct
-            leftFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            rightFDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            leftBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            rightBDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            l_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            r_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            l_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            r_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             // Compute desired position
             newLeftFTarget = (int)(leftInches * COUNTS_PER_INCH / STRAFE_DISTANCE_FACTOR);
@@ -1408,12 +1404,12 @@ public class MechBot {
             doneL = doneR = false;
             spdUpL = spdUpR = newSpeedL = newSpeedR = speedRampUp[0];
             spdDnL = spdDnR = speedRampDown[0];
-            curPosL = leftBDrive.getCurrentPosition();
-            curPosR = rightBDrive.getCurrentPosition();
+            curPosL = l_b_motor.getCurrentPosition();
+            curPosR = r_b_motor.getCurrentPosition();
 
             // FIXME -- Read the front encoders only for logging
-            curPosLf = leftFDrive.getCurrentPosition();
-            curPosRf = rightFDrive.getCurrentPosition();
+            curPosLf = l_f_motor.getCurrentPosition();
+            curPosRf = r_f_motor.getCurrentPosition();
 
             // Keep looping while we are still active, and there is time left, and we haven't reached the target
             while (myLOpMode.opModeIsActive() &&
@@ -1424,11 +1420,11 @@ public class MechBot {
                 // This code implements a soft start and soft stop.
                 // Compute the distance gone and how far to go.
                 if (!doneL) {
-                    spdPosL = curPosL = leftBDrive.getCurrentPosition();
+                    spdPosL = curPosL = l_b_motor.getCurrentPosition();
                     toGoL = Math.min(toGoL, Math.max(0, Math.abs(newLeftBTarget - curPosL)));
                 }
                 if (!doneR) {
-                    spdPosR = curPosR = rightBDrive.getCurrentPosition();
+                    spdPosR = curPosR = r_b_motor.getCurrentPosition();
                     toGoR  = Math.min(toGoR, Math.max(0,Math.abs(newRightBTarget - curPosR)));
                 }
                 // Average them if driving straight to reduce twist/steer.
@@ -1490,22 +1486,22 @@ public class MechBot {
 
                 if ((newSpeedL != actSpeedL) || (newSpeedR != actSpeedR)) {
 
-                    leftFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+                    l_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
                     // FIXME, rightF seems to be either ahead or behind by different amounts.
                     //  Could this be due to shimming on the bearings and rubbing the outside
                     //  screws?
                     if (newRightFTarget > 0) {
-                        rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)) * 0.92);
+                        r_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)) * 0.92);
                     } else {
-                        rightFDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)) * 0.97);
+                        r_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)) * 0.97);
                     }
-                    rightBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
-                    leftBDrive.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+                    r_b_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
+                    l_b_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
                     actSpeedL = newSpeedL;
                     actSpeedR = newSpeedR;
                 }
 
-                logger.logD("MechLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f,%d,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f", rt, deltaHeading, KhL, KhR, curPosLf, curPosL, leftFDrive.getCurrentPosition(),leftBDrive.getCurrentPosition(), newLeftBTarget, curPosRf, curPosR, rightFDrive.getCurrentPosition(), rightBDrive.getCurrentPosition(), newRightBTarget, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
+                logger.logD("MechLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f,%d,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f", rt, deltaHeading, KhL, KhR, curPosLf, curPosL, l_f_motor.getCurrentPosition(),l_b_motor.getCurrentPosition(), newLeftBTarget, curPosRf, curPosR, r_f_motor.getCurrentPosition(), r_b_motor.getCurrentPosition(), newRightBTarget, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
 
                 if (DEBUG) {
                     myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
@@ -1515,14 +1511,14 @@ public class MechBot {
             }
 
             // Stop all motion;
-            leftFDrive.setPower(0);
-            rightFDrive.setPower(0);
-            rightBDrive.setPower(0);
-            leftBDrive.setPower(0);
+            l_f_motor.setPower(0);
+            r_f_motor.setPower(0);
+            r_b_motor.setPower(0);
+            l_b_motor.setPower(0);
 
             if (DEBUG) {
-                curPosL = leftBDrive.getCurrentPosition();
-                curPosR = rightBDrive.getCurrentPosition();
+                curPosL = l_b_motor.getCurrentPosition();
+                curPosR = r_b_motor.getCurrentPosition();
                 myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
                 myLOpMode.telemetry.addData("rght", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpR, spdDnR, newSpeedR, (int) curPosR, newRightBTarget, (int) toGoR);
                 myLOpMode.telemetry.update();
@@ -1530,10 +1526,10 @@ public class MechBot {
 
             // FIXME -- Lets just run in this mode all the time and not keep programming the motors
             // Reset run mode
-            leftFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            leftBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightBDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            r_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            l_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         }
         if (leftInches == rightInches) {
