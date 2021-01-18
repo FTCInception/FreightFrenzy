@@ -36,9 +36,12 @@ import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.IntegratingGyroscope;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.PIDCoefficients;
 
 import org.firstinspires.ftc.robotcore.external.Func;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -69,26 +72,20 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     private ElapsedTime runtime = new ElapsedTime();
     //private static ExpansionHubEx expansionHub1;
     //private static ExpansionHubEx expansionHub2;
-    private static DcMotor l_f_motor, l_b_motor, r_f_motor, r_b_motor;
+    private static DcMotorEx l_f_motor, l_b_motor, r_f_motor, r_b_motor;
     private static DcMotor intake_motor;
-    private static DcMotor shoot1_motor, shoot2_motor;
-    private static DcMotor wobble_motor;
-    private static DcMotor l_in_motor, r_in_motor;
-    private static DcMotor l_out_motor, r_out_motor;
-    private static Servo foundation1, foundation2, claw,lift,flicker;
-    private static Servo back_grabber, front_grabber, slide;
+    private static DcMotorEx shoot1_motor, shoot2_motor;
+    private static DcMotorEx wobble_motor;
+    private static Servo claw,flicker;
 
     BNO055IMU imu,imu2;
     //Orientation angles,angles2;
-    double MAX_OUTTAKE_POWER = 1.0;
     double MAX_SHOOTER_POWER = 0.495;
     double MAX_INTAKE_POWER = 1.0;
 
     private BotLog logger = new BotLog();
     private boolean enableCSVLogging = true;
 
-    // Declare other variables
-    double in_pwr, out_pwr;
 
     // Mech drive related variables
     double theta, r_speed, new_x, new_y;
@@ -103,7 +100,6 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     double r_b_motor_power;
 
     double wobble_power;
-    double intake_power;
     double shooter_power;
 
     // Declare other variables
@@ -190,57 +186,52 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     public void runOpMode() {
         //RevBulkData bulkData1, bulkData2;
         // Co-pilot toggles
-        double fGrabSet[] = {0.6, 0.2};
-        double bGrabSet[] = {0.3, 0.0};
-        double slideSet[] = {0.22, 0.77};
-        boolean lBump2Prev=false, rBump2Prev=false, lTrigPrev=false;
-        int fGrabPos=0, bGrabPos=0, slidePos=0;
-        boolean dDown2Prev = false, dUp2Prev = false;
+        boolean lBump2Prev=false, rBump2Prev=false, lTrig2Prev=false, rTrig2Prev=false;
+        boolean dDown2Prev = false, dUp2Prev = false, dLeft2Prev = false, dRight2Prev=false;
 
         // Pilot toggles
-        double liftSet[] = {0.0, 0.3};
-        double flickerSet[] = {0.0, 1.0};
-        double lFounSet[] = {0.0, 0.9};
-        double rFounSet[] = {1.0, 0.1};
-        double clawSet[] = {1.0, 0.0};
-        boolean lBump1Prev=false, rBump1Prev=false, wobblePrev=false, clawPrev=false;
-        int lFounPos=0, rFounPos=0, clawPos=0,liftPos=0, flickerPos=0;
-        boolean dLeft1Prev=false;
+        double[] flickerSet = {0.0, 1.0};
+        double[] clawSet = {1.0, 0.0};
+        double[] intakeSet = {0.0, MAX_INTAKE_POWER};
+        int clawPos=0, flickerPos=0, intakePwr=0;
+
+        boolean lBump1Prev=false, rBump1Prev=false, lTrig1Prev=false, rTrig1Prev=false;
+        boolean wobblePrev=false, clawPrev=false;
+        boolean dDown1Prev = false, dUp1Prev = false, dLeft1Prev = false, dRight1Prev=false;
         double childLock=1.0;
-        boolean dDown1Prev = false, dUp1Prev = false;
         double currFlickerPos;
 
         // Elevator controls
         double prt=0.0, rt = 0.0, nextLog = 0.0;
-        int lPos, rPos;
-        double lPwr=0, rPwr=0;
 
         double maxPwr = 0.0;
 
         //wobble stuff
         final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0;
-        //int wobbleTargets[] = {100, TOTAL_WOBBLE_TICKS/8*5, TOTAL_WOBBLE_TICKS/4, TOTAL_WOBBLE_TICKS/2};
-        final int wobbleTargets[] = {(int)(5*WOBBLE_TICKS_PER_DEGREE),(int)(225*WOBBLE_TICKS_PER_DEGREE), (int)(90*WOBBLE_TICKS_PER_DEGREE), (int)(180*WOBBLE_TICKS_PER_DEGREE)};
+        final int[] wobbleTargets = {(int)(5*WOBBLE_TICKS_PER_DEGREE),(int)(215*WOBBLE_TICKS_PER_DEGREE), (int)(90*WOBBLE_TICKS_PER_DEGREE), (int)(175*WOBBLE_TICKS_PER_DEGREE)};
         int wobblePos = 0;
-        wobble_power = 0.6;
+        wobble_power = 0.4;
 
-        //claw stuff
-        double clawTarget = 0.0;
-        double clawStep = 0.05;
-
+        /** 'Manual' PID or shooter
         // https://en.wikipedia.org/wiki/Ziegler–Nichols_method
         // Ku = 1/100; Tu = .5s @ 1200 RPM
         // Need to mess with this some more I guess?
         MiniPID pid= new MiniPID(0.10*(1.0/100.0),0.025*(1.0/100.0), 0.2*(1.0/100.0), 0.495/((3600.0*(28.0/1.5))/60.0));
         pid.setOutputLimits(0.0,0.7);
 
-        double shoot2Pos, prevShoot2Pos=0.0;
-        double PIDrt, rps=0.0, prevPIDrt=0.0;
-        double nextPID=0.0, PIDTime = 0.1;
-        double shooterReq,prevShooterReq=0.0;
+
+        double prevShooterReq=0.0;
         double shooterTarget = ((3600.0*(28.0/1.5))/60.0);
         double shooterStep = ((50.0*(28.0/1.5))/60.0);
         double iters=0.0;
+        **/
+
+        double PIDrt, tps=0.0, prevPIDrt=0.0;
+        double shoot2Pos, prevShoot2Pos=0.0;
+        double nextPID=0.0, PIDTime = 0.1;
+        double shooterReq;
+        double shooter_tgt_power = 0.475;
+        double powerStep = 0.005;
 
         if (enableCSVLogging) {
             // Enable debug logging
@@ -259,60 +250,123 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         //expansionHub1 = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 1");
         //expansionHub2 = hardwareMap.get(ExpansionHubEx.class, "Expansion Hub 2");
 
-        l_f_motor = hardwareMap.dcMotor.get("left_front");
-        l_b_motor = hardwareMap.dcMotor.get("left_back");
-        r_f_motor = hardwareMap.dcMotor.get("right_front");
-        r_b_motor = hardwareMap.dcMotor.get("right_back");
-        intake_motor = hardwareMap.dcMotor.get("intake");
-        shoot1_motor = hardwareMap.dcMotor.get("shoot1");
-        shoot2_motor = hardwareMap.dcMotor.get("shoot2");
-        wobble_motor = hardwareMap.dcMotor.get("wobble");
-        //Ult l_in_motor = hardwareMap.dcMotor.get("right_in");
-        //Ult r_in_motor = hardwareMap.dcMotor.get("left_in");
-
-        //Ult foundation1 = hardwareMap.servo.get("foundation1");
-        //Ult foundation2 = hardwareMap.servo.get("foundation2");
-        claw = hardwareMap.servo.get("claw");
-        //No lift: lift = hardwareMap.servo.get("lift");
-        flicker = hardwareMap.servo.get("flicker");
-
-
-        //Ult front_grabber = hardwareMap.servo.get("grabber1");
-        //Ult back_grabber = hardwareMap.servo.get("grabber2");
-        //Ult slide = hardwareMap.servo.get("slide");
-        //Ult l_out_motor = hardwareMap.dcMotor.get("right_out");
-        //Ult r_out_motor = hardwareMap.dcMotor.get("left_out");
-
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
+        l_f_motor = hardwareMap.get(DcMotorEx.class,"left_front");
+        l_b_motor = hardwareMap.get(DcMotorEx.class,"left_back");
+        r_f_motor = hardwareMap.get(DcMotorEx.class,"right_front");
+        r_b_motor = hardwareMap.get(DcMotorEx.class,"right_back");
         l_f_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         l_b_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        //Ult l_in_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        //Ult l_out_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-
         r_f_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         r_b_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+        l_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        l_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        r_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        r_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        l_f_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        l_b_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        r_f_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        r_b_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+
+        intake_motor = hardwareMap.dcMotor.get("intake");
         intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        intake_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        intake_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        wobble_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        wobble_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        // The wobble must be left alone here.  If we mess with it, we will potentially
+        // lose our '0' position set at the start of auto.
+        wobble_motor = hardwareMap.get(DcMotorEx.class,"wobble");
+        wobble_motor.setPower(0.0);
+        //wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        //wobble_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        //wobble_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //wobble_motor.setTargetPosition(0);
+        //wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        wobble_motor.setPositionPIDFCoefficients(5.0);
+        wobble_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
 
+        shoot1_motor = hardwareMap.get(DcMotorEx.class,"shoot1");
+        shoot2_motor = hardwareMap.get(DcMotorEx.class,"shoot2");
         shoot1_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         shoot2_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         shoot1_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         shoot2_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        // These PIDF values seem pretty good.
+        //PIDFCoefficients pidFNew = new PIDFCoefficients(125.0, 2.5, 5.0, 4.0);
+        // Raising 'F' increases overshoot a lot
+        // Raising 'I' increases overshoot a lot
+        // 'P' is in a sweet-spot, could go down to 75 and still be OK
+        // 'D' didn't make a ton of different, not sure that is tuned properly
+        // Quick spin-up and recovery.  There may be a little overshoot just after a shot.
+        shoot1_motor.setVelocityPIDFCoefficients(125.0, 2.5, 5.0, 4.0);
+        shoot2_motor.setVelocityPIDFCoefficients(125.0, 2.5, 5.0, 4.0);
 
-        //Ult r_in_motor.setDirection(DcMotorSimple.Direction.FORWARD);
-        //Ult r_out_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+        claw = hardwareMap.servo.get("claw");
+        flicker = hardwareMap.servo.get("flicker");
 
-        r_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        l_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        r_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        l_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        if (false) {
 
-        //Ult r_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //Ult l_out_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            /*
+            PIDFCoefficients pidfWPOrig = wobble_motor.getPIDFCoefficients(DcMotor.RunMode.RUN_TO_POSITION);
+            PIDFCoefficients pidfWEOrig = wobble_motor.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
+            */
+
+            wobble_motor.setPositionPIDFCoefficients(5.0);
+            wobble_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+
+            /*
+            // display info to user.
+            PIDFCoefficients pidfWPAct = wobble_motor.getPIDFCoefficients(DcMotor.RunMode.RUN_TO_POSITION);
+            PIDFCoefficients pidfWEAct = wobble_motor.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            telemetry.addData("P,I,D,F (Orig Pos)", "%.02f, %.02f, %.02f, %.2f",
+                    pidfWPOrig.p, pidfWPOrig.i, pidfWPOrig.d, pidfWPOrig.f);
+            telemetry.addData("P,I,D,F (Orig Enc)", "%.02f, %.02f, %.02f, %.2f",
+                    pidfWEOrig.p, pidfWEOrig.i, pidfWEOrig.d, pidfWEOrig.f);
+            telemetry.addData("P,I,D,F (Act Pos)", "%.02f, %.02f, %.02f, %.2f",
+                    pidfWPAct.p, pidfWPAct.i, pidfWPAct.d, pidfWPAct.f);
+            telemetry.addData("P,I,D,F (Act Enc)", "%.02f, %.02f, %.02f, %.2f",
+                    pidfWEAct.p, pidfWEAct.i, pidfWEAct.d, pidfWEAct.f);
+            */
+
+            /*
+            PIDFCoefficients pidfValsShooter = shoot1_motor.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
+            */
+
+            // These PIDF values seem pretty good.
+            //PIDFCoefficients pidFNew = new PIDFCoefficients(125.0, 2.5, 5.0, 4.0);
+            // Raising 'F' increases overshoot a lot
+            // Raising 'I' increases overshoot a lot
+            // 'P' is in a sweet-spot, could go down to 75 and still be OK
+            // 'D' didn't make a ton of different, not sure that is tuned properly
+            // Quick spin-up and recovery.  There may be a little overshoot just after a shot.
+            //PIDFCoefficients pidFNew = new PIDFCoefficients(150.0, 2.5, 5.0, 4.0);
+            //shoot1_motor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidFNew);
+            //shoot2_motor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidFNew);
+            // 'P' might need to be 100 here.
+            shoot1_motor.setVelocityPIDFCoefficients(125.0, 2.5, 5.0, 4.0);
+            shoot2_motor.setVelocityPIDFCoefficients(125.0, 2.5, 5.0, 4.0);
+
+            /**
+            // display info to user.
+            PIDFCoefficients pidfAct1 = shoot1_motor.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
+            PIDFCoefficients pidfAct2 = shoot2_motor.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            telemetry.addData("P,I,D,F (orig Pos)", "%.02f, %.02f, %.02f, %.2f",
+                    pidfValsShooter.p, pidfValsShooter.i, pidfValsShooter.d, pidfValsShooter.f);
+            telemetry.addData("P,I,D,F (new)", "%.02f, %.02f, %.02f, %.2f",
+                    pidFNew.p, pidFNew.i, pidFNew.d, pidFNew.f);
+            telemetry.addData("P,I,D,F (act1)", "%.02f, %.02f, %.02f, %.2f",
+                    pidfAct1.p, pidfAct1.i, pidfAct1.d, pidfAct1.f);
+            telemetry.addData("P,I,D,F (act2)", "%.02f, %.02f, %.02f, %.2f",
+                    pidfAct2.p, pidfAct2.i, pidfAct2.d, pidfAct2.f);
+
+            telemetry.update();
+            sleep(5000);
+            **/
+        }
+
 
         imu = initIMU("imu");
         //imu2 = initIMU("imu 1");
@@ -324,24 +378,15 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         waitForStart();
         runtime.reset();
 
-        // Take up any slack in the spools
-        //Ult l_out_motor.setPower(0.20);
-        //Ult r_out_motor.setPower(0.20);
-
         // Initialize all servos
-        //Ult claw.setPosition(clawSet[clawPos]);
-        //Ult foundation1.setPosition(lFounSet[lFounPos]);
-        //Ult foundation2.setPosition(rFounSet[rFounPos]);
-        //Ult slide.setPosition(slideSet[slidePos]);
-        //Ult back_grabber.setPosition(bGrabSet[bGrabPos]);
-        //Ult front_grabber.setPosition(fGrabSet[fGrabPos]);
-        //No Lift: lift.setPosition(liftSet[liftPos]);
-        flicker.setPosition(flickerSet[0]);
+        // This must be done after the 'start' button is pressed or things may be moving during the match which shouldn't move.
+        flicker.setPosition(flickerSet[flickerPos]);
 
-        sleep(500);
-
-        //Ult l_out_motor.setPower(0.0);
-        //Ult r_out_motor.setPower(0.0);
+        // We may want a button to do this init for the arm/claw increase they are hung up on something.
+        // one thing to do would be to start in a special position that can only be set/reached in init.  Then just use the same
+        // button that advances state to go to state '0'.
+        claw.setPosition(clawSet[clawPos]);
+        wobble_motor.setTargetPosition(0);
 
         if (enableCSVLogging) {
             // Lay down a header for our logging
@@ -349,55 +394,76 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             logger.logD("MechFOVCSV", String.format(",rt,shoot2Enc,shootPwr"));
         }
 
-        // We need to run the motors at very low power and wait until the encoders stop counting.
-        // Once they stop counting the slack is taken up from the string.
-        // Now set power to 0 and reset encoders.
-        // Now we want to let Rev Hub manage encoder position.
-
-        //Ult l_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //Ult r_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        //Ult l_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        //Ult r_out_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
             // Begin controller 2 (co-pilot)
-            // Single button toggle for grabbers
-            //Ult if (gamepad2.right_bumper) {
-            //Ult     if(!lBump2Prev) {
-            //Ult         bGrabPos++; bGrabPos %= 2;
-            //Ult         back_grabber.setPosition(bGrabSet[bGrabPos]);
-            //Ult         lBump2Prev = true;
-            //Ult         //logger.logD("MechFOVbGrab", String.format("%f, %f",runtime.seconds(), bGrabSet[bGrabPos]));
-            //Ult     }
-            //Ult } else {
-            //Ult     lBump2Prev = false;
-            //Ult }
+            if (gamepad2.right_bumper) {
+                if(!lBump2Prev) {
+                    // Nothing right now
+                    lBump2Prev = true;
+                }
+            } else {
+                lBump2Prev = false;
+            }
 
-            //Ult if (gamepad2.left_bumper) {
-            //Ult     if (!rBump2Prev){
-            //Ult         fGrabPos++; fGrabPos %= 2;
-            //Ult         front_grabber.setPosition(fGrabSet[fGrabPos]);
-            //Ult         rBump2Prev = true;
-            //Ult         //logger.logD("MechFOVfGrab", String.format("%f, %f",runtime.seconds(), fGrabSet[fGrabPos]));
-            //Ult     }
-            //Ult } else {
-            //Ult     rBump2Prev = false;
-            //Ult }
+            if (gamepad2.left_bumper) {
+                if (!rBump2Prev){
+                    // Nothing right now
+                    rBump2Prev = true;
+                }
+            } else {
+                rBump2Prev = false;
+            }
 
-            //Ult if (gamepad2.left_trigger > 0.9) {
-            //Ult     if (!lTrigPrev){
-            //Ult         slidePos++; slidePos %= 2;
-            //Ult         slide.setPosition(slideSet[slidePos]);
-            //Ult         lTrigPrev = true;
-            //Ult         //logger.logD("MechFOVSlide", String.format("%f, %f",runtime.seconds(), slideSet[slidePos]));
-            //Ult     }
-            //Ult } else if (gamepad2.left_trigger < 0.1) {
-            //Ult     lTrigPrev = false;
-            //Ult }
+            if (gamepad2.left_trigger > 0.9) {
+                if (!lTrig2Prev){
+                    // Nothing right now
+                    lTrig2Prev = true;
+                }
+            } else if (gamepad2.left_trigger < 0.1) {
+                lTrig2Prev = false;
+            }
 
+            rt = runtime.seconds();
+
+            // Let the REV hub PID manage our shooter motors...
+            // Read the trigger value
+            shooterReq = gamepad1.left_trigger;
+            if (shooterReq > 0.7) {
+                if ( shooter_power == 0 ) {
+                    shooter_power = shooter_tgt_power;
+                    shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                    shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                    shoot1_motor.setPower(shooter_power);
+                    shoot2_motor.setPower(shooter_power);
+                }
+            } else if (shooterReq < 0.3) {
+                if ( shooter_power > 0.0 ) {
+                    shooter_power = 0.0;
+                    shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    shoot1_motor.setPower(shooter_power);
+                    shoot2_motor.setPower(shooter_power);
+                }
+            }
+
+            if ( nextPID < rt ) {
+
+                shoot2Pos = shoot2_motor.getCurrentPosition();
+                PIDrt = runtime.seconds();
+
+                tps = (shoot2Pos - prevShoot2Pos) / (PIDrt - prevPIDrt);
+
+                prevShoot2Pos = shoot2Pos;
+                prevPIDrt = PIDrt;
+
+                // 'Schedule' the next PID check
+                nextPID = rt + PIDTime;
+            }
+
+
+            /*** 'Manual' shooter PID
             prt = rt;
             rt = runtime.seconds();
             if ((int)(prt/5.0) != (int)(rt/5.0)){
@@ -420,7 +486,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                     if (prevShooterReq == 0) {
                         // Reset PID
                         pid.reset();
-                        // Update current RPS rate
+                        // Update current TPS rate
                         prevPIDrt = PIDrt;
                         prevShoot2Pos = shoot2Pos;
                         shoot2Pos = shoot2_motor.getCurrentPosition();
@@ -428,14 +494,14 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                     }
 
                     // Compute current rev per second
-                    rps = (shoot2Pos - prevShoot2Pos) / (PIDrt - prevPIDrt);
+                    tps = (shoot2Pos - prevShoot2Pos) / (PIDrt - prevPIDrt);
 
                     // Save current values for the next loop
                     prevPIDrt = PIDrt;
                     prevShoot2Pos = shoot2Pos;
 
                     // Now adjust the power based on our PID
-                    shooter_power = pid.getOutput(rps, shooterReq * shooterTarget);
+                    shooter_power = pid.getOutput(tps, shooterReq * shooterTarget);
 
                     // 'Schedule' the next PID check
                     nextPID = rt + PIDTime;
@@ -455,6 +521,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
             // Recored the current request to handle special case for going off-on-off
             prevShooterReq = shooterReq;
+            ***/
 
             if (gamepad1.dpad_right) {
                 if(!clawPrev) {
@@ -468,51 +535,29 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
             if(gamepad1.dpad_left){
                 if(!wobblePrev) {
+
                     wobblePos++; wobblePos %= 4;
-                    wobble_motor.setTargetPosition(wobbleTargets[wobblePos]);
-                    wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                    if(wobblePos == 0){
+                    //wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+                    if(wobblePos == 0) {
                         wobble_motor.setPower(0.4);
-                    }else{
+                    } else if(wobblePos == 3) {
+                        wobble_motor.setPower(0.3);
+                    } else {
                         wobble_motor.setPower(wobble_power);
                     }
+
+                    wobble_motor.setTargetPosition(wobbleTargets[wobblePos]);
+
                     wobblePrev = true;
                 }
             } else {
                 wobblePrev = false;
-
             }
 
             if(wobble_motor.getCurrentPosition() <= (10.0*WOBBLE_TICKS_PER_DEGREE) && wobblePos == 0){
                 wobble_motor.setPower(0);
             }
-
-            // Use the right trigger for elevator power
-            //Ult out_pwr = gamepad2.right_trigger;
-            //Ult lPos = l_out_motor.getCurrentPosition();
-            //Ult rPos = r_out_motor.getCurrentPosition();
-
-            // Adjust the power to help if the encoders get out of whack
-            //Ult lPwr = Range.clip(out_pwr - ((lPos-rPos) / 75.0), 0.02, MAX_OUTTAKE_POWER);
-            //Ult rPwr = Range.clip(out_pwr + ((lPos-rPos) / 75.0),0.02, MAX_OUTTAKE_POWER);
-
-            // Limit the power at max height to avoid damage
-            //Ult if ((lPos > 350) || (rPos > 350)) {
-            //Ult     lPwr = Range.clip(lPwr, 0, 0.38);
-            //Ult     rPwr = Range.clip(rPwr, 0, 0.38);
-            //Ult }
-
-            // At the bottom, with no power request, turn off motors to avoid heating and noise
-            //Ult if (((lPos < 9) || (rPos < 9)) && (out_pwr == 0)) {
-            //Ult     lPwr = 0;
-            //Ult     rPwr = 0;
-            //Ult }
-
-            //out_pwr = gamepad2.right_trigger * MAX_OUTTAKE_POWER;
-            //Ult l_out_motor.setPower(lPwr);
-            //Ult r_out_motor.setPower(rPwr);
-
-            //logger.logD("MechFOVOuttake", String.format("%f, %f, %f, %f, %d, %d",runtime.seconds(), getQHeading(), lPwr, rPwr, l_out_motor.getCurrentPosition(), r_out_motor.getCurrentPosition()));
 
             // Toggle the child lock between 0.0 and 1.0
             /*
@@ -535,7 +580,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             //degrees[1] = degrees[0] = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
 
             // Get the current robot heading
-            degrees[1] = degrees[0] = getQHeading();
+            degrees[1] = degrees[0] = getHeading();
 
             // Read the controller 1 (driver) stick positions
             strafe[0] = gamepad1.left_stick_x;
@@ -548,11 +593,12 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             rotate[1] = gamepad2.right_stick_x;
 
 
-            // Is controller asking to update the FOD heading of switch to FOD from traditional?
+            // Shooter power control
             if (gamepad1.dpad_up) {
                 // If we detected dpad released since the last press
                 if (!dUp1Prev) {
-                    shooterTarget += shooterStep;
+                    //shooterTarget += shooterStep;
+                    shooter_tgt_power += powerStep;
                     // Prevent this path again until the dpad is released
                     dUp1Prev = true;
                 }
@@ -561,11 +607,12 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 dUp1Prev = false;
             }
 
-            // Is controller asking to switch FOD mode?
+            //  Shooter power control
             if (gamepad1.dpad_down) {
                 // If we detected dpad released since the last press
                 if (!dDown1Prev) {
-                    shooterTarget -= shooterStep;
+                    //shooterTarget -= shooterStep;
+                    shooter_tgt_power -= powerStep;
                     // Prevent this path again until the dpad is released
                     dDown1Prev = true;
                 }
@@ -574,65 +621,71 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 dDown1Prev = false;
             }
 
-            // Is controller asking to changeupdate the FOD heading of switch to FOD from traditional?
-            //No lift: if (gamepad1.dpad_up) {
-            //No lift:     // If we detected dpad released since the last press
-            //No lift:     if (!dUp1Prev) {
-            //No lift:         lift.setPosition(liftSet[liftPos]);
-            //No lift:         // Prevent this path again until the dpad is released
-            //No lift:         dUp1Prev = true;
-            //No lift:     }
-            //No lift: } else {
-            //No lift:     // Detected the dpad released
-            //No lift:     dUp1Prev = false;
-            //No lift: }
+            //FOV // Is controller asking to update the FOD heading of switch to FOD from traditional?
+            //FOV if (gamepad1.dpad_up) {
+            //FOV     // If we detected dpad released since the last press
+            //FOV     if (!dUp1Prev) {
+            //FOV         if (FOD[0]) {
+            //FOV             // If already in FOD, update the adjustment angle
+            //FOV             adjustAngle[0] = degrees[0];
+            //FOV         } else {
+            //FOV             // If in traditional drive, just switch to FOD only
+            //FOV             FOD[0] = true;
+            //FOV         }
+            //FOV         // Prevent this path again until the dpad is released
+            //FOV         dUp1Prev = true;
+            //FOV     }
+            //FOV } else {
+            //FOV     // Detected the dpad released
+            //FOV     dUp1Prev = false;
+            //FOV }
 
-            //ULT // Is controller asking to update the FOD heading of switch to FOD from traditional?
-            //ULT if (gamepad1.dpad_up) {
-            //ULT     // If we detected dpad released since the last press
-            //ULT     if (!dUp1Prev) {
-            //ULT         if (FOD[0]) {
-            //ULT             // If already in FOD, update the adjustment angle
-            //ULT             adjustAngle[0] = degrees[0];
-            //ULT         } else {
-            //ULT             // If in traditional drive, just switch to FOD only
-            //ULT             FOD[0] = true;
-            //ULT         }
-            //ULT         // Prevent this path again until the dpad is released
-            //ULT         dUp1Prev = true;
-            //ULT     }
-            //ULT } else {
-            //ULT     // Detected the dpad released
-            //ULT     dUp1Prev = false;
-            //ULT }
+            //FOV // Is controller asking to switch FOD mode?
+            //FOV if (gamepad1.dpad_down) {
+            //FOV     // If we detected dpad released since the last press
+            //FOV     if (!dDown1Prev) {
+            //FOV         // Invert FOD mode
+            //FOV         FOD[0] = ! FOD[0];
+            //FOV         // Prevent this path again until the dpad is released
+            //FOV         dDown1Prev = true;
+            //FOV     }
+            //FOV } else {
+            //FOV     // Detected the dpad released
+            //FOV     dDown1Prev = false;
+            //FOV }
 
-            //ULT // Is controller asking to switch FOD mode?
-            //ULT if (gamepad1.dpad_down) {
-            //ULT     // If we detected dpad released since the last press
-            //ULT     if (!dDown1Prev) {
-            //ULT         // Invert FOD mode
-            //ULT         FOD[0] = ! FOD[0];
-            //ULT         // Prevent this path again until the dpad is released
-            //ULT         dDown1Prev = true;
-            //ULT     }
-            //ULT } else {
-            //ULT     // Detected the dpad released
-            //ULT     dDown1Prev = false;
-            //ULT }
+            //FOV // Is controller asking to update the FOD heading of switch to FOD from traditional?
+            //FOV if (gamepad2.dpad_up) {
+            //FOV     // If we detected dpad released since the last press
+            //FOV     if (!dUp2Prev) {
+            //FOV         if (FOD[1]) {
+            //FOV             // If already in FOD, update the adjustment angle
+            //FOV             adjustAngle[1] = degrees[1];
+            //FOV         } else {
+            //FOV             // If in traditional drive, just switch to FOD only
+            //FOV             FOD[1] = true;
+            //FOV         }
+            //FOV         // Prevent this path again until the dpad is released
+            //FOV         dUp2Prev = true;
+            //FOV     }
+            //FOV } else {
+            //FOV     // Detected the dpad released
+            //FOV     dUp2Prev = false;
+            //FOV }
 
-            // Is controller asking to switch FOD mode?
-            if (gamepad2.dpad_down) {
-                // If we detected dpad released since the last press
-                if (!dDown2Prev) {
-                    // Invert FOD mode
-                    FOD[1] = ! FOD[1];
-                    // Prevent this path again until the dpad is released
-                    dDown2Prev = true;
-                }
-            } else {
-                // Detected the dpad released
-                dDown2Prev = false;
-            }
+            //FOV // Is controller asking to switch FOD mode?
+            //FOV if (gamepad2.dpad_down) {
+            //FOV     // If we detected dpad released since the last press
+            //FOV     if (!dDown2Prev) {
+            //FOV         // Invert FOD mode
+            //FOV         FOD[1] = ! FOD[1];
+            //FOV         // Prevent this path again until the dpad is released
+            //FOV         dDown2Prev = true;
+            //FOV     }
+            //FOV } else {
+            //FOV     // Detected the dpad released
+            //FOV     dDown2Prev = false;
+            //FOV }
 
             // Compute the effective offset for each controller FOV
             degrees[0] = AngleUnit.DEGREES.normalize(degrees[0] - adjustAngle[0]);
@@ -696,30 +749,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             r_f_motor.setPower(r_f_motor_power);
             r_b_motor.setPower(r_b_motor_power);
 
-            /*
-            // No scaling version of driving.
-            // This adds the requested powers from both controllers together scaled for each controller and FOV (clipped to 1.0)
-            l_f_motor_power   = Range.clip(((forward[0] + strafe[0] + rotate[0]) * speedModifier[0])+((forward[1] + strafe[1] + rotate[1]) * speedModifier[1] * childLock), -1.0, 1.0) ;
-            l_b_motor_power   = Range.clip(((forward[0] - strafe[0] + rotate[0]) * speedModifier[0])+((forward[1] - strafe[1] + rotate[1]) * speedModifier[1] * childLock), -1.0, 1.0) ;
-            r_f_motor_power   = Range.clip(((forward[0] - strafe[0] - rotate[0]) * speedModifier[0])+((forward[1] - strafe[1] - rotate[1]) * speedModifier[1] * childLock), -1.0, 1.0) ;
-            r_b_motor_power   = Range.clip(((forward[0] + strafe[0] - rotate[0]) * speedModifier[0])+((forward[1] + strafe[1] - rotate[1]) * speedModifier[1] * childLock), -1.0, 1.0) ;
-            */
-
             // Additional controls
-
-            // Intake power
-            //Ult in_pwr = gamepad1.right_trigger * MAX_INTAKE_POWER;
-            //Ult in_pwr -= gamepad1.left_trigger * MAX_INTAKE_POWER;
-            //Ult l_in_motor.setPower(in_pwr);
-            //Ult r_in_motor.setPower(in_pwr);
-
-            //intake_power = (gamepad1.right_trigger - gamepad1.left_trigger) * MAX_INTAKE_POWER;
-            intake_power = (gamepad1.right_trigger) * MAX_INTAKE_POWER;
-            intake_motor.setPower(intake_power);
-
-            //shooter_power = gamepad1.left_trigger * MAX_SHOOTER_POWER;
-            //shoot1_motor.setPower(shooter_power);
-            //shoot2_motor.setPower(shooter_power);
 
             //speed control
             if (gamepad1.x) {
@@ -760,45 +790,17 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 }
             }
 
-            //No lift: if (gamepad1.left_bumper) {
-            //No lift:     if (!lBump1Prev){
-            //No lift:         liftPos++; liftPos %= 2;
-            //No lift:         lift.setPosition(liftSet[liftPos]);
-            //No lift:         lBump1Prev = true;
-            //No lift:     }
-            //No lift: } else {
-            //No lift:     lBump1Prev = false;
-            //No lift: }
-
-            // Single button toggle for foundation servos
-            // Left Bumper for Foundation
-            //Ult if (gamepad1.left_bumper) {
-            //Ult     if(!lBump1Prev) {
-            //Ult         lFounPos++; lFounPos %= 2;
-            //Ult         rFounPos++; rFounPos %= 2;
-            //Ult         foundation1.setPosition(lFounSet[lFounPos]);
-            //Ult         foundation2.setPosition(rFounSet[rFounPos]);
-            //Ult         lBump1Prev = true;
-            //Ult     }
-            //Ult } else {
-            //Ult     lBump1Prev = false;
-            //Ult }
-
-            // Single button toggle for claw servo
-            // Right bumper for claw
-            //Ult if (gamepad1.right_bumper) {
-            //Ult     // The elevator interferes with the claw, don't use it
-            //Ult     if (lPos < 15) {
-            //Ult         if (!rBump1Prev) {
-            //Ult             clawPos++;
-            //Ult             clawPos %= 2;
-            //Ult             claw.setPosition(clawSet[clawPos]);
-            //Ult             rBump1Prev = true;
-            //Ult         }
-            //Ult     }
-            //Ult } else {
-            //Ult     rBump1Prev = false;
-            //Ult }
+            if (gamepad1.right_bumper) {
+                if (!rBump1Prev) {
+                    intakePwr++;
+                    intakePwr %= 2;
+                    // Intake power
+                    intake_motor.setPower(intakeSet[intakePwr]);
+                    rBump1Prev = true;
+                }
+            } else {
+                rBump1Prev = false;
+            }
 
             // Update the logger 10 times/second max
             if (enableCSVLogging) {
@@ -823,26 +825,18 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
-            telemetry.addData("Iters", iters);
             telemetry.addData("Polar", "Speed (%.2f), theta (%.2f)", forward[0], theta);
             telemetry.addData("Gyro", degrees[0]);
-            telemetry.addData("Shooter:", "tgt: %.0f (%.0f) vs %.0f",(shooterTarget/(28.0/1.5))*60.0, (shooterTarget/(28.0/1.5))*60.0*shooterReq, (rps/(28.0/1.5))*60.0);
+            telemetry.addData("Shooter:", "%.3f, %.0f", shooter_tgt_power, (tps/(28.0/2.0))*60.0);
             telemetry.addData("Wobble", "Is busy: " + wobble_motor.isBusy() + "- Current Target: " + wobbleTargets[wobblePos] + "- Current Power: " + wobble_motor.getPower() + "- Current Pos: " + wobble_motor.getCurrentPosition()) ;
             telemetry.update();
         }
 
         // Stop all power
-        //Ult l_out_motor.setPower(0.0);
-        //Ult r_out_motor.setPower(0.0);
-        //Ult l_in_motor.setPower(0.0);
-        //Ult r_in_motor.setPower(0.0);
         l_f_motor.setPower(0.0);
         l_b_motor.setPower(0.0);
         r_f_motor.setPower(0.0);
         r_b_motor.setPower(0.0);
-        //Ult l_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //Ult r_out_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
     }
 
     String formatAngle(AngleUnit angleUnit, double angle) {
@@ -867,5 +861,4 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         new_y = r * Math.sin(theta);
     }
 }
-
 
