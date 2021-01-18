@@ -359,10 +359,10 @@ public class MechBot {
         l_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         r_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         r_b_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        l_f_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
-        l_b_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
-        r_f_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
-        r_b_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        //l_f_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        //l_b_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        //r_f_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        //r_b_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
         l_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         l_b_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         r_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);

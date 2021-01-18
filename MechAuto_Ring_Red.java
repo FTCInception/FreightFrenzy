@@ -141,8 +141,6 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             robot.flicker.setPosition(1.0);
             sleep(500);
             robot.flicker.setPosition(0.0);
-
-            //finish shooting
             sleep(750);
             robot.flicker.setPosition(1.0);
             sleep(500);
@@ -180,30 +178,81 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
         } else if (goalPos == 2){
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, 56, 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, 87, 8, P);
             robot.straightA = a;
-            a = robot.fastEncoderStrafe(DRIVE_SPEED, 18, 1.75);
-            robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, 24, 4, P);
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 1.75);
+
 
             robot.intake_motor.setPower(0.4);
             sleep(400);
             robot.intake_motor.setPower(0);
 
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -20, 2, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -35, 3, P);
 
-            sleep(3000);
+            robot.shoot1_motor.setPower(0.475);
+            robot.shoot2_motor.setPower(0.475);
+            sleep(500);
+            robot.flicker.setPosition(1.0);
+            sleep(500);
+            robot.flicker.setPosition(0.0);
+            sleep(750);
+            robot.flicker.setPosition(1.0);
+            sleep(500);
+            robot.claw.setPosition(0);
+            robot.setWobblePosition(1,.4);
+            robot.flicker.setPosition(0.0);
+            sleep(750);
+            robot.flicker.setPosition(1.0);
+            sleep(500);
+            robot.shoot1_motor.setPower(0.0);
+            robot.shoot2_motor.setPower(0.0);
+            robot.flicker.setPosition(0.0);
+
+
+
 
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, 5, 1, P);
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, 13, 2, P);
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -30, 4, P);
+
+            robot.claw.setPosition(1);
+            sleep(1000);
+            robot.setWobblePosition(3,.4);
+            sleep(1000);
+
+            robot.straightA = a;
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, -17, 2, P);
+
+            robot.intake_motor.setPower(0.8);
+
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, 35, 4, P);
+
+            robot.intake_motor.setPower(0);
+            robot.shoot1_motor.setPower(0.475);
+            robot.shoot2_motor.setPower(0.475);
+            sleep(500);
+            robot.flicker.setPosition(1.0);
+            sleep(500);
+            robot.flicker.setPosition(0.0);
+            robot.shoot1_motor.setPower(0.0);
+            robot.shoot2_motor.setPower(0.0);
+
+            a = robot.gyroRotate(TURN_SPEED,180-a, 4);
+
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -18, 4, P);
+
+            robot.claw.setPosition(0);
+            sleep(500);
+            robot.setWobblePosition(0,.4);
+            sleep(2000);
+
         } else if (goalPos == 3){
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, 6, 1, P);
-            robot.straightA = a;
-            a = robot.fastEncoderStrafe(DRIVE_SPEED, -6, 1.75);
-            robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, 96, 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, 102, 4, P);
 
             robot.intake_motor.setPower(0.4);
             sleep(400);
@@ -213,6 +262,23 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             a = robot.fastEncoderStraight(DRIVE_SPEED, -50, 3, P);
             robot.straightA = a;
             a = robot.fastEncoderStrafe(DRIVE_SPEED, 30, 6, P);
+
+            robot.shoot1_motor.setPower(0.475);
+            robot.shoot2_motor.setPower(0.475);
+            sleep(500);
+            robot.flicker.setPosition(1.0);
+            sleep(500);
+            robot.flicker.setPosition(0.0);
+            sleep(750);
+            robot.flicker.setPosition(1.0);
+            sleep(500);
+            robot.flicker.setPosition(0.0);
+            sleep(750);
+            robot.flicker.setPosition(1.0);
+            sleep(500);
+            robot.shoot1_motor.setPower(0.0);
+            robot.shoot2_motor.setPower(0.0);
+            robot.flicker.setPosition(0.0);
 
             sleep(3000);
 
