@@ -428,6 +428,10 @@ public class MechBot {
         }
     }
 
+    public double fastEncoderStraight(double speed, double distance, double timeoutS, double P, double flickL, double flickR) {
+        return(fastEncoderDrive( speed, distance, distance, timeoutS, P, flickL, flickR ));
+    }
+
     public double fastEncoderStraight(double speed, double distance, double timeoutS, double P) {
         return(fastEncoderDrive( speed, distance, distance, timeoutS, P ));
     }
@@ -975,13 +979,22 @@ public class MechBot {
 
         // Default value of P is 0.0 (no gyro assist)
         return(fastEncoderStrafe( speed, inchesToLeft, timeoutS, 0.0));
-
     }
 
     public double fastEncoderStrafe(double speed,
                                     double inchesToLeft,
                                     double timeoutS,
                                     double P) {
+
+        // Default is no flicking
+        return(fastEncoderStrafe( speed, inchesToLeft, timeoutS, P, 0.0, 0.0));
+    }
+
+    public double fastEncoderStrafe(double speed,
+                                    double inchesToLeft,
+                                    double timeoutS,
+                                    double P,
+                                    double flickL, double flickR ) {
         double a;
 
         // Long straight (default)
@@ -991,7 +1004,7 @@ public class MechBot {
         invertMotorDirection(l_f_motor);
         invertMotorDirection(r_b_motor);
 
-        a = fastEncoderDrive2( speed, inchesToLeft, inchesToLeft, timeoutS, P, speedRampUp, speedRampDown, l_b_motor, r_b_motor, l_f_motor, r_f_motor);
+        a = fastEncoderDrive2( speed, inchesToLeft, inchesToLeft, timeoutS, P, flickL, flickR, speedRampUp, speedRampDown, l_b_motor, r_b_motor, l_f_motor, r_f_motor);
 
         invertMotorDirection(r_b_motor);
         invertMotorDirection(l_f_motor);
@@ -1013,12 +1026,21 @@ public class MechBot {
                                  double timeoutS) {
 
         // Default value of P is 0.0 (no gyro assist)
-        return(fastEncoderDrive( speed, leftInches, rightInches, timeoutS,0.0 ));
+        return(fastEncoderDrive( speed, leftInches, rightInches, timeoutS, 0.0 ));
     }
 
     public double fastEncoderDrive(double speed,
                                    double leftInches, double rightInches,
                                    double timeoutS, double P) {
+
+        // Default is no flicking
+        return(fastEncoderDrive( speed, leftInches, rightInches, timeoutS, P, 0.0, 0.0 ));
+    }
+
+
+    public double fastEncoderDrive(double speed,
+                                   double leftInches, double rightInches,
+                                   double timeoutS, double P, double flickL, double flickR) {
 
         // Rotate acceleration curves
         //double[] speedRampUpR = {0.325, 0.40, 0.475, 0.55, 0.60, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
@@ -1086,7 +1108,7 @@ public class MechBot {
         }
         **/
 
-        return(fastEncoderDrive( speed, leftInches, rightInches, timeoutS, P, speedRampUp, speedRampDown ));
+        return(fastEncoderDrive( speed, leftInches, rightInches, timeoutS, P, flickL, flickR, speedRampUp, speedRampDown));
     }
 
     /*
@@ -1099,7 +1121,10 @@ public class MechBot {
      */
     public double fastEncoderDrive(double speed,
                                double leftInches, double rightInches,
-                               double timeoutS, double P, double[] up, double[] down) {
+                               double timeoutS, double P,
+                               double flickL, double flickR,
+                               double[] up, double[] down) {
+
 
         int newLeftFTarget;
         int newRightFTarget;
@@ -1120,6 +1145,7 @@ public class MechBot {
         double KhL = 1.0;
         double KhR = 1.0;
         double rt = 0.0;
+        double fRT = 0.0;
 
         // Get the current Heading and update for the correction angle
         curHeading = tgtHeading = getHeading();
@@ -1165,6 +1191,9 @@ public class MechBot {
             newLeftBTarget = (int)(leftInches * COUNTS_PER_INCH);
             newRightBTarget = (int)(rightInches * COUNTS_PER_INCH);
 
+            flickR *= COUNTS_PER_INCH;
+            flickL *= COUNTS_PER_INCH;
+
             // Initialze toGo == target (maximum toGo)
             toGoL = Math.abs(newLeftBTarget);
             toGoR = Math.abs(newRightBTarget);
@@ -1209,6 +1238,24 @@ public class MechBot {
                     spdPosL = spdPosR = (curPosL + curPosR)/2;
                     toGoL = toGoR = (toGoL + toGoR)/2;
                 }
+
+                // If there is a flick target and we aren't already flicking and its past our flick target
+                if ((flickL != 0) && (fRT == 0) && (Math.abs(spdPosL) > Math.abs(flickL))) {
+                    // flick
+                    flicker.setPosition(1.0);
+                    // Set the time to reset the flick
+                    fRT = rt + 500;
+                } else if ((flickR != 0) && (fRT == 0) && (Math.abs(spdPosR) > Math.abs(flickR))) {
+                    // flick
+                    flicker.setPosition(1.0);
+                    // Set the time to reset the flick
+                    fRT = rt + 500;
+                }
+                //} else if (fRT > rt) {
+                //    flicker.setPosition(0.0);
+                //    // We already flicked, no more flicking flicker.
+                //    fRT = -1.0;
+                //}
 
                 if (!doneL) {
                     doneL = ((Math.abs(newLeftBTarget) - Math.abs(curPosL)) < CLOSE_ENOUGH);
@@ -1302,13 +1349,20 @@ public class MechBot {
             r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         }
+
+        // FIXME
+        //while (runtime.seconds() < fRT) { };
+        if ((flickL != 0.0) || (flickR != 0.0)) {
+            flicker.setPosition(0.0);
+        }
+
         if (leftInches == rightInches) {
             // FIXME -- do we really need to burn 500ms every move here?
             //  Seems like the gyro is still moving a little here. We might consider switching to
             //  using something like a 'heading' instead of a angular delta. Then we don't really
             //  need to carry error forward, it's just known from the heading value.
             //  Then we also don't need the delay here either.
-            myLOpMode.sleep(500);
+            //myLOpMode.sleep(500);
             // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
             logger.logD("MechLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
             return (normalizeAngle((getHeading() - tgtHeading)));
@@ -1327,8 +1381,11 @@ public class MechBot {
      */
     public double fastEncoderDrive2(double speed,
                                     double leftInches, double rightInches,
-                                    double timeoutS, double P, double[] up, double[] down,
-                                    DcMotor l_f_motor, DcMotor l_b_motor, DcMotor r_f_motor, DcMotor r_b_motor ) {
+                                    double timeoutS, double P,
+                                    double flickL, double flickR,
+                                    double[] up, double[] down,
+                                    DcMotor l_f_motor, DcMotor l_b_motor, DcMotor r_f_motor, DcMotor r_b_motor) {
+
 
         int newLeftFTarget;
         int newRightFTarget;
@@ -1349,10 +1406,11 @@ public class MechBot {
         double KhL = 1.0;
         double KhR = 1.0;
         double rt = 0.0;
+        double fRT = 0.0;
 
         // Get the current Heading and update for the correction angle
         curHeading = tgtHeading = getHeading();
-        logger.logD("MechLog",String.format("fastEncodeDrive: tgt: %f, A: %f", tgtHeading, straightA));
+        logger.logD("MechLog",String.format("fastEncodeDrive2: tgt: %f, A: %f", tgtHeading, straightA));
         tgtHeading = normalizeAngle(tgtHeading - straightA) ;
 
         // now clear the correction angle so it's never used again
@@ -1387,6 +1445,9 @@ public class MechBot {
             newRightFTarget = (int)(rightInches * COUNTS_PER_INCH / STRAFE_DISTANCE_FACTOR);
             newLeftBTarget = (int)(leftInches * COUNTS_PER_INCH / STRAFE_DISTANCE_FACTOR);
             newRightBTarget = (int)(rightInches * COUNTS_PER_INCH / STRAFE_DISTANCE_FACTOR);
+
+            flickR *= COUNTS_PER_INCH / STRAFE_DISTANCE_FACTOR ;
+            flickL *= COUNTS_PER_INCH / STRAFE_DISTANCE_FACTOR ;
 
             // Initialze toGo == target (maximum toGo)
             toGoL = Math.abs(newLeftBTarget);
@@ -1431,6 +1492,23 @@ public class MechBot {
                 if (leftInches == rightInches) {
                     spdPosL = spdPosR = (curPosL + curPosR)/2;
                     toGoL = toGoR = (toGoL + toGoR)/2;
+                }
+
+                // If there is a flick target and we aren't already flicking and its past our flick target
+                if ((flickL != 0) && (fRT == 0) && (Math.abs(spdPosL) > Math.abs(flickL))) {
+                    // flick
+                    flicker.setPosition(1.0);
+                    // Set the time to reset the flick
+                    fRT = rt + 500;
+                } else if ((flickR != 0) && (fRT == 0) && (Math.abs(spdPosR) > Math.abs(flickR))) {
+                    // flick
+                    flicker.setPosition(1.0);
+                    // Set the time to reset the flick
+                    fRT = rt + 500;
+                } else if (fRT > rt) {
+                    flicker.setPosition(0.0);
+                    // We already flicked, no more flicking flicker.
+                    fRT = -1.0;
                 }
 
                 if (!doneL) {
@@ -1532,13 +1610,20 @@ public class MechBot {
             r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         }
+
+        // FIXME
+        //while (runtime.seconds() < fRT) { };
+        if ((flickL != 0.0) || (flickR != 0.0)) {
+            flicker.setPosition(0.0);
+        }
+
         if (leftInches == rightInches) {
             // FIXME -- do we really need to burn 500ms every move here?
             //  Seems like the gyro is still moving a little here. We might consider switching to
             //  using something like a 'heading' instead of a angular delta. Then we don't really
             //  need to carry error forward, it's just known from the heading value.
             //  Then we also don't need the delay here either.
-            myLOpMode.sleep(500);
+            //myLOpMode.sleep(500);
             // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
             logger.logD("MechLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
             return (normalizeAngle((getHeading() - tgtHeading)));

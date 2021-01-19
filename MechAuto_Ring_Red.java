@@ -53,8 +53,8 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
     private MechBot robot = new MechBot();   // Use a Pushbot's hardware
 
-    private static final double DRIVE_SPEED = 0.8;
-    private static final double TURN_SPEED = 0.65;
+    private static final double DRIVE_SPEED = 1.0;
+    private static final double TURN_SPEED = 0.8;
     private static final double PIVOT_SPEED = 0.40;
     private static final double SQ = 70 / 3.0;        // Length of 3 squares / 3 in case we want to think that way
     private static final double[] blocks = {0.0, 28.0, 36.0, 44.0, 4.0, 12.0, 20.0};
@@ -64,7 +64,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
     //private IncepVision vision = new IncepVision();
     private int block;
-    private double P = 0.05;
+    private double P = 0.075;
     private double a = 0;
 
     @Override
@@ -119,15 +119,17 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
         if (goalPos == 1) {
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, 56, 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, 56, 60, P);
 
             robot.intake_motor.setPower(0.4);
             sleep(400);
             robot.intake_motor.setPower(0);
 
             robot.straightA = a;
-            a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 6, P);
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 60, P);
 
+            // We had a strange twitch in the previous strafe, this delay was added to see if it
+            // made any difference.  May not be necessary.
             sleep(500);
 
             // Shoot sequence
@@ -155,9 +157,9 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             sleep(2000);
 
             robot.straightA = a;
-            a = robot.fastEncoderStrafe(DRIVE_SPEED, 12, 2, P);
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, 12, 60, P);
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 60, P);
 
             robot.claw.setPosition(1);
             sleep(1000);
@@ -165,10 +167,10 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             sleep(1000);
 
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, 46, 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, 46, 60, P);
             a = robot.gyroRotate(TURN_SPEED,90-a, 4);
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -20, 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -20, 60, P);
 
             robot.claw.setPosition(0);
             sleep(500);
@@ -177,120 +179,227 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
 
         } else if (goalPos == 2){
+            // Drive to drop zone
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, 87, 8, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, 87, 60, P);
             robot.straightA = a;
-            a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 1.75);
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, 22, 60, P);
 
-
+            // Drop the wobble
             robot.intake_motor.setPower(0.4);
-            sleep(400);
+            sleep(600);
+
+            // Turn off intake
             robot.intake_motor.setPower(0);
 
+            // Back to shooting zone
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -35, 3, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -34, 60, P);
 
+            // Start the shooter
             robot.shoot1_motor.setPower(0.475);
             robot.shoot2_motor.setPower(0.475);
-            sleep(500);
+
+            // Line up
+            robot.straightA = a;
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, 4, 60, P);
+
+            // Fire away
             robot.flicker.setPosition(1.0);
-            sleep(500);
+            sleep(300);
             robot.flicker.setPosition(0.0);
-            sleep(750);
+            sleep(650);
             robot.flicker.setPosition(1.0);
-            sleep(500);
-            robot.claw.setPosition(0);
+            sleep(300);
+            // Get ready for wobble
+            robot.claw.setPosition(0.25);
             robot.setWobblePosition(1,.4);
             robot.flicker.setPosition(0.0);
-            sleep(750);
+            sleep(650);
             robot.flicker.setPosition(1.0);
-            sleep(500);
+            sleep(100);
             robot.shoot1_motor.setPower(0.0);
             robot.shoot2_motor.setPower(0.0);
+
+            // Line up for wobble
+            robot.straightA = a;
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, 11, 60, P);
             robot.flicker.setPosition(0.0);
 
-
-
-
+            // Back up to wobble
             robot.straightA = a;
-            a = robot.fastEncoderStrafe(DRIVE_SPEED, 13, 2, P);
-            robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -30, 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -29, 60, P);
 
+            // Grab wobble
             robot.claw.setPosition(1);
-            sleep(1000);
-            robot.setWobblePosition(3,.4);
-            sleep(1000);
+            sleep(750);
+            robot.setWobblePosition(3,.5);
+            sleep(500);
 
+            // Strafe to line up on ring
             robot.straightA = a;
-            a = robot.fastEncoderStrafe(DRIVE_SPEED, -17, 2, P);
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, -18, 60, P);
 
-            robot.intake_motor.setPower(0.8);
+            // Turn on intake
+            robot.intake_motor.setPower(1.0);
 
+            // Intake ring and drive to shoot distance
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, 35, 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, 29, 60, P);
 
+            // Line up for shot
+            robot.straightA = a;
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, 7, 60, P);
+
+            // Turn off intake
+            robot.intake_motor.setPower(1.0);
+
+            // Shoot the ring
             robot.intake_motor.setPower(0);
             robot.shoot1_motor.setPower(0.475);
             robot.shoot2_motor.setPower(0.475);
             sleep(500);
             robot.flicker.setPosition(1.0);
-            sleep(500);
+            sleep(300);
             robot.flicker.setPosition(0.0);
             robot.shoot1_motor.setPower(0.0);
             robot.shoot2_motor.setPower(0.0);
 
-            a = robot.gyroRotate(TURN_SPEED,180-a, 4);
+            a = robot.gyroRotate(TURN_SPEED,165-a, 60);
 
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -18, 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -22, 60, P);
 
-            robot.claw.setPosition(0);
+            robot.claw.setPosition(0.0);
             sleep(500);
             robot.setWobblePosition(0,.4);
-            sleep(2000);
+            sleep(1000);
+            robot.claw.setPosition(1.0);
+            sleep(1000);
 
         } else if (goalPos == 3){
+            // Full speed length of field to the target zone
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, 102, 4, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, 112, 60, P);
 
+            // Drop the wobble and run
             robot.intake_motor.setPower(0.4);
-            sleep(400);
+
+            // Back up to a good shooting distance
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -58, 60, P);
+
+            // Turn off intake now
             robot.intake_motor.setPower(0);
 
+            // Move to line up shot
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -50, 3, P);
-            robot.straightA = a;
-            a = robot.fastEncoderStrafe(DRIVE_SPEED, 30, 6, P);
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, 28, 60, P);
 
+            // Fire away
             robot.shoot1_motor.setPower(0.475);
             robot.shoot2_motor.setPower(0.475);
             sleep(500);
             robot.flicker.setPosition(1.0);
-            sleep(500);
+            sleep(300);
             robot.flicker.setPosition(0.0);
-            sleep(750);
+            sleep(650);
             robot.flicker.setPosition(1.0);
-            sleep(500);
+            sleep(300);
+            robot.claw.setPosition(0.25);
+            robot.setWobblePosition(1,.4);
             robot.flicker.setPosition(0.0);
-            sleep(750);
+            sleep(650);
             robot.flicker.setPosition(1.0);
-            sleep(500);
+            sleep(100);
             robot.shoot1_motor.setPower(0.0);
             robot.shoot2_motor.setPower(0.0);
+
+            // Line up for wobble pickup
+            robot.straightA = a;
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, 9, 60, P);
             robot.flicker.setPosition(0.0);
 
-            sleep(3000);
-
+            // Back to wobble
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, 15, 1, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -30, 60, P);
+
+            // Grab the wobble
+            robot.claw.setPosition(1);
+            sleep(750);
+            robot.setWobblePosition(3,.5);
+            sleep(500);
+
+            // Line up over 4-stack
+            robot.straightA = a;
+            a = robot.fastEncoderStrafe(DRIVE_SPEED, -18, 60, P);
+
+            // Get ready to intake and shoot
+            robot.intake_motor.setPower(1.0);
+
+            robot.shoot1_motor.setPower(0.475);
+            robot.shoot2_motor.setPower(0.475);
+
+            // Go intake a few and shoot one
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, 17.0, 60, P);
+
+            // Turn a little towards the goal
+            a = robot.gyroRotate(.8,5-a, 4);
+
+            // Wait for the rings to settle
+            sleep(500);
+            robot.flicker.setPosition(1.0);
+
+            // Turn a little back
+            a = robot.gyroRotate(TURN_SPEED,-5-a, 4);
+            robot.flicker.setPosition(0.0);
+
+            // Intake the reset and shoot them
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, 17.0, 60, P);
+            robot.flicker.setPosition(1.0);
+            sleep(650);
+            robot.flicker.setPosition(0.0);
+            sleep(350);
+            robot.flicker.setPosition(1.0);
+            sleep(650);
+            robot.flicker.setPosition(0.0);
+            sleep(350);
+            robot.flicker.setPosition(1.0);
+            sleep(250);
+
+            // Stop the shooter
+            robot.shoot1_motor.setPower(0.0);
+            robot.shoot2_motor.setPower(0.0);
+
+            // Stop the intake
+            robot.intake_motor.setPower(0);
+
+            // Turn around and back the wobble in
+            a = robot.gyroRotate(TURN_SPEED,157-a, 4);
+            robot.flicker.setPosition(0.0);
+
+            // Drive the wobble in
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -40.0, 60, P);
+
+            // Drop it off
+            robot.claw.setPosition(0);
+            sleep(250);
+            robot.setWobblePosition(0,.4);
+
+            // Run like heck
+            robot.straightA = a;
+            a = robot.fastEncoderStraight(DRIVE_SPEED, 24.0, 60, P);
+
         } else if (goalPos==4){
             robot.claw.setPosition(0);
             sleep(500);
              robot.setWobblePosition(1,.4);
             sleep(2000);
             robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -10, 3, P);
+            a = robot.fastEncoderStraight(DRIVE_SPEED, -10, 60, P);
             robot.claw.setPosition(1);
             sleep(2000);
             robot.setWobblePosition(2,.4);
