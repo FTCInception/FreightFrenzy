@@ -87,7 +87,8 @@ public class MechAuto_Block_Blue extends LinearOpMode {
 
         // Wait until we're told to go and look for the block
         while (!isStarted()) {
-            block = vision.getBlockNumber(ideals);
+            //block = vision.getBlockNumber(ideals);
+            block = 1;
         }
         vision.shutdown();
 

@@ -33,6 +33,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.vuforia.Image;
 
 /**
  * This file houses Autonomous code
@@ -58,6 +59,9 @@ public class MechAuto_Cal extends LinearOpMode {
 
     private static final double     DRIVE_SPEED             = 1.0;
     private static final double     TURN_SPEED              = 0.8;
+
+    private IncepVision vision = new IncepVision();
+
     double a=0;
     double P=0.075;
 
@@ -78,6 +82,14 @@ public class MechAuto_Cal extends LinearOpMode {
 
         // Init the robot setting for Autonomous play
         robot.initAutonomous(this);
+        vision.initAutonomous(this);
+
+        while (!isStarted()) {
+            vision.ringCount();
+            //telemetry.addData("Ring Count", "%d", vision.ringCount());
+            //telemetry.update();
+        }
+        vision.shutdown();
 
         while (!isStarted()) {
             sleep(250);
@@ -125,6 +137,7 @@ public class MechAuto_Cal extends LinearOpMode {
         robot.intake_motor.setPower(0);
         */
 
+        /*
         // Test strafe in here
         a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 60, P );
         robot.straightA = a;
@@ -133,6 +146,7 @@ public class MechAuto_Cal extends LinearOpMode {
         a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 60, P );
         robot.straightA = a;
         a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 60, P );
+        */
 
         // Now a bunch of junk to try different movements like short, medium, long, etc.
         /*

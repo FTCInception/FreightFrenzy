@@ -26,441 +26,269 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package Inception.UltimateGoal;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import android.app.Activity;
+import android.util.Log;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.vuforia.Image;
 import com.vuforia.PIXEL_FORMAT;
-
+import com.vuforia.Vuforia;
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CloseableFrame;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
-import org.firstinspires.ftc.robotcore.internal.vuforia.VuforiaException;
 
-import android.graphics.Color;
-import android.app.Activity;
-import android.view.View;
-
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.view.View;
 
-/**
- * This 2019-2020 OpMode illustrates the basics of using the TensorFlow Object Detection API to
- * determine the position of the Skystone game elements.
- * <p>
- * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
- * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list.
- * <p>
- * IMPORTANT: In order to use this OpMode, you need to obtain your own Vuforia license key as
- * is explained below.
+/*
+ * This is a modified version of the vuforia code by G-FORCE that uses Vuforia to capture images from the camera
+ * Leveraged from here:
+ * https://gist.github.com/brandonwang1/d5c02f64d8ab05e2dc8c18c7ba4e199a
  */
 
 public class IncepVision {
-    private static final String TFOD_MODEL_ASSET = "Skystone.tflite";
-    private static final String LABEL_FIRST_ELEMENT = "Stone";
-    private static final String LABEL_SECOND_ELEMENT = "Skystone";
 
-    private static LinearOpMode myLOpMode;
-    private int BlockNumber;
-    private int bytes_per_pixel;
-    private int row;
-    private int column;
-    private int botGrade = Color.RED;
-    private int bufWidth;
-    private int bufHeight;
-    private int recWidth;
-    private int recHeight;
-    private int step;
-    private int windowwidth;
-    private int threshold;
-    private int left, boundary, top, bottom;
-    private Boolean edgeFound;
-    private int sum;
-    private int pixelArray[];
-    private double BoundOffset;
-    private int vScale;
-    private Recognition skystone_rec;
-    private int pixelFormat;
-    private int framefound;
+    // Select which camera you want use.  The FRONT camera is the one on the same side as the screen.  Alt. is BACK
+    //private static final VuforiaLocalizer.CameraDirection CAMERA_CHOICE = VuforiaLocalizer.CameraDirection.FRONT;
+
+    /* Private class members. */
+    private LinearOpMode myLOpMode;       // Access to the LinearOpMode object
+    public VuforiaLocalizer vuforia;     // The localizer
+    private TFObjectDetector tfod;
+    private static final String VUFORIA_KEY = "AfWZ0Nj/////AAABma9i7nGZSk81hrDHleShtMuKJES27HbNIQandd3JejLnjvR3256AZU4KbwLKM3zRbhT54zvMHzIwofU7N0TwRifRjMB9sPJ/GZoVpvrcOTNl0F3G6ynufbSkLWWRAGzf3ffMAWeB97a8iF/fPSC5kYY7u56rj2IXVXw7zB2GrTIlFIgkGmy+faJST+4838yCmE4kZFqSc8qnKW1zG0qh9EhMdg8KobZkODSkG2r2uDHXEcvnD8zLKQMIZGm3ueWs1aWvJRZZgx6wDFr1LFnnzZDdJ1en1TjkVWt7Mv+pb8j+9j/9W7Fp4Q5yUrqDl64aeNe7pLplamMYlZXBSOmevv/4r+h6SdQKeimUeP5dCZ6m";
+    private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
+    private static final String LABEL_FIRST_ELEMENT = "Quad";
+    private static final String LABEL_SECOND_ELEMENT = "Single";
+    private static int IMAGE_LEFT=280;
+    private static int IMAGE_TOP=260;
+    private static int IMAGE_RIGHT=260;
+    private static int IMAGE_BOTTOM=155;
+    private static boolean clip=false;
     // get a reference to the RelativeLayout so we can change the
     // background color of the Robot Controller
     int relativeLayoutId;
     View relativeLayout;
 
-    /*
-     * IMPORTANT: You need to obtain your own license key to use Vuforia. The string below with which
-     * 'parameters.vuforiaLicenseKey' is initialized is for illustration only, and will not function.
-     * A Vuforia 'Development' license key, can be obtained free of charge from the Vuforia developer
-     * web site at https://developer.vuforia.com/license-manager.
-     *
-     * Vuforia license keys are always 380 characters long, and look as if they contain mostly
-     * random data. As an example, here is a example of a fragment of a valid key:
-     *      ... yIgIzTqZ4mWjk9wd3cZO9T1axEqzuhxoGlfOOI2dRzKS4T0hQ8kT ...
-     * Once you've obtained a license key, copy the string from the Vuforia web site
-     * and paste it in to your code on the next line, between the double quotes.
+    /***
+     * Initialize the Target Tracking and navigation interface
+     * @param lOpMode    pointer to OpMode
      */
-    private static final String VUFORIA_KEY = "AfWZ0Nj/////AAABma9i7nGZSk81hrDHleShtMuKJES27HbNIQandd3JejLnjvR3256AZU4KbwLKM3zRbhT54zvMHzIwofU7N0TwRifRjMB9sPJ/GZoVpvrcOTNl0F3G6ynufbSkLWWRAGzf3ffMAWeB97a8iF/fPSC5kYY7u56rj2IXVXw7zB2GrTIlFIgkGmy+faJST+4838yCmE4kZFqSc8qnKW1zG0qh9EhMdg8KobZkODSkG2r2uDHXEcvnD8zLKQMIZGm3ueWs1aWvJRZZgx6wDFr1LFnnzZDdJ1en1TjkVWt7Mv+pb8j+9j/9W7Fp4Q5yUrqDl64aeNe7pLplamMYlZXBSOmevv/4r+h6SdQKeimUeP5dCZ6m";
 
-    /**
-     * {@link #vuforia} is the variable we will use to store our instance of the Vuforia
-     * localization engine.
-     */
-    private VuforiaLocalizer vuforia;
-
-    /**
-     * {@link #tfod} is the variable we will use to store our instance of the TensorFlow Object
-     * Detection engine.
-     */
-    private TFObjectDetector tfod;
-
-    /* init function for Autonomous mode
-     *
-     */
     public void initAutonomous(LinearOpMode lOpMode) {
+
+        // Save reference to OpMode and Hardware map
         myLOpMode = lOpMode;
 
-        // constants
-        step = 4;
-        windowwidth = 16;
-        // Turn the threshold down just a little as we were triggering on the gap
-        // between blocks and sometimes the mat.
-        threshold = 0x40 * windowwidth;
-
-        BlockNumber = 0;
-        bytes_per_pixel = -1;
-        row = -1;
-        column = -1;
-        botGrade = Color.RED;
-        bufWidth = -1;
-        bufHeight = -1;
-        recWidth = -1;
-        recHeight = -1;
-        left = -1;
-        boundary = -1;
-        top = -1;
-        bottom = -1;
-        sum = 0;
-        edgeFound = false;
-        pixelArray = new int[windowwidth];
-        BoundOffset = 0;
-        vScale = 1;
-        Recognition skystone_rec = null;
-        pixelFormat = 0;
-        framefound = 0;
-
-
-        for (int i = 0; i < windowwidth; i++) {
-            pixelArray[i] = 0;
-        }
-        // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
-        // first.
         initVuforia();
-        initTfod();
 
-        /**
-         * Activate TensorFlow Object Detection before we wait for the start command.
-         * Do it here so that the Camera Stream window will have the TensorFlow annotations visible.
-         **/
+        initTfod();
         if (tfod != null) {
             tfod.activate();
         }
 
+        // We really only want tensor flow loaded just so we can see the clipped image on the DS.
+        tfod.deactivate();
+
         // get a reference to the RelativeLayout so we can change the
         // background color of the Robot Controller
-        relativeLayoutId = lOpMode.hardwareMap.appContext.getResources().getIdentifier("RelativeLayout", "id", lOpMode.hardwareMap.appContext.getPackageName());
-        relativeLayout = ((Activity) lOpMode.hardwareMap.appContext).findViewById(relativeLayoutId);
+        relativeLayoutId = myLOpMode.hardwareMap.appContext.getResources().getIdentifier("RelativeLayout", "id", myLOpMode.hardwareMap.appContext.getPackageName());
+        relativeLayout = ((Activity) myLOpMode.hardwareMap.appContext).findViewById(relativeLayoutId);
 
-        /** Wait for the game to begin */
-        myLOpMode.telemetry.addData(">", "Vision Code Initialized");
-        myLOpMode.telemetry.update();
-        //myLOpMode.waitForStart();
     }
 
+    public void initVuforia() {
 
-    //below function returns skystone blocks
-    public void RestoreWhite() {
-        relativeLayout.post(new Runnable() {
-            public void run() {
-                relativeLayout.setBackgroundColor(Color.WHITE);
+        // This line allows the output of Vuforia to be connected to the Camera Stream window of the DS
+        // We need to get the clipping effect to help align the rings in our frame so we can't use this directly
+        // because we don't know how to make Vuforia do the right thing.  But it's interesting anyway
+        //int viewId = myOpMode.hardwareMap.appContext.getResources().getIdentifier(
+        //        "tfodMonitorViewId", "id", myOpMode.hardwareMap.appContext.getPackageName());
+        // VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(viewId);  // Use this line to see camera display
+
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+
+        parameters.cameraName = myLOpMode.hardwareMap.get(WebcamName.class, "Webcam 1");
+
+        parameters.vuforiaLicenseKey = VUFORIA_KEY;
+
+        vuforia = ClassFactory.getInstance().createVuforia(parameters);
+
+        vuforia.setFrameQueueCapacity(1); // Keeps the most recent image captured by the camera
+        Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true); // Sets the image format to RGBA565
+
+    }
+
+    /**
+     * Initialize the TensorFlow Object Detection engine.
+     */
+    public void initTfod() {
+        // This finds the ID of the DS camera stream window
+        int tfodMonitorViewId = myLOpMode.hardwareMap.appContext.getResources().getIdentifier(
+                "tfodMonitorViewId", "id", myLOpMode.hardwareMap.appContext.getPackageName());
+
+        // This creates a 'params' object servicing the DS camera stream with 0.6 confidence
+        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+
+        // Create the object
+        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
+
+        // Load the model
+        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
+
+        // bound the window down to help with ring alignment
+        tfod.setClippingMargins(IMAGE_LEFT,IMAGE_TOP,IMAGE_RIGHT,IMAGE_BOTTOM);
+    }
+
+    public int processImage( Image image ) {
+
+        int bufWidth = image.getBufferWidth();
+        int bufHeight = image.getBufferHeight();
+
+        Bitmap bitmap = Bitmap.createBitmap(image.getBufferWidth(), image.getBufferHeight(),
+                Bitmap.Config.RGB_565);
+        bitmap.copyPixelsFromBuffer(image.getPixels());
+
+        // Optionally create a few smaller copies of the bitmap to make processing easier below.
+        // Also consider increasing contrast and/or brightness to compensate for lighting.
+        // Likely break the bitmaps up into one slice for each expected ring and a slice
+        // for the mat just in front of the rings.
+        // Or perhaps use the mat to the right and left of each ring slice.
+        // This might be better because removing a ring exposes the mat 'in the distance'/behind
+        // the missing ring.  That may have different lighting than the ring itself.
+        // Comparing the region to the left and right of each ring against the ring slice
+        // might give the best indication of ring presence.
+        // In any case, it's imperative that the rings are aligned properly in the frame.
+
+        // If the rings are 'perfectly' aligned inside the image, then the ring height is ~1/4
+        // of the clipped region.
+
+        int ringTop    = IMAGE_TOP ;
+        int ringBottom = bufHeight - IMAGE_BOTTOM ;
+        int ringHeight = ((ringBottom - IMAGE_TOP)/4) ;
+        int ringRight  = bufWidth - IMAGE_RIGHT ;
+        int ringLeft   = IMAGE_LEFT ;
+
+        // I think x,y is 0,0 in the top,left corner of the image
+        // x goes left to right
+        // y goes top to bottom
+
+        // Go just in front of the ring stack and measure a slice of ground there.
+        // FIXME: We'd probably be better off measuring to the left and right of the ring stack
+        // but the front seems to be OK for Remote field.
+        int x, y, rIdx, color;
+        int gndR=0, gndG=0, gndB=0;
+        int gndCount=0;
+        for(x=ringLeft;x<ringRight;x++) {
+            for (y = (ringBottom + (int)(ringHeight*0.5)); y < (ringBottom + (int)(ringHeight*1.5)); y++) {
+                color = bitmap.getPixel(x, y);
+                gndR += Color.red(color);
+                gndG += Color.green(color);
+                gndB += Color.blue(color);
+                gndCount++;
             }
-        });
+        }
+
+        gndR = gndR / gndCount;
+        gndG = gndG / gndCount;
+        gndB = gndB / gndCount;
+
+        // Slice the slipped image into 4 slices and assume each is a ring.
+        // This is not strictly true since we're not looking head-on but close enough.
+        int[] ringR = new int[] {0,0,0,0};
+        int[] ringG = new int[] {0,0,0,0};
+        int[] ringB = new int[] {0,0,0,0};
+        int pixCount=0;
+        for (rIdx=0;rIdx<4;rIdx++) {
+            pixCount=0;
+            for (x = ringLeft; x < ringRight; x++) {
+                for (y = (ringBottom-(ringHeight*(rIdx+1))); y < (ringBottom-(ringHeight*rIdx)); y++) {
+                    color = bitmap.getPixel(x, y);
+                    ringR[rIdx] += Color.red(color);
+                    ringG[rIdx] += Color.green(color);
+                    ringB[rIdx] += Color.blue(color);
+
+                    // FIXME: Compare this pixel against the average gray pixel.
+                    // If it's similar enough, then count it as gray.
+                    // During the line-up portion of the match, the camera should be placed
+                    // in such a way that there is very little to no gray pixels
+                    // Once the camera is adjusted (gray pixel count is low enough),
+                    // then turn the screen green.
+
+                    pixCount++;
+                }
+            }
+            ringR[rIdx] /= pixCount;
+            ringG[rIdx] /= pixCount;
+            ringB[rIdx] /= pixCount;
+        }
+
+        // FIXME: If gray count is low enough, color DS green:
+        // Now create color ranges
+        /*
+        if ( grayCount < 2% ) {
+            relativeLayout.post(new Runnable() { public void run() { relativeLayout.setBackgroundColor(Color.GREEN); } });
+        } else if ( grayCount < 5% ) {
+            relativeLayout.post(new Runnable() { public void run() { relativeLayout.setBackgroundColor(Color.YELLOW); } });
+        } else {
+            relativeLayout.post(new Runnable() { public void run() { relativeLayout.setBackgroundColor(Color.RED); } });
+        }
+        */
+
+        // Now display everything we learned.
+        // FIXME: Add the actual ring count code here.  What will be used to actually count rings presence?
+        myLOpMode.telemetry.addData("PI", "W: %d, H: %d, S:%d", bufWidth, bufHeight, image.getStride());
+        myLOpMode.telemetry.addData("PI", " gnd, r:%3d,g:%3d,b:%3d (%d)", gndR, gndG, gndB, gndCount);
+        myLOpMode.telemetry.addData("PI", "r[0], r:%3d,g:%3d,b:%3d (%d)", ringR[0], ringG[0], ringB[0], pixCount);
+        myLOpMode.telemetry.addData("PI", "r[1], r:%3d,g:%3d,b:%3d (%d)", ringR[1], ringG[1], ringB[1], pixCount);
+        myLOpMode.telemetry.addData("PI", "r[2], r:%3d,g:%3d,b:%3d (%d)", ringR[2], ringG[2], ringB[2], pixCount);
+        myLOpMode.telemetry.addData("PI", "r[3], r:%3d,g:%3d,b:%3d (%d)", ringR[3], ringG[3], ringB[3], pixCount);
+
+        myLOpMode.telemetry.update();
+
+        // -1 for unknown rings for now.
+        return -1;
     }
 
-
-    public int getBlockNumber() {
-
-        int ideals[] = {0, 468, 252, 208};
-
-        return (getBlockNumber(ideals));
-    }
-
-
-    //below function returns skystone blocks
-    public int getBlockNumber( int[] ideals ) {
-        int center;
-        int ideal=0;
-
-        int PixelIndex;
-        int Third;
-        edgeFound = false;
+    public int ringCount() {
 
         if (tfod != null) {
-            // getUpdatedRecognitions() will return null if no new information is available since
-            // the last time that call was made.
-            //List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+
             List<Recognition> updatedRecognitions = tfod.getRecognitions();
 
+            VuforiaLocalizer.CloseableFrame frame;
+            try {
+                frame = vuforia.getFrameQueue().poll(100, TimeUnit.MILLISECONDS);
+            } catch(Exception e) {
+                frame = null;
+            }
 
-            if (updatedRecognitions != null) {
-                // step through the list of recognitions and display boundary info.
-                int i = 0;
-                skystone_rec = null;
-                for (Recognition recognition : updatedRecognitions) {
-                            /*myLOpMode.telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
-                            //below will give the left, top, right, bottom but it is disabled because of unnecessary feedback
-                            myLOpMode.telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
-                                          recognition.getLeft(), recognition.getTop());
-                            myLOpMode.telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
-                                recognition.getRight(), recognition.getBottom());*/
-
-                    // Choose highest confidence
-                    if ((skystone_rec == null) || (recognition.getConfidence() > skystone_rec.getConfidence())) {
-                        skystone_rec = recognition;
-                    }
-                }
-                if (updatedRecognitions.size() > 0) {
-                    myLOpMode.telemetry.addData("# Object Detected", "%d (%.2f)", updatedRecognitions.size(), skystone_rec.getConfidence());
-                } else {
-                    myLOpMode.telemetry.addData("# Object Detected", "%d", updatedRecognitions.size());
-                }
-
-                // get Frame
-                CloseableFrame myFrame;
-                try {
-                     myFrame = vuforia.getFrameQueue().poll(100, TimeUnit.MILLISECONDS);
-                } catch(Exception e) {
-                    //throw new RuntimeException(e);
-                    myFrame = null;
-                }
-
-                framefound = 0;
-                if (myFrame != null) framefound = 1;
-
-                if ((myFrame != null) && (skystone_rec != null)) {
-
-                    // Image stats
-                    Image myImage = myFrame.getImage(0);
-                    bufWidth = myImage.getBufferWidth();
-                    bufHeight = myImage.getBufferHeight();
-                    //center = (int) myImage.getBufferWidth() / 2;
-
-                    recWidth = skystone_rec.getImageWidth();
-                    recHeight = skystone_rec.getImageHeight();
-
-                    ByteBuffer myBuffer = myImage.getPixels();
-                    bytes_per_pixel = myImage.getStride() / myImage.getBufferWidth();
-
-                    // discover how the pixels are stored
-                    pixelFormat = myImage.getFormat();
-
-                    // Shrink the sampel window just a little to make the block lineup more tolerant.
-                    BoundOffset = bufWidth * 0.1125;
-
-                    // object stats.
-                    //int hScale = skystone_rec.getImageWidth() / bufWidth;
-                    vScale = skystone_rec.getImageHeight() / bufHeight;
-
-                            /*column   = (int) skystone_rec.getLeft() / hScale; //starts at left edge
-                            left     = (int) skystone_rec.getLeft() / hScale; // left edge
-                            boundary = (int) skystone_rec.getRight() / hScale; // right edge*/
-                    left = (int) BoundOffset;
-                    column = left;
-
-                    boundary = (int) (bufWidth - BoundOffset); // right edge
-                    top = (int) skystone_rec.getTop() / vScale; // top of detected skystone
-                    bottom = (int) skystone_rec.getBottom() / vScale; // bottom of detected skystone
-
-                    Third = (boundary - left) / 3;
-
-                    row = ((int) (top) + (int) (bottom)) / 2; // halfway between the top and the bottom of the detected block object
-
-                    if (row < 0) {
-                        row = 0;
-                    }
-
-                    if (row > (bufHeight - 1)) {
-                        row = bufHeight - 1;
-                    }
-
-                    // debug: grab first few pixels on left edge
-                    PixelIndex = (row * bufWidth * bytes_per_pixel) + column * bytes_per_pixel;
-                    for (int index = 0; index < windowwidth; index++) {
-                        if (pixelFormat == PIXEL_FORMAT.GRAYSCALE) { // GRAYSCALE = 4
-                            pixelArray[index] = myBuffer.getChar(PixelIndex + index * bytes_per_pixel); // & 0x00ff; // debug
-                        } else if (pixelFormat == PIXEL_FORMAT.RGB565) { // RGB565 = 1
-                            // Mask out the green bits
-                            // right shift out the blue bits
-                            // multiply by 4 since this is 6 bits and not a full 8
-                            char pixelChar = myBuffer.getChar(PixelIndex + index * bytes_per_pixel);
-                            double red = ((pixelChar & 0xf800) >> 11) << 3; // 5 bits to 8
-                            double green = ((pixelChar & 0x07e0) >> 5) << 2; // 6 bits to 8
-                            double blue = ((pixelChar & 0x001F)) << 3; // 5 bits to 8;
-                            double gray = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-
-                            sum += (int) (gray) & 0xff;
+            if (frame != null) {
+                long numImgs = frame.getNumImages();
+                for (int i = 0; i < numImgs; i++) {
+                    if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
+                        //Log.d("Vuforia", "Success");
+                        if (clip == true) {
+                            tfod.setClippingMargins(IMAGE_LEFT,IMAGE_TOP,IMAGE_RIGHT,IMAGE_BOTTOM);
+                            clip = false;
+                        } else{
+                            tfod.setClippingMargins(0, 0, 0, 0);
+                            clip=true;
                         }
+                        return processImage(frame.getImage(i));
                     }
-
-                    // Find the skystone black edge from left to right
-                    edgeFound = false;
-                    Boolean done = false;
-                    while (!done) {
-                        sum = 0;
-                        PixelIndex = (row * bufWidth * bytes_per_pixel) + column * bytes_per_pixel; // column updates every loop - must update pixelIndex
-                        if (pixelFormat == PIXEL_FORMAT.GRAYSCALE) { // GRAYSCALE = 4
-                            for (int index = 0; index < windowwidth; index++) {
-                                sum += myBuffer.getChar(PixelIndex + index * bytes_per_pixel) & 0x00ff;
-                            }
-                        } else if (pixelFormat == PIXEL_FORMAT.RGB565) { // RGB565 = 1
-                            for (int index = 0; index < windowwidth; index++) {
-                                // Mask out the green bits
-                                // right shift out the blue bits
-                                // multiply by 4 since this is 6 bits and not a full 8
-                                char pixelChar = myBuffer.getChar(PixelIndex + index * bytes_per_pixel);
-                                double red = ((pixelChar & 0xf800) >> 11) << 3; // 5 bits to 8
-                                double green = ((pixelChar & 0x07e0) >> 5) << 2; // 6 bits to 8
-                                double blue = ((pixelChar & 0x001F)) << 3; // 5 bits to 8;
-                                double gray = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-
-                                sum += (int) (gray) & 0xff;
-                            }
-                        }
-
-                        //PixelIndex += step;
-                        column += step;
-
-                        // if column is more than the right edge of the object
-                        if (column > boundary) {
-                            done = true;
-                        }
-
-                        if (sum <= threshold) {
-                            edgeFound = true;
-                            done = true;
-                        }
-
-                    }
-
-                    // If edge is found, calc the block number
-                    if (edgeFound) {
-                        int dist = column - left;
-
-                        //if (dist >= (2 * Third)) {
-                        // Detecting block 1 only has about 1/2"-1" tolerance. Give a little more tolerance
-                        if (dist >= ((3 * Third)/2)) {
-                            BlockNumber = 1;
-                        } else if (dist >= (Third / 2)) {
-                            BlockNumber = 2;
-                        } else {
-                            BlockNumber = 3;
-
-                            column = boundary - windowwidth;
-                            // Find the skystone black edge from right to left to help with alignment
-                            done = false;
-                            while (!done) {
-                                sum = 0;
-                                PixelIndex = (row * bufWidth * bytes_per_pixel) + column * bytes_per_pixel; // column updates every loop - must update pixelIndex
-                                if (pixelFormat == PIXEL_FORMAT.GRAYSCALE) { // GRAYSCALE = 4
-                                    for (int index = 0; index < windowwidth; index++) {
-                                        sum += myBuffer.getChar(PixelIndex + index * bytes_per_pixel) & 0x00ff;
-                                    }
-                                } else if (pixelFormat == PIXEL_FORMAT.RGB565) { // RGB565 = 1
-                                    for (int index = 0; index < windowwidth; index++) {
-                                        // Mask out the green bits
-                                        // right shift out the blue bits
-                                        // multiply by 4 since this is 6 bits and not a full 8
-                                        char pixelChar = myBuffer.getChar(PixelIndex + index * bytes_per_pixel);
-                                        double red = ((pixelChar & 0xf800) >> 11) << 3; // 5 bits to 8
-                                        double green = ((pixelChar & 0x07e0) >> 5) << 2; // 6 bits to 8
-                                        double blue = ((pixelChar & 0x001F)) << 3; // 5 bits to 8;
-                                        double gray = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-
-                                        sum += (int) (gray) & 0xff;
-                                    }
-                                }
-
-                                //PixelIndex += step;
-                                column -= step;
-
-                                // if column is less than the left edge of the object
-                                if (column < left) {
-                                    done = true;
-                                }
-
-                                if (sum <= threshold) {
-                                    done = true;
-                                }
-                            }
-                        }
-                    }
-                    //myFrame.close();
                 }
             }
         }
 
-        // Experimentally determine ideal columns for each configuration
-        // just in case the referees don't setup the blocks in the center position.
-        if (BlockNumber == 1) {
-            ideal = ideals[1];
-        } else if (BlockNumber == 2) {
-            ideal = ideals[2];
-        } else if (BlockNumber == 3) {
-            ideal = ideals[3];
-        } else {
-            ideal = ideals[0];
-        }
-
-        // Now create color ranges
-        // Our vision code only returns columns in 4 pixel alignments so +/-7 is really about as
-        // close as possible.  +/-15 is probably within 1 inch of center.
-        if ( Math.abs(ideal - column) < 7 ) {
-            botGrade = Color.GREEN;
-        } else if ( Math.abs(ideal - column) < 15 ) {
-            botGrade = Color.YELLOW;
-        } else {
-            botGrade = Color.RED;
-        }
-
-        // Leveraged from sample code from MR Gyro example
-        relativeLayout.post(new Runnable() {
-            public void run() {
-                relativeLayout.setBackgroundColor(botGrade);
-            }
-        });
-
-        myLOpMode.telemetry.addData(">", "Col: %d (%d) (%d)", column, ideal, framefound);
-        myLOpMode.telemetry.addData(">", "Block Number: %d", BlockNumber);
-        //myLOpMode.telemetry.addData(">", "Buffer(WxH): (%d x %d) (%d x %d)", bufWidth, bufHeight, recWidth, recHeight);
-        //myLOpMode.telemetry.addData(">", "BPP: %d pf: %d, Edge Found: %b %x %x %x %x", bytes_per_pixel, pixelFormat, edgeFound, pixelArray[0], pixelArray[1], pixelArray[2], pixelArray[3]);
-        //myLOpMode.telemetry.addData("Top Bottom Left Right ", "%d %d %d %d", top, bottom, left, boundary);
-        //myLOpMode.telemetry.addData(">", "Row, vScale: %d, %d", row, vScale);
-        //myLOpMode.telemetry.addData(">", "Threshold: %d  sum: %d", threshold, sum);
-        //myLOpMode.telemetry.addData("updatedrecognitions size", "%d", tfod.getRecognitions().size());
-        myLOpMode.telemetry.update();
-
-        //will the return the block number
-        return BlockNumber;
+        // Unknown rings on any error.
+        return -1;
     }
 
     public void shutdown() {
@@ -468,78 +296,4 @@ public class IncepVision {
             tfod.shutdown();
         }
     }
-
-    /**
-     * Initialize the Vuforia localization engine.
-     */
-    private void initVuforia() {
-        /*
-         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
-         */
-        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
-
-
-        parameters.vuforiaLicenseKey = VUFORIA_KEY;
-
-        CameraName savedName = parameters.cameraName;
-        try {
-            parameters.cameraName = myLOpMode.hardwareMap.get(WebcamName.class, "Webcam 1");
-        } catch (Exception e) {
-            parameters.cameraName = savedName;
-            parameters.cameraDirection = CameraDirection.BACK;
-        }
-
-        //  Instantiate the Vuforia engine
-        vuforia = ClassFactory.getInstance().createVuforia(parameters);
-
-
-        //Get Frame
-        vuforia.setFrameQueueCapacity(1);
-
-        // Loading trackables is not necessary for the TensorFlow Object Detection engine.
-    }
-
-    /**
-     * Initialize the TensorFlow Object Detection engine.
-     */
-    public void initTfod() {
-        int tfodMonitorViewId = myLOpMode.hardwareMap.appContext.getResources().getIdentifier(
-                "tfodMonitorViewId", "id", myLOpMode.hardwareMap.appContext.getPackageName());
-        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
-        tfodParameters.minimumConfidence = 0.6;
-        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
-        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
-        // This matches the .1 bound above.
-        // FIXME: make the boundary offset and this match for sure
-        tfod.setClippingMargins(72,125,72,125);
-    }
 }
-/*
-code will auto detect if a webcam is connected or not
-example code on how to use:
-package Inception.Skystone;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-
-@Autonomous(name="Incep: Vision Test 2", group="Incepbot")
-public class (class goes here) extends LinearOpMode {
-
-    private IncepVision        vision   = new IncepVision();
-
-
-    @Override
-    public void runOpMode() {
-    //starts the code only needs to be run once
-        vision.initAutonomous(this);
-
-        //runs during init
-        while(!isStopRequested())
-        {
-            vision.getBlockNumber();
-        }
-        //stops vision code fully
-        vision.shutdown();
-    }
-}
-
- */
