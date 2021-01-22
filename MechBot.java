@@ -115,8 +115,10 @@ public class MechBot {
     static final double RIGHT = 1;
     static final double LEFT = 0;
 
-    final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0;
-    final int wobbleTargets[] = {(int)(5*WOBBLE_TICKS_PER_DEGREE),(int)(225*WOBBLE_TICKS_PER_DEGREE), (int)(90*WOBBLE_TICKS_PER_DEGREE), (int)(180*WOBBLE_TICKS_PER_DEGREE)};
+    //final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0; // 30 RPM 6mm d-shaft (5202 series)
+    //final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0; // 60 RPM 6mm d-shaft (5202 series)
+    final double WOBBLE_TICKS_PER_DEGREE = 3892.0/360.0; // 43 RPM 8mm REX (5203 series)
+    final int wobbleTargets[] = {(int)(5*WOBBLE_TICKS_PER_DEGREE),(int)(225*WOBBLE_TICKS_PER_DEGREE), (int)(90*WOBBLE_TICKS_PER_DEGREE), (int)(175*WOBBLE_TICKS_PER_DEGREE)};
 
     static double KpL;
     static double KpR;
@@ -1635,11 +1637,7 @@ public class MechBot {
     public void setWobblePosition(int wobblePos, double power){
         wobble_motor.setTargetPosition(wobbleTargets[wobblePos]);
         wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        if(wobblePos == 0){
-            wobble_motor.setPower(0.4);
-        }else{
-            wobble_motor.setPower(power);
-        }
+        wobble_motor.setPower(power);
     }
 
 

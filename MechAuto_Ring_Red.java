@@ -55,47 +55,43 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
     private static final double DRIVE_SPEED = 1.0;
     private static final double TURN_SPEED = 0.8;
-    private static final double PIVOT_SPEED = 0.40;
-    private static final double SQ = 70 / 3.0;        // Length of 3 squares / 3 in case we want to think that way
-    private static final double[] blocks = {0.0, 28.0, 36.0, 44.0, 4.0, 12.0, 20.0};
-    private static final double dropZone = 82.0;
-    private static final double bridge = 71.0;
+    private static final double wobble_power = 0.6;
     private String className = this.getClass().getSimpleName().toLowerCase();
 
-    //private IncepVision vision = new IncepVision();
+    private IncepVision vision = new IncepVision();
     private int block;
     private double P = 0.075;
     private double a = 0;
+    private int ringCount = -1;
 
     @Override
     public void runOpMode() {
-        double firstBlock, secondBlock, thirdBlock, fourthBlock;
-        double turnDirection;
-        double laneLength;
-        double laneLengthWall;
-        double laneAdjust1;
-        double laneAdjust2;
-        int    ideals[]={0, 412, 196, 152};
 
         //robot.logger.LOGLEVEL = robot.logger.LOGDEBUG ;
 
         // Init the robot and subsystems
         robot.init(hardwareMap);
         robot.initAutonomous(this);
-        //vision.initAutonomous(this);
+        vision.initAutonomous(this);
 
         // Wait until we're told to go and look for the block
 
         /*
         while (!isStarted()) {
-            block = vision.getBlockNumber(ideals);
+            ringCount = vision.ringCount();
         }
         vision.shutdown();
-        */
 
-        // Red or blue alliance changes include:
-        // Correction for block numbering
-        // Turn direction
+        if (rings == 0) {
+            goalPos = 1;
+        } else if (rings == 1) {
+            goalPos = 2;
+        } else if (rings == 4) {
+            goalPos = 3;
+        else {
+            goalPos = 3;
+        }
+        */
 
         // Wait for the game to start (driver presses PLAY)
         //waitForStart();
@@ -153,7 +149,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             //prime some stuff for wobble
             robot.claw.setPosition(0);
             sleep(500);
-            robot.setWobblePosition(1,.4);
+            robot.setWobblePosition(1,wobble_power);
             sleep(2000);
 
             robot.straightA = a;
@@ -163,7 +159,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
             robot.claw.setPosition(1);
             sleep(1000);
-            robot.setWobblePosition(3,.4);
+            robot.setWobblePosition(3,wobble_power);
             sleep(1000);
 
             robot.straightA = a;
@@ -174,7 +170,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
             robot.claw.setPosition(0);
             sleep(500);
-            robot.setWobblePosition(0,.4);
+            robot.setWobblePosition(0,wobble_power);
             sleep(2000);
 
 
@@ -213,7 +209,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             sleep(300);
             // Get ready for wobble
             robot.claw.setPosition(0.25);
-            robot.setWobblePosition(1,.4);
+            robot.setWobblePosition(1,wobble_power);
             robot.flicker.setPosition(0.0);
             sleep(650);
             robot.flicker.setPosition(1.0);
@@ -233,7 +229,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             // Grab wobble
             robot.claw.setPosition(1);
             sleep(750);
-            robot.setWobblePosition(3,.5);
+            robot.setWobblePosition(3,wobble_power);
             sleep(500);
 
             // Strafe to line up on ring
@@ -272,7 +268,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
             robot.claw.setPosition(0.0);
             sleep(500);
-            robot.setWobblePosition(0,.4);
+            robot.setWobblePosition(0,wobble_power);
             sleep(1000);
             robot.claw.setPosition(1.0);
             sleep(1000);
@@ -307,7 +303,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             robot.flicker.setPosition(1.0);
             sleep(300);
             robot.claw.setPosition(0.25);
-            robot.setWobblePosition(1,.4);
+            robot.setWobblePosition(1,wobble_power);
             robot.flicker.setPosition(0.0);
             sleep(650);
             robot.flicker.setPosition(1.0);
@@ -327,7 +323,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             // Grab the wobble
             robot.claw.setPosition(1);
             sleep(750);
-            robot.setWobblePosition(3,.5);
+            robot.setWobblePosition(3,wobble_power);
             sleep(500);
 
             // Line up over 4-stack
@@ -387,7 +383,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             // Drop it off
             robot.claw.setPosition(0);
             sleep(250);
-            robot.setWobblePosition(0,.4);
+            robot.setWobblePosition(0,wobble_power);
 
             // Run like heck
             robot.straightA = a;
@@ -396,13 +392,13 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         } else if (goalPos==4){
             robot.claw.setPosition(0);
             sleep(500);
-             robot.setWobblePosition(1,.4);
+             robot.setWobblePosition(1,wobble_power);
             sleep(2000);
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, -10, 60, P);
             robot.claw.setPosition(1);
             sleep(2000);
-            robot.setWobblePosition(2,.4);
+            robot.setWobblePosition(2,wobble_power);
             sleep(2000);
         }
 

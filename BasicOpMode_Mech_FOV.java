@@ -207,10 +207,12 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         double maxPwr = 0.0;
 
         //wobble stuff
-        final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0;
-        final int[] wobbleTargets = {(int)(5*WOBBLE_TICKS_PER_DEGREE),(int)(215*WOBBLE_TICKS_PER_DEGREE), (int)(90*WOBBLE_TICKS_PER_DEGREE), (int)(175*WOBBLE_TICKS_PER_DEGREE)};
+        //final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0; // 30 RPM 6mm d-shaft (5202 series)
+        //final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0; // 60 RPM 6mm d-shaft (5202 series)
+        final double WOBBLE_TICKS_PER_DEGREE = 3892.0/360.0; // 43 RPM 8mm REX (5203 series)
+        final int wobbleTargets[] = {(int)(5*WOBBLE_TICKS_PER_DEGREE),(int)(225*WOBBLE_TICKS_PER_DEGREE), (int)(90*WOBBLE_TICKS_PER_DEGREE), (int)(175*WOBBLE_TICKS_PER_DEGREE)};
         int wobblePos = 0;
-        wobble_power = 0.4;
+        wobble_power = 0.6;
 
         /** 'Manual' PID or shooter
         // https://en.wikipedia.org/wiki/Ziegler–Nichols_method
@@ -552,13 +554,13 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             if(gamepad1.dpad_left){
                 if(!wobblePrev) {
 
-                    wobblePos++; wobblePos %= 4;
+                    wobblePos++; wobblePos %= wobbleTargets.length;
                     //wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
                     if(wobblePos == 0) {
-                        wobble_motor.setPower(0.4);
+                        wobble_motor.setPower(wobble_power);
                     } else if(wobblePos == 3) {
-                        wobble_motor.setPower(0.3);
+                        wobble_motor.setPower(0.5);
                     } else {
                         wobble_motor.setPower(wobble_power);
                     }
@@ -571,7 +573,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 wobblePrev = false;
             }
 
-            if(wobble_motor.getCurrentPosition() <= (10.0*WOBBLE_TICKS_PER_DEGREE) && wobblePos == 0){
+            if(wobble_motor.getCurrentPosition() <= (7.0*WOBBLE_TICKS_PER_DEGREE) && wobblePos == 0){
                 wobble_motor.setPower(0);
             }
 
