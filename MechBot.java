@@ -100,7 +100,9 @@ public class MechBot {
     private static final double WAIT_SPEED = 0.005;
     // Staic ratio between left and right power for 'normal' driving
     private static final double fKpL = 1.0;
-    private static final double fKpR = 0.997;
+    private static final double fKpR = 1.0;
+    //private static final double fKpR = 0.997;
+
     // Staic ratio between left and right power for 'strafe' driving
     private static final double sKpL = 0.90;
     private static final double sKpR = 1.0;
@@ -1056,30 +1058,32 @@ public class MechBot {
 
         // Long straight (default)
         //double[] speedRampUp = {0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
-        double[] speedRampUp = {0.40, 0.55, 0.70, 0.85, 1.0};
+        double[] speedRampUp = {0.30, 0.40, 0.55, 0.70, 0.85, 1.0};
         //double[] speedRampDown = {0.10, 0.125, 0.125, 0.15, 0.175, 0.20, 0.225, 0.25, 0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
         //double[] speedRampDown = {0.20, 0.225, 0.25, 0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
-        double[] speedRampDown = {0.10, 0.25, 0.40, 0.55, 0.70, 0.85, 1.0};
+        //double[] speedRampDown = {0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
+        double[] speedRampDown = {0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
         //double[] speedRampDown = {0.20, 0.30, 0.40, 0.60, 0.80, 1.0};
 
-
         // Medium straight
-        double[] speedRampUp24 = {0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
-        double[] speedRampDown24 = {0.10, 0.125, 0.175, 0.225, 0.275, 0.325, 0.375, 0.45,};
+        double[] speedRampUp30 = {0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
+        // Good profile for picking up wobble! double[] speedRampDown30 = {0.10, 0.125, 0.175, 0.225, 0.275, 0.325, 0.375, 0.45,};
+        double[] speedRampDown30 = {0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
 
         // Short straight
-        double[] speedRampUp12 = {0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
-        double[] speedRampDown12 = {0.10, 0.15, 0.225, 0.35};
+        double[] speedRampUp16 = {0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
+        double[] speedRampDown16 = {0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0};
+        //double[] speedRampDown16 = {0.10, 0.15, 0.225, 0.35};
 
         // Choose some accel/decel curves based on distance
         // Need more time to decelerate for longer distances (higher top speeds)
         if (leftInches == rightInches) {
             if (Math.abs(leftInches) <= 16.0) {
-                speedRampUp = speedRampUp12;
-                speedRampDown = speedRampDown12;
+                speedRampUp = speedRampUp16;
+                speedRampDown = speedRampDown16;
             } else if (Math.abs(leftInches) <= 30.0) {
-                speedRampUp = speedRampUp24;
-                speedRampDown = speedRampDown24;
+                speedRampUp = speedRampUp30;
+                speedRampDown = speedRampDown30;
             }
         } else if (leftInches == -rightInches) {
             speedRampUp = speedRampUpR;
@@ -1364,7 +1368,7 @@ public class MechBot {
             //  using something like a 'heading' instead of a angular delta. Then we don't really
             //  need to carry error forward, it's just known from the heading value.
             //  Then we also don't need the delay here either.
-            //myLOpMode.sleep(500);
+            myLOpMode.sleep(500);
             // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
             logger.logD("MechLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
             return (normalizeAngle((getHeading() - tgtHeading)));
@@ -1567,14 +1571,16 @@ public class MechBot {
                 if ((newSpeedL != actSpeedL) || (newSpeedR != actSpeedR)) {
 
                     l_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
+
                     // FIXME, rightF seems to be either ahead or behind by different amounts.
                     //  Could this be due to shimming on the bearings and rubbing the outside
                     //  screws?
-                    if (newRightFTarget > 0) {
-                        r_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)) * 0.92);
-                    } else {
-                        r_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)) * 0.97);
-                    }
+                    r_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
+                    //if (newRightFTarget > 0) {
+                    //    r_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)) * 0.92);
+                    //} else {
+                    //    r_f_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)) * 0.97);
+                    //}
                     r_b_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedR)));
                     l_b_motor.setPower(Math.max(-1.0, Math.min(1.0, newSpeedL)));
                     actSpeedL = newSpeedL;
@@ -1625,7 +1631,7 @@ public class MechBot {
             //  using something like a 'heading' instead of a angular delta. Then we don't really
             //  need to carry error forward, it's just known from the heading value.
             //  Then we also don't need the delay here either.
-            //myLOpMode.sleep(500);
+            myLOpMode.sleep(500);
             // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
             logger.logD("MechLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
             return (normalizeAngle((getHeading() - tgtHeading)));

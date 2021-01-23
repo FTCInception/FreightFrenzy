@@ -33,6 +33,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.Range;
 import com.vuforia.Image;
 
 /**
@@ -61,6 +62,7 @@ public class MechAuto_Cal extends LinearOpMode {
     private static final double     TURN_SPEED              = 0.8;
 
     private IncepVision vision = new IncepVision();
+    int rings;
 
     double a=0;
     double P=0.075;
@@ -84,21 +86,54 @@ public class MechAuto_Cal extends LinearOpMode {
         robot.initAutonomous(this);
         vision.initAutonomous(this);
 
-        while (!isStarted()) {
-            vision.ringCount();
+        int deltaX=0, deltaY=0,sizeX=0,sizeY=0;
+        sizeX = 640 - (IncepVision.imageLeft + IncepVision.imageRight);
+        sizeY = 480 - (IncepVision.imageTop + IncepVision.imageBottom);
+
+        vision.clip = false;
+
+        while (!isStarted() && (!isStopRequested())) {
+            rings = vision.ringCount();
+            deltaX=0; deltaY=0; sizeX=0; sizeY=0;
+            if ( gamepad1.dpad_left ) { deltaX -= 2; }
+            if ( gamepad1.dpad_right ) { deltaX += 2; }
+            if ( gamepad1.dpad_down ) { deltaY -= 2; }
+            if ( gamepad1.dpad_up ) { deltaY += 2; }
+            if ( gamepad1.x ) { sizeX -= 2; }
+            if ( gamepad1.b ) { sizeX += 2; }
+            if ( gamepad1.a ) { sizeY -= 2; }
+            if ( gamepad1.y ) { sizeY += 2; }
+            if ( gamepad1.left_bumper ) { vision.tfod.deactivate(); vision.tfodState=false;}
+            if ( gamepad1.right_bumper ) { vision.clip = true; }
+
+            // Adjust size
+            IncepVision.imageLeft   = IncepVision.imageLeft - sizeX;
+            IncepVision.imageRight  = IncepVision.imageRight - sizeX;
+            IncepVision.imageTop    = IncepVision.imageTop - sizeY;
+            IncepVision.imageBottom = IncepVision.imageBottom - sizeY;
+
+            // Adjust location
+            IncepVision.imageLeft   = IncepVision.imageLeft + deltaX;
+            IncepVision.imageRight  = IncepVision.imageRight - deltaX;
+            IncepVision.imageTop    = IncepVision.imageTop - deltaY;
+            IncepVision.imageBottom = IncepVision.imageBottom + deltaY;
+
+            // Observe some limits
+            Range.clip(IncepVision.imageLeft,  0,640);
+            Range.clip(IncepVision.imageRight, 0,640);
+            Range.clip(IncepVision.imageTop,   0,480);
+            Range.clip(IncepVision.imageBottom,0,480);
+
             //telemetry.addData("Ring Count", "%d", vision.ringCount());
             //telemetry.update();
         }
         vision.shutdown();
 
-        while (!isStarted()) {
+        while (!isStarted() && (!isStopRequested())) {
             sleep(250);
             telemetry.addData("Heading", "%f", robot.getHeading());
             telemetry.update();
         }
-
-        // Wait for the game to start (driver presses PLAY)
-        //waitForStart();
 
         //robot.MotorCal(robot.leftFDrive, "lf", 1.0 );
         //robot.MotorCal(robot.leftBDrive, "lb",1.0 );
@@ -106,39 +141,10 @@ public class MechAuto_Cal extends LinearOpMode {
         //robot.MotorCal(robot.rightBDrive, "rb", 1.0 );
 
         robot.straightA = a;
-        // Drive straight a while without any gyro correction
-        // Power adjust right/left to get a straight line
-        //a=robot.fastEncoderStraight(DRIVE_SPEED,96.0,60, 0);
-        //sleep(5000);
 
-        /*
-        // Now turn 4 full rotations and back with a pause to check for over/under rotation
-        // Check for drift as well (not sure how to fix drift.)
-        double turnSize=360.0*4.0;
-        robot.gyroRotate(TURN_SPEED,turnSize-a, 60);
-        telemetry.addData("Heading", "%f", robot.getHeading());
-        telemetry.update();
-
-        sleep(3000);
-
-        robot.gyroRotate(TURN_SPEED,-turnSize-a, 60);
-        telemetry.addData("Heading", "%f", robot.getHeading());
-        telemetry.update();
-        */
-
-        /*
-        // 3-ring pickup test.
-        robot.intake_motor.setPower(1.0);
-        a=robot.fastEncoderStraight(DRIVE_SPEED,30.0,60, P);
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(.2,9.0,60, P);
-        robot.straightA = a;
-        sleep(2000);
-        robot.intake_motor.setPower(0);
-        */
-
-        /*
         // Test strafe in here
+        /*
+        P=0.075;
         a=robot.fastEncoderStrafe(DRIVE_SPEED,48, 60, P );
         robot.straightA = a;
         a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 60, P);
@@ -148,207 +154,67 @@ public class MechAuto_Cal extends LinearOpMode {
         a=robot.fastEncoderStrafe(DRIVE_SPEED,-48, 60, P );
         */
 
+        /*
+        double distance=16.0;
+        P=0.075;
         // Now a bunch of junk to try different movements like short, medium, long, etc.
-        /*
         robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,72.0,60, P);
-        a=robot.gyroRotate(TURN_SPEED,(180)-a, 60);
+        a=robot.fastEncoderStraight(DRIVE_SPEED,distance,60, P);
+        sleep(2000);
+        //a=robot.gyroRotate(TURN_SPEED,(180)-a, 60);
         robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,72.0,60, P);
-        a=robot.gyroRotate(TURN_SPEED,(-180)-a, 60);
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-distance,60, P);
+        sleep(2000);
+        //a=robot.gyroRotate(TURN_SPEED,(-180)-a, 60);
         robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,72.0,60, P);
-        a=robot.gyroRotate(TURN_SPEED,(180)-a, 60);
+        a=robot.fastEncoderStraight(DRIVE_SPEED,distance,60, P);
+        sleep(2000);
+        //a=robot.gyroRotate(TURN_SPEED,(180)-a, 60);
         robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,72.0,60, P);
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-distance,60, P);
+        sleep(2000);
+
+        distance = 30.0;
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,distance,60, P);
+        sleep(2000);
+        //a=robot.gyroRotate(TURN_SPEED,(180)-a, 60);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-distance,60, P);
+        sleep(2000);
+        //a=robot.gyroRotate(TURN_SPEED,(-180)-a, 60);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,distance,60, P);
+        sleep(2000);
+        //a=robot.gyroRotate(TURN_SPEED,(180)-a, 60);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-distance,60, P);
+        sleep(2000);
+
+        distance = 72.0;
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,distance,60, P);
+        sleep(2000);
+        //a=robot.gyroRotate(TURN_SPEED,(180)-a, 60);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-distance,60, P);
+        sleep(2000);
+        //a=robot.gyroRotate(TURN_SPEED,(-180)-a, 60);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,distance,60, P);
+        sleep(2000);
+        //a=robot.gyroRotate(TURN_SPEED,(180)-a, 60);
+        robot.straightA = a;
+        a=robot.fastEncoderStraight(DRIVE_SPEED,-distance,60, P);
+        sleep(2000);
         */
 
         /*
-        double turnDirection = -1.0;
-
-        robot.foundation2.setPosition(0.35);
-        a=robot.gyroRotate(TURN_SPEED,(-90 * turnDirection)-a, 4);
-        robot.claw.setPosition(0.7);
-        sleep(500);
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-(10 + 2),4, P);
-
-        a=robot.gyroTurn((145 * turnDirection)-a, TURN_SPEED/2.0, -TURN_SPEED, 4);
-        robot.claw.setPosition(0.25);
-
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-(10),4, P);
-        a=robot.gyroRotate(TURN_SPEED,(-55 * turnDirection)-a, 4);
-        robot.claw.setPosition(0.7);
-
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-68,4, P);
-        robot.dropBlock(100);
-
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,12,4, P);
-        // End funky stuff
+        a=robot.gyroRotate(TURN_SPEED,5*360.0, 60);
+        sleep(3000);
+        a=robot.gyroRotate(TURN_SPEED,-5*360.0, 60);
+        sleep(3000);
         */
-
-        //sleep(24000);
-
-        /*
-        // Yeah, the encoder for one revolution is 537.6.
-        // Not 570 like we think documentation said.
-        robot.encoderTest(0.2,546,5);
-        robot.encoderTest(0.2,546,5);
-        robot.encoderTest(0.2,546,5);
-        robot.encoderTest(0.2,546,5);
-        robot.encoderTest(0.2,538*10,50);
-        */
-
-        /*
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,12, 2, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,12, 2, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,12, 2, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,12, 2, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-12, 2, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-12, 2, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-12, 2, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-12, 2, P );
-        robot.grabBlock(1000);
-        robot.dropBlock(500);
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,24, 2, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,24, 2, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-24, 2, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-24, 2, P );
-        robot.grabBlock(1000);
-        robot.dropBlock(500);
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,12, 5, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,36, 5, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-36, 5, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-12, 5, P );
-        robot.grabBlock(1000);
-        robot.dropBlock(500);
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,48, 5, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-48, 5, P );
-        robot.grabBlock(1000);
-        robot.dropBlock(500);
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,72, 5, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-72, 5, P );
-        robot.grabBlock(1000);
-        robot.dropBlock(500);
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,96, 5, P );
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-96, 5, P );
-        robot.grabBlock(1000);
-        robot.dropBlock(500);
-        sleep(10000);
-        */
-
-        /*
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,96, 5, P );
-        robot.grabBlock(1000);
-        robot.dropBlock(500);
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-96, 5, P );
-        robot.grabBlock(1000);
-        robot.dropBlock(500);
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,96, 5, P );
-        robot.grabBlock(1000);
-        robot.dropBlock(500);
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-96, 5, P );
-        robot.grabBlock(1000);
-        robot.dropBlock(500);
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,96, 5, P );
-        robot.grabBlock(1000);
-        robot.dropBlock(500);
-        robot.straightA = a;
-        a=robot.fastEncoderStraight(DRIVE_SPEED,-96, 5, P );
-        robot.grabBlock(1000);
-        robot.dropBlock(500);
-        sleep(5000);
-        */
-
-        /*
-        robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED, -48, 10, P);
-        robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED, 48, 10, P);
-        robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED, -24, 10, P);
-        robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED, 24, 10, P);
-        robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED, -12, 10, P);
-        robot.straightA = a;
-        a=robot.fastEncoderStrafe(DRIVE_SPEED, 12, 10, P);
-        */
-
-        //robot.fastEncoderStraight(DRIVE_SPEED, 96, 10,0.05);
-        //sleep(1000);
-
-        /*
-        a=robot.gyroRotate(TURN_SPEED,90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,180-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,180-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,360-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-360-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-180-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-180-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
-        a=robot.gyroRotate(TURN_SPEED,-90-a, 6);
-        */
-
-        //robot.fastEncoderStraight(DRIVE_SPEED, 96, 10,0.05);
-        //sleep(1000);
-
-        /*
-        robot.fastEncoderStraight(DRIVE_SPEED, -48, 10,0.05);
-        sleep(1000);
-        robot.fastEncoderStraight(DRIVE_SPEED, 48, 10,0.05);
-        sleep(1000);
-        robot.fastEncoderStraight(DRIVE_SPEED, -24, 10,0.05);
-        sleep(1000);
-        robot.fastEncoderStraight(DRIVE_SPEED, 24, 10,0.05);
-        sleep(1000);
-        robot.fastEncoderStraight(DRIVE_SPEED, -12, 10,0.05);
-        sleep(1000);
-        robot.fastEncoderStraight(DRIVE_SPEED, 12, 10,0.05);
-        */
-
-
-/*
-        robot.gyroRotate(TURN_SPEED,90-a, 6);
-        robot.gyroRotate(TURN_SPEED,90-a, 6);
-        robot.gyroRotate(TURN_SPEED,90-a, 6);
-        robot.gyroRotate(TURN_SPEED,90-a, 6);
-        robot.gyroRotate(TURN_SPEED,-90-a, 6);
-        robot.gyroRotate(TURN_SPEED,-90-a, 6);
-        robot.gyroRotate(TURN_SPEED,-90-a, 6);
-        robot.gyroRotate(TURN_SPEED,-90-a, 6);
-
- */
 
 /*
         robot.fastEncoderRotate(TURN_SPEED,90, 6);
@@ -368,19 +234,6 @@ public class MechAuto_Cal extends LinearOpMode {
         robot.fastEncoderRotate(TURN_SPEED,-90, 6);
         robot.logger.logD("MechLog",String.format("Turn err %f, heading %f",a,robot.getHeading()));
 */
-
-        //sleep(5000);
-
-
-        /*
-        a = robot.fastEncoderStraight(DRIVE_SPEED, 72, 6, 0.06);
-        a = robot.gyroRotate(TURN_SPEED,90-a, 4);
-        a = robot.gyroRotate(TURN_SPEED,90-a, 4);
-        robot.straightA = -a;
-        a = robot.fastEncoderStraight(DRIVE_SPEED, 48, 6, 0.06);
-        a = robot.gyroRotate(TURN_SPEED,90-a, 4);
-        a = robot.gyroRotate(TURN_SPEED,90-a, 4);
-        */
 
         robot.logger.logD("MechLog","Done");
         robot.logger.logD("MechLog","  ");

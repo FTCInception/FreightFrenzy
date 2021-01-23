@@ -61,16 +61,17 @@ public class IncepVision {
     /* Private class members. */
     private LinearOpMode myLOpMode;       // Access to the LinearOpMode object
     public VuforiaLocalizer vuforia;     // The localizer
-    private TFObjectDetector tfod;
+    public TFObjectDetector tfod;
     private static final String VUFORIA_KEY = "AfWZ0Nj/////AAABma9i7nGZSk81hrDHleShtMuKJES27HbNIQandd3JejLnjvR3256AZU4KbwLKM3zRbhT54zvMHzIwofU7N0TwRifRjMB9sPJ/GZoVpvrcOTNl0F3G6ynufbSkLWWRAGzf3ffMAWeB97a8iF/fPSC5kYY7u56rj2IXVXw7zB2GrTIlFIgkGmy+faJST+4838yCmE4kZFqSc8qnKW1zG0qh9EhMdg8KobZkODSkG2r2uDHXEcvnD8zLKQMIZGm3ueWs1aWvJRZZgx6wDFr1LFnnzZDdJ1en1TjkVWt7Mv+pb8j+9j/9W7Fp4Q5yUrqDl64aeNe7pLplamMYlZXBSOmevv/4r+h6SdQKeimUeP5dCZ6m";
     private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
-    private static final String LABEL_FIRST_ELEMENT = "Quad";
-    private static final String LABEL_SECOND_ELEMENT = "Single";
-    private static int IMAGE_LEFT=280;
-    private static int IMAGE_TOP=260;
-    private static int IMAGE_RIGHT=260;
-    private static int IMAGE_BOTTOM=155;
-    private static boolean clip=false;
+    private static final String LABEL_QUAD = "Quad";
+    private static final String LABEL_SINGLE = "Single";
+    public static int imageLeft=280;
+    public static int imageTop=260;
+    public static int imageRight=260;
+    public static int imageBottom=155;
+    public boolean clip=false;
+    public boolean tfodState=false;
     // get a reference to the RelativeLayout so we can change the
     // background color of the Robot Controller
     int relativeLayoutId;
@@ -91,10 +92,11 @@ public class IncepVision {
         initTfod();
         if (tfod != null) {
             tfod.activate();
+            tfodState=true;
         }
 
         // We really only want tensor flow loaded just so we can see the clipped image on the DS.
-        tfod.deactivate();
+        //tfod.deactivate();
 
         // get a reference to the RelativeLayout so we can change the
         // background color of the Robot Controller
@@ -140,10 +142,13 @@ public class IncepVision {
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
 
         // Load the model
-        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
+        //tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_QUAD, LABEL_SINGLE);
+        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_QUAD);
 
         // bound the window down to help with ring alignment
-        tfod.setClippingMargins(IMAGE_LEFT,IMAGE_TOP,IMAGE_RIGHT,IMAGE_BOTTOM);
+        if(clip) {
+            tfod.setClippingMargins(imageLeft, imageTop, imageRight, imageBottom);
+        }
     }
 
     public int processImage( Image image ) {
@@ -169,11 +174,11 @@ public class IncepVision {
         // If the rings are 'perfectly' aligned inside the image, then the ring height is ~1/4
         // of the clipped region.
 
-        int ringTop    = IMAGE_TOP ;
-        int ringBottom = bufHeight - IMAGE_BOTTOM ;
-        int ringHeight = ((ringBottom - IMAGE_TOP)/4) ;
-        int ringRight  = bufWidth - IMAGE_RIGHT ;
-        int ringLeft   = IMAGE_LEFT ;
+        int ringTop    = imageTop ;
+        int ringBottom = bufHeight - imageBottom ;
+        int ringHeight = ((ringBottom - imageTop)/4) ;
+        int ringRight  = bufWidth - imageRight ;
+        int ringLeft   = imageLeft ;
 
         // I think x,y is 0,0 in the top,left corner of the image
         // x goes left to right
@@ -195,9 +200,11 @@ public class IncepVision {
             }
         }
 
-        gndR = gndR / gndCount;
-        gndG = gndG / gndCount;
-        gndB = gndB / gndCount;
+        if ( gndCount != 0 ) {
+            gndR = gndR / gndCount;
+            gndG = gndG / gndCount;
+            gndB = gndB / gndCount;
+        }
 
         // Slice the slipped image into 4 slices and assume each is a ring.
         // This is not strictly true since we're not looking head-on but close enough.
@@ -224,9 +231,11 @@ public class IncepVision {
                     pixCount++;
                 }
             }
-            ringR[rIdx] /= pixCount;
-            ringG[rIdx] /= pixCount;
-            ringB[rIdx] /= pixCount;
+            if ( pixCount != 0 ) {
+                ringR[rIdx] /= pixCount;
+                ringG[rIdx] /= pixCount;
+                ringB[rIdx] /= pixCount;
+            }
         }
 
         // FIXME: If gray count is low enough, color DS green:
@@ -243,7 +252,20 @@ public class IncepVision {
 
         // Now display everything we learned.
         // FIXME: Add the actual ring count code here.  What will be used to actually count rings presence?
-        myLOpMode.telemetry.addData("PI", "W: %d, H: %d, S:%d", bufWidth, bufHeight, image.getStride());
+        //myLOpMode.telemetry.addData("PI", "W: %d, H: %d, S:%d", bufWidth, bufHeight, image.getStride());
+        if (tfodState) {
+            if (clip) {
+                myLOpMode.telemetry.addData("PI", "L %3d, T %3s R %3d B %3d <-- Updating/Clipped", imageLeft, imageTop, imageRight, imageBottom);
+            } else {
+                myLOpMode.telemetry.addData("PI", "L %3d, T %3s R %3d B %3d <-- Updating/Unclipped", imageLeft, imageTop, imageRight, imageBottom);
+            }
+        } else {
+            if (clip) {
+                myLOpMode.telemetry.addData("PI", "L %3d, T %3s R %3d B %3d <-- Frozen/Clipped", imageLeft, imageTop, imageRight, imageBottom);
+            } else {
+                myLOpMode.telemetry.addData("PI", "L %3d, T %3s R %3d B %3d <-- Frozen/Unclipped", imageLeft, imageTop, imageRight, imageBottom);
+            }
+        }
         myLOpMode.telemetry.addData("PI", " gnd, r:%3d,g:%3d,b:%3d (%d)", gndR, gndG, gndB, gndCount);
         myLOpMode.telemetry.addData("PI", "r[0], r:%3d,g:%3d,b:%3d (%d)", ringR[0], ringG[0], ringB[0], pixCount);
         myLOpMode.telemetry.addData("PI", "r[1], r:%3d,g:%3d,b:%3d (%d)", ringR[1], ringG[1], ringB[1], pixCount);
@@ -260,7 +282,17 @@ public class IncepVision {
 
         if (tfod != null) {
 
-            List<Recognition> updatedRecognitions = tfod.getRecognitions();
+            List<Recognition> Recognitions = tfod.getRecognitions();
+            if (Recognitions != null) {
+                for (Recognition recognition : Recognitions) {
+                    if (recognition.getLabel().equals(LABEL_QUAD)) {
+                        imageLeft   = (int)recognition.getLeft();
+                        imageTop    = (int)recognition.getTop();
+                        imageRight  = 640-(int)recognition.getRight();
+                        imageBottom = 480-(int)recognition.getBottom();
+                    }
+                }
+            }
 
             VuforiaLocalizer.CloseableFrame frame;
             try {
@@ -275,11 +307,9 @@ public class IncepVision {
                     if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
                         //Log.d("Vuforia", "Success");
                         if (clip == true) {
-                            tfod.setClippingMargins(IMAGE_LEFT,IMAGE_TOP,IMAGE_RIGHT,IMAGE_BOTTOM);
-                            clip = false;
+                            tfod.setClippingMargins(imageLeft,imageTop,imageRight,imageBottom);
                         } else{
                             tfod.setClippingMargins(0, 0, 0, 0);
-                            clip=true;
                         }
                         return processImage(frame.getImage(i));
                     }
