@@ -93,30 +93,17 @@ public class MechAuto_Cal extends LinearOpMode {
         vision.clip = false;
 
         while (!isStarted() && (!isStopRequested())) {
-            rings = vision.ringCount();
-            deltaX=0; deltaY=0; sizeX=0; sizeY=0;
-            if ( gamepad1.dpad_left ) { deltaX -= 2; }
-            if ( gamepad1.dpad_right ) { deltaX += 2; }
-            if ( gamepad1.dpad_down ) { deltaY -= 2; }
-            if ( gamepad1.dpad_up ) { deltaY += 2; }
-            if ( gamepad1.x ) { sizeX -= 2; }
-            if ( gamepad1.b ) { sizeX += 2; }
-            if ( gamepad1.a ) { sizeY -= 2; }
-            if ( gamepad1.y ) { sizeY += 2; }
+            rings = vision.countRings();
+            if ( gamepad1.dpad_left ) { IncepVision.imageLeft -= 1; }
+            if ( gamepad1.dpad_right ) { IncepVision.imageLeft += 1; }
+            if ( gamepad1.dpad_down ) { IncepVision.imageTop += 1; }
+            if ( gamepad1.dpad_up ) { IncepVision.imageTop -= 1; }
+            if ( gamepad1.x ) { IncepVision.imageRight += 1; }
+            if ( gamepad1.b ) { IncepVision.imageRight -= 1; }
+            if ( gamepad1.a ) { IncepVision.imageBottom -= 1; }
+            if ( gamepad1.y ) { IncepVision.imageBottom += 1; }
             if ( gamepad1.left_bumper ) { vision.tfod.deactivate(); vision.tfodState=false;}
             if ( gamepad1.right_bumper ) { vision.clip = true; }
-
-            // Adjust size
-            IncepVision.imageLeft   = IncepVision.imageLeft - sizeX;
-            IncepVision.imageRight  = IncepVision.imageRight - sizeX;
-            IncepVision.imageTop    = IncepVision.imageTop - sizeY;
-            IncepVision.imageBottom = IncepVision.imageBottom - sizeY;
-
-            // Adjust location
-            IncepVision.imageLeft   = IncepVision.imageLeft + deltaX;
-            IncepVision.imageRight  = IncepVision.imageRight - deltaX;
-            IncepVision.imageTop    = IncepVision.imageTop - deltaY;
-            IncepVision.imageBottom = IncepVision.imageBottom + deltaY;
 
             // Observe some limits
             Range.clip(IncepVision.imageLeft,  0,640);

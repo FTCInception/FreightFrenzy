@@ -42,6 +42,7 @@ import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.Arrays;
 
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -171,70 +172,92 @@ public class IncepVision {
         // might give the best indication of ring presence.
         // In any case, it's imperative that the rings are aligned properly in the frame.
 
-        // If the rings are 'perfectly' aligned inside the image, then the ring height is ~1/4
-        // of the clipped region.
 
+        // Divide the clipping region in 10 slices.
+        // Compute the average value of the pixel inside each slice of the center 80%.
+        // Extend each slice to the right and left of the clipping box by 40% of box width.
+        // Compute the average value of the pixel in these wings.
+        // The wings should represent a reference value of gray for each slice.
+        // Compare the wings and the rings and see which slices look like they have ring.
+        double sliceCount = 8.0;
         int ringTop    = imageTop ;
         int ringBottom = bufHeight - imageBottom ;
-        int ringHeight = ((ringBottom - imageTop)/4) ;
+        double sliceHeight = ((ringBottom - imageTop) / sliceCount) ;
         int ringRight  = bufWidth - imageRight ;
         int ringLeft   = imageLeft ;
+        int ringWidth = ringRight - ringLeft ;
 
         // I think x,y is 0,0 in the top,left corner of the image
         // x goes left to right
         // y goes top to bottom
-
-        // Go just in front of the ring stack and measure a slice of ground there.
-        // FIXME: We'd probably be better off measuring to the left and right of the ring stack
-        // but the front seems to be OK for Remote field.
-        int x, y, rIdx, color;
-        int gndR=0, gndG=0, gndB=0;
-        int gndCount=0;
-        for(x=ringLeft;x<ringRight;x++) {
-            for (y = (ringBottom + (int)(ringHeight*0.5)); y < (ringBottom + (int)(ringHeight*1.5)); y++) {
-                color = bitmap.getPixel(x, y);
-                gndR += Color.red(color);
-                gndG += Color.green(color);
-                gndB += Color.blue(color);
-                gndCount++;
-            }
-        }
-
-        if ( gndCount != 0 ) {
-            gndR = gndR / gndCount;
-            gndG = gndG / gndCount;
-            gndB = gndB / gndCount;
-        }
-
-        // Slice the slipped image into 4 slices and assume each is a ring.
-        // This is not strictly true since we're not looking head-on but close enough.
-        int[] ringR = new int[] {0,0,0,0};
-        int[] ringG = new int[] {0,0,0,0};
-        int[] ringB = new int[] {0,0,0,0};
+        int x, y, sIdx, color;
+        // Slice the clipped image into 10 slices and check each slice.
+        int[] sliceR = new int[] {0,0,0,0,0,0,0,0};
+        int[] sliceG = new int[] {0,0,0,0,0,0,0,0};
+        int[] sliceB = new int[] {0,0,0,0,0,0,0,0};
         int pixCount=0;
-        for (rIdx=0;rIdx<4;rIdx++) {
+        int[] gndR = new int[] {0,0,0,0,0,0,0,0};
+        int[] gndG = new int[] {0,0,0,0,0,0,0,0};
+        int[] gndB = new int[] {0,0,0,0,0,0,0,0};
+        int[] ring = new int[] {0,0,0,0,0,0,0,0};
+        int gndCount=0;
+
+        // For each slice
+        for ( sIdx = 0 ; sIdx < sliceCount ; sIdx++ ) {
             pixCount=0;
-            for (x = ringLeft; x < ringRight; x++) {
-                for (y = (ringBottom-(ringHeight*(rIdx+1))); y < (ringBottom-(ringHeight*rIdx)); y++) {
+            for ( y = (int) ( ringBottom - ( sliceHeight * ( sIdx+1 ) ) ); y < ( ringBottom - ( sliceHeight * sIdx ) ) ; y++ ) {
+                // Wing on the left is 30% of the ring width
+                for ( x = (int) (ringLeft-(ringWidth*0.50)) ; x > (ringLeft-(ringWidth*0.20))  ; x-- ) {
                     color = bitmap.getPixel(x, y);
-                    ringR[rIdx] += Color.red(color);
-                    ringG[rIdx] += Color.green(color);
-                    ringB[rIdx] += Color.blue(color);
-
-                    // FIXME: Compare this pixel against the average gray pixel.
-                    // If it's similar enough, then count it as gray.
-                    // During the line-up portion of the match, the camera should be placed
-                    // in such a way that there is very little to no gray pixels
-                    // Once the camera is adjusted (gray pixel count is low enough),
-                    // then turn the screen green.
-
+                    gndR[sIdx] += Color.red(color);
+                    gndG[sIdx] += Color.green(color);
+                    gndB[sIdx] += Color.blue(color);
+                    gndCount++;
+                }
+                // Use center 60% of the ring
+                for ( x = (int) (ringLeft+(ringWidth*0.20)) ; x < (ringRight-(ringWidth*0.20)) ; x++ ) {
+                    color = bitmap.getPixel(x, y);
+                    sliceR[sIdx] += Color.red(color);
+                    sliceG[sIdx] += Color.green(color);
+                    sliceB[sIdx] += Color.blue(color);
                     pixCount++;
                 }
+                // Wing on the right is 30% of the ring width
+                for( x = (int) (ringRight+(ringWidth*0.20)) ; x < (ringRight+(ringWidth*0.50)) ; x++ ) {
+                    color = bitmap.getPixel(x, y);
+                    gndR[sIdx] += Color.red(color);
+                    gndG[sIdx] += Color.green(color);
+                    gndB[sIdx] += Color.blue(color);
+                    gndCount++;
+                }
             }
+
+            // Get the averages
+            if ( gndCount != 0 ) {
+                gndR[sIdx] = gndR[sIdx] / gndCount;
+                gndG[sIdx] = gndG[sIdx] / gndCount;
+                gndB[sIdx] = gndB[sIdx] / gndCount;
+            }
+
             if ( pixCount != 0 ) {
-                ringR[rIdx] /= pixCount;
-                ringG[rIdx] /= pixCount;
-                ringB[rIdx] /= pixCount;
+                sliceR[sIdx] /= pixCount;
+                sliceG[sIdx] /= pixCount;
+                sliceB[sIdx] /= pixCount;
+            }
+
+            // Now check the average for each slice
+            // If the ground has more than twice the blue of the ring, then it's probably a ring
+            double gndBlue, sliceBlue;
+
+            // What's the relative percentage of blue compared to the other colors?
+            // FIXME
+            // Should we be doing this?  Or just comparing the blue element straight-up?
+            gndBlue = (double)gndB[sIdx] / (double)(gndR[sIdx]+gndG[sIdx]+gndB[sIdx]) ;
+            sliceBlue = (double)sliceB[sIdx] / (double)(sliceR[sIdx]+sliceG[sIdx]+sliceB[sIdx]) ;
+            if ( sliceBlue < (gndBlue/2.0) ) {
+                ring[sIdx]=1;
+            } else {
+                ring[sIdx]=0;
             }
         }
 
@@ -249,6 +272,25 @@ public class IncepVision {
             relativeLayout.post(new Runnable() { public void run() { relativeLayout.setBackgroundColor(Color.RED); } });
         }
         */
+
+        //ringCount is how many slots we detect as ring
+        //ringPos is the actual amount of rings present
+        int ringSlices = 0 ;
+        int ringCount = -1 ;
+        // FIXME David:
+        for(int i = 0; i<ring.length; i++){
+            if(ring[i]==1){
+                ringSlices++;
+            }
+        }
+
+        if (ringSlices >= 5){
+            ringCount = 4;
+        } else if (ringSlices > 0){
+            ringCount = 1;
+        } else {
+            ringCount = 0;
+        }
 
         // Now display everything we learned.
         // FIXME: Add the actual ring count code here.  What will be used to actually count rings presence?
@@ -266,19 +308,15 @@ public class IncepVision {
                 myLOpMode.telemetry.addData("PI", "L %3d, T %3s R %3d B %3d <-- Frozen/Unclipped", imageLeft, imageTop, imageRight, imageBottom);
             }
         }
-        myLOpMode.telemetry.addData("PI", " gnd, r:%3d,g:%3d,b:%3d (%d)", gndR, gndG, gndB, gndCount);
-        myLOpMode.telemetry.addData("PI", "r[0], r:%3d,g:%3d,b:%3d (%d)", ringR[0], ringG[0], ringB[0], pixCount);
-        myLOpMode.telemetry.addData("PI", "r[1], r:%3d,g:%3d,b:%3d (%d)", ringR[1], ringG[1], ringB[1], pixCount);
-        myLOpMode.telemetry.addData("PI", "r[2], r:%3d,g:%3d,b:%3d (%d)", ringR[2], ringG[2], ringB[2], pixCount);
-        myLOpMode.telemetry.addData("PI", "r[3], r:%3d,g:%3d,b:%3d (%d)", ringR[3], ringG[3], ringB[3], pixCount);
+        myLOpMode.telemetry.addData("PI", "r: %s", Arrays.toString(ring));
+        myLOpMode.telemetry.addData("Ring Count", "%d", ringCount);
 
         myLOpMode.telemetry.update();
 
-        // -1 for unknown rings for now.
-        return -1;
+        return ringCount;
     }
 
-    public int ringCount() {
+    public int countRings() {
 
         if (tfod != null) {
 
