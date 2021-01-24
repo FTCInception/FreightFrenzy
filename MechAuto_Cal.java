@@ -84,43 +84,48 @@ public class MechAuto_Cal extends LinearOpMode {
 
         // Init the robot setting for Autonomous play
         robot.initAutonomous(this);
+
         vision.initAutonomous(this);
-
-        int deltaX=0, deltaY=0,sizeX=0,sizeY=0;
-        sizeX = 640 - (IncepVision.imageLeft + IncepVision.imageRight);
-        sizeY = 480 - (IncepVision.imageTop + IncepVision.imageBottom);
-
         vision.clip = false;
-
+        int deltaX=0, deltaY=0;
         while (!isStarted() && (!isStopRequested())) {
             rings = vision.countRings();
-            if ( gamepad1.dpad_left ) { IncepVision.imageLeft -= 1; }
-            if ( gamepad1.dpad_right ) { IncepVision.imageLeft += 1; }
-            if ( gamepad1.dpad_down ) { IncepVision.imageTop += 1; }
-            if ( gamepad1.dpad_up ) { IncepVision.imageTop -= 1; }
-            if ( gamepad1.x ) { IncepVision.imageRight += 1; }
-            if ( gamepad1.b ) { IncepVision.imageRight -= 1; }
-            if ( gamepad1.a ) { IncepVision.imageBottom -= 1; }
-            if ( gamepad1.y ) { IncepVision.imageBottom += 1; }
+            if ( gamepad1.dpad_left ) { IncepVision.clipLeft -= 1; }
+            if ( gamepad1.dpad_right ) { IncepVision.clipLeft += 1; }
+            if ( gamepad1.dpad_down ) { IncepVision.clipTop += 1; }
+            if ( gamepad1.dpad_up ) { IncepVision.clipTop -= 1; }
+            if ( gamepad1.x ) { IncepVision.clipRight += 1; }
+            if ( gamepad1.b ) { IncepVision.clipRight -= 1; }
+            if ( gamepad1.a ) { IncepVision.clipBottom -= 1; }
+            if ( gamepad1.y ) { IncepVision.clipBottom += 1; }
             if ( gamepad1.left_bumper ) { vision.tfod.deactivate(); vision.tfodState=false;}
             if ( gamepad1.right_bumper ) { vision.clip = true; }
 
-            // Observe some limits
-            Range.clip(IncepVision.imageLeft,  0,640);
-            Range.clip(IncepVision.imageRight, 0,640);
-            Range.clip(IncepVision.imageTop,   0,480);
-            Range.clip(IncepVision.imageBottom,0,480);
+            // Move the entire box with the joystick.
+            deltaY = (int)(gamepad1.left_stick_y * 2.1);
+            deltaX = (int)(gamepad1.left_stick_x * 2.1);
+            deltaY += (int)(gamepad1.right_stick_y * 2.1);
+            deltaX += (int)(gamepad1.right_stick_x * 2.1);
+            IncepVision.clipTop += deltaY;
+            IncepVision.clipBottom -= deltaY;
+            IncepVision.clipLeft += deltaX;
+            IncepVision.clipRight -= deltaX;
 
-            //telemetry.addData("Ring Count", "%d", vision.ringCount());
-            //telemetry.update();
+            // Observe some limits
+            IncepVision.clipLeft   = Range.clip(IncepVision.clipLeft,  5,635);
+            IncepVision.clipRight  = Range.clip(IncepVision.clipRight, 5,635);
+            IncepVision.clipTop    = Range.clip(IncepVision.clipTop,   5,475);
+            IncepVision.clipBottom = Range.clip(IncepVision.clipBottom,5,475);
         }
         vision.shutdown();
 
+        /*
         while (!isStarted() && (!isStopRequested())) {
             sleep(250);
             telemetry.addData("Heading", "%f", robot.getHeading());
             telemetry.update();
         }
+        */
 
         //robot.MotorCal(robot.leftFDrive, "lf", 1.0 );
         //robot.MotorCal(robot.leftBDrive, "lb",1.0 );

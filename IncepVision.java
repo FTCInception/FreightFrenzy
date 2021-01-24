@@ -67,16 +67,12 @@ public class IncepVision {
     private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
     private static final String LABEL_QUAD = "Quad";
     private static final String LABEL_SINGLE = "Single";
-    public static int imageLeft=280;
-    public static int imageTop=260;
-    public static int imageRight=260;
-    public static int imageBottom=155;
+    public static int clipLeft=280;
+    public static int clipTop=260;
+    public static int clipRight=260;
+    public static int clipBottom=155;
     public boolean clip=false;
     public boolean tfodState=false;
-    // get a reference to the RelativeLayout so we can change the
-    // background color of the Robot Controller
-    int relativeLayoutId;
-    View relativeLayout;
 
     /***
      * Initialize the Target Tracking and navigation interface
@@ -95,15 +91,6 @@ public class IncepVision {
             tfod.activate();
             tfodState=true;
         }
-
-        // We really only want tensor flow loaded just so we can see the clipped image on the DS.
-        //tfod.deactivate();
-
-        // get a reference to the RelativeLayout so we can change the
-        // background color of the Robot Controller
-        relativeLayoutId = myLOpMode.hardwareMap.appContext.getResources().getIdentifier("RelativeLayout", "id", myLOpMode.hardwareMap.appContext.getPackageName());
-        relativeLayout = ((Activity) myLOpMode.hardwareMap.appContext).findViewById(relativeLayoutId);
-
     }
 
     public void initVuforia() {
@@ -148,7 +135,7 @@ public class IncepVision {
 
         // bound the window down to help with ring alignment
         if(clip) {
-            tfod.setClippingMargins(imageLeft, imageTop, imageRight, imageBottom);
+            tfod.setClippingMargins(clipLeft, clipTop, clipRight, clipBottom);
         }
     }
 
@@ -161,130 +148,121 @@ public class IncepVision {
                 Bitmap.Config.RGB_565);
         bitmap.copyPixelsFromBuffer(image.getPixels());
 
-        // Optionally create a few smaller copies of the bitmap to make processing easier below.
-        // Also consider increasing contrast and/or brightness to compensate for lighting.
-        // Likely break the bitmaps up into one slice for each expected ring and a slice
-        // for the mat just in front of the rings.
-        // Or perhaps use the mat to the right and left of each ring slice.
-        // This might be better because removing a ring exposes the mat 'in the distance'/behind
-        // the missing ring.  That may have different lighting than the ring itself.
-        // Comparing the region to the left and right of each ring against the ring slice
-        // might give the best indication of ring presence.
-        // In any case, it's imperative that the rings are aligned properly in the frame.
+        // I think x,y is 0,0 in the top,left corner of the image
+        // x goes left to right
+        // y goes top to bottom
 
-
+        // It's imperative that the rings are aligned properly in the frame in the clip box.
         // Divide the clipping region in 10 slices.
         // Compute the average value of the pixel inside each slice of the center 80%.
         // Extend each slice to the right and left of the clipping box by 40% of box width.
         // Compute the average value of the pixel in these wings.
         // The wings should represent a reference value of gray for each slice.
         // Compare the wings and the rings and see which slices look like they have ring.
-        double sliceCount = 8.0;
-        int ringTop    = imageTop ;
-        int ringBottom = bufHeight - imageBottom ;
-        double sliceHeight = ((ringBottom - imageTop) / sliceCount) ;
-        int ringRight  = bufWidth - imageRight ;
-        int ringLeft   = imageLeft ;
+
+        // Slice the clipped image into 8 slices and check each slice.
+        final double NUM_SLICES = 8.0;
+        final int RED=0, GREEN=1, BLUE=2;
+        int x, y, sIdx, color;
+
+        int[][] sliceColor = new int[3][(int)NUM_SLICES];
+        int[][] gndColor = new int[3][(int)NUM_SLICES];
+        int pixCount=0;
+        int gndCount=0;
+        int[] isRing = new int[(int)NUM_SLICES];
+        //int[] isRing2 = new int[(int)NUM_SLICES];
+
+        int ringTop    = clipTop ;
+        int ringBottom = bufHeight - clipBottom ;
+        double sliceHeight = ((ringBottom - clipTop) / NUM_SLICES) ;
+        int ringRight  = bufWidth - clipRight ;
+        int ringLeft   = clipLeft ;
         int ringWidth = ringRight - ringLeft ;
 
-        // I think x,y is 0,0 in the top,left corner of the image
-        // x goes left to right
-        // y goes top to bottom
-        int x, y, sIdx, color;
-        // Slice the clipped image into 10 slices and check each slice.
-        int[] sliceR = new int[] {0,0,0,0,0,0,0,0};
-        int[] sliceG = new int[] {0,0,0,0,0,0,0,0};
-        int[] sliceB = new int[] {0,0,0,0,0,0,0,0};
-        int pixCount=0;
-        int[] gndR = new int[] {0,0,0,0,0,0,0,0};
-        int[] gndG = new int[] {0,0,0,0,0,0,0,0};
-        int[] gndB = new int[] {0,0,0,0,0,0,0,0};
-        int[] ring = new int[] {0,0,0,0,0,0,0,0};
-        int gndCount=0;
-
         // For each slice
-        for ( sIdx = 0 ; sIdx < sliceCount ; sIdx++ ) {
+        for ( sIdx = 0 ; sIdx < NUM_SLICES ; sIdx++ ) {
             pixCount=0;
+            gndCount=0;
             for ( y = (int) ( ringBottom - ( sliceHeight * ( sIdx+1 ) ) ); y < ( ringBottom - ( sliceHeight * sIdx ) ) ; y++ ) {
                 // Wing on the left is 30% of the ring width
                 for ( x = (int) (ringLeft-(ringWidth*0.50)) ; x > (ringLeft-(ringWidth*0.20))  ; x-- ) {
                     color = bitmap.getPixel(x, y);
-                    gndR[sIdx] += Color.red(color);
-                    gndG[sIdx] += Color.green(color);
-                    gndB[sIdx] += Color.blue(color);
+                    gndColor[RED][sIdx] += Color.red(color);
+                    gndColor[GREEN][sIdx] += Color.red(color);
+                    gndColor[BLUE][sIdx] += Color.red(color);
                     gndCount++;
                 }
                 // Use center 60% of the ring
                 for ( x = (int) (ringLeft+(ringWidth*0.20)) ; x < (ringRight-(ringWidth*0.20)) ; x++ ) {
                     color = bitmap.getPixel(x, y);
-                    sliceR[sIdx] += Color.red(color);
-                    sliceG[sIdx] += Color.green(color);
-                    sliceB[sIdx] += Color.blue(color);
+                    sliceColor[RED][sIdx] += Color.red(color);
+                    sliceColor[GREEN][sIdx] += Color.green(color);
+                    sliceColor[BLUE][sIdx] += Color.blue(color);
                     pixCount++;
                 }
                 // Wing on the right is 30% of the ring width
                 for( x = (int) (ringRight+(ringWidth*0.20)) ; x < (ringRight+(ringWidth*0.50)) ; x++ ) {
                     color = bitmap.getPixel(x, y);
-                    gndR[sIdx] += Color.red(color);
-                    gndG[sIdx] += Color.green(color);
-                    gndB[sIdx] += Color.blue(color);
+                    gndColor[RED][sIdx] += Color.red(color);
+                    gndColor[GREEN][sIdx] += Color.red(color);
+                    gndColor[BLUE][sIdx] += Color.red(color);
                     gndCount++;
                 }
             }
 
             // Get the averages
             if ( gndCount != 0 ) {
-                gndR[sIdx] = gndR[sIdx] / gndCount;
-                gndG[sIdx] = gndG[sIdx] / gndCount;
-                gndB[sIdx] = gndB[sIdx] / gndCount;
+                gndColor[RED][sIdx] /= gndCount;
+                gndColor[GREEN][sIdx] /= gndCount;
+                gndColor[BLUE][sIdx] /= gndCount;
             }
 
             if ( pixCount != 0 ) {
-                sliceR[sIdx] /= pixCount;
-                sliceG[sIdx] /= pixCount;
-                sliceB[sIdx] /= pixCount;
+                sliceColor[RED][sIdx] /= pixCount;
+                sliceColor[GREEN][sIdx] /= pixCount;
+                sliceColor[BLUE][sIdx] /= pixCount;
             }
 
+             // Do a straight-up compare of average blue.  No need to normalize
+            if ( sliceColor[BLUE][sIdx] < (gndColor[BLUE][sIdx]/2.0) ) {
+                isRing[sIdx]=1;
+            } else {
+                isRing[sIdx]=0;
+            }
+
+            /*
             // Now check the average for each slice
+            // What's the relative percentage of blue compared to the other colors?
             // If the ground has more than twice the blue of the ring, then it's probably a ring
             double gndBlue, sliceBlue;
-
-            // What's the relative percentage of blue compared to the other colors?
-            // FIXME
-            // Should we be doing this?  Or just comparing the blue element straight-up?
-            gndBlue = (double)gndB[sIdx] / (double)(gndR[sIdx]+gndG[sIdx]+gndB[sIdx]) ;
-            sliceBlue = (double)sliceB[sIdx] / (double)(sliceR[sIdx]+sliceG[sIdx]+sliceB[sIdx]) ;
+            gndBlue = (double)gndColor[BLUE][sIdx] / (double)(gndColor[RED][sIdx]+gndColor[GREEN][sIdx]+gndColor[BLUE][sIdx]) ;
+            sliceBlue = (double)sliceColor[BLUE][sIdx] / (double)(sliceColor[RED][sIdx]+sliceColor[GREEN][sIdx]+sliceColor[BLUE][sIdx]) ;
             if ( sliceBlue < (gndBlue/2.0) ) {
-                ring[sIdx]=1;
+                isRing[sIdx]=1;
             } else {
-                ring[sIdx]=0;
+                isRing[sIdx]=0;
             }
+            */
         }
 
-        // FIXME: If gray count is low enough, color DS green:
-        // Now create color ranges
-        /*
-        if ( grayCount < 2% ) {
-            relativeLayout.post(new Runnable() { public void run() { relativeLayout.setBackgroundColor(Color.GREEN); } });
-        } else if ( grayCount < 5% ) {
-            relativeLayout.post(new Runnable() { public void run() { relativeLayout.setBackgroundColor(Color.YELLOW); } });
-        } else {
-            relativeLayout.post(new Runnable() { public void run() { relativeLayout.setBackgroundColor(Color.RED); } });
-        }
-        */
+        // FIXME: Check the blue average in the top and bottom slices to the middle?  See if they need to be adjusted. Print to telemetry?
 
-        //ringCount is how many slots we detect as ring
-        //ringPos is the actual amount of rings present
+        //ringSlices is how many slices we detect as ring
+        //ringCount is the actual amount of rings present
+        // Count the ring slices
         int ringSlices = 0 ;
         int ringCount = -1 ;
-        // FIXME David:
-        for(int i = 0; i<ring.length; i++){
-            if(ring[i]==1){
+        for(int i = 0; i<isRing.length; i++){
+            if(isRing[i]==1){
                 ringSlices++;
             }
         }
 
-        if (ringSlices >= 5){
+        // Convert to the number of actual rings
+        // The bottom ring is viewed from above, so it appears to be much larger in the bitmap
+        // than it actually is.  In fact, it coves 4 slices.  So we wil only call this '4' rings
+        // when we are REALLY sure (>=6 slices.)
+        if (ringSlices >= 6){
             ringCount = 4;
         } else if (ringSlices > 0){
             ringCount = 1;
@@ -293,23 +271,23 @@ public class IncepVision {
         }
 
         // Now display everything we learned.
-        // FIXME: Add the actual ring count code here.  What will be used to actually count rings presence?
-        //myLOpMode.telemetry.addData("PI", "W: %d, H: %d, S:%d", bufWidth, bufHeight, image.getStride());
         if (tfodState) {
             if (clip) {
-                myLOpMode.telemetry.addData("PI", "L %3d, T %3s R %3d B %3d <-- Updating/Clipped", imageLeft, imageTop, imageRight, imageBottom);
+                myLOpMode.telemetry.addData("box", "L %3d, T %3s R %3d B %3d <-- Updating/Clipped", clipLeft, clipTop, clipRight, clipBottom);
             } else {
-                myLOpMode.telemetry.addData("PI", "L %3d, T %3s R %3d B %3d <-- Updating/Unclipped", imageLeft, imageTop, imageRight, imageBottom);
+                myLOpMode.telemetry.addData("box", "L %3d, T %3s R %3d B %3d <-- Updating/Unclipped", clipLeft, clipTop, clipRight, clipBottom);
             }
         } else {
             if (clip) {
-                myLOpMode.telemetry.addData("PI", "L %3d, T %3s R %3d B %3d <-- Frozen/Clipped", imageLeft, imageTop, imageRight, imageBottom);
+                myLOpMode.telemetry.addData("box", "L %3d, T %3s R %3d B %3d <-- Frozen/Clipped", clipLeft, clipTop, clipRight, clipBottom);
             } else {
-                myLOpMode.telemetry.addData("PI", "L %3d, T %3s R %3d B %3d <-- Frozen/Unclipped", imageLeft, imageTop, imageRight, imageBottom);
+                myLOpMode.telemetry.addData("box", "L %3d, T %3s R %3d B %3d <-- Frozen/Unclipped", clipLeft, clipTop, clipRight, clipBottom);
             }
         }
-        myLOpMode.telemetry.addData("PI", "r: %s", Arrays.toString(ring));
-        myLOpMode.telemetry.addData("Ring Count", "%d", ringCount);
+        myLOpMode.telemetry.addData("gb", "%s", Arrays.toString(gndColor[BLUE]));
+        myLOpMode.telemetry.addData("sb", "%s", Arrays.toString(sliceColor[BLUE]));
+        myLOpMode.telemetry.addData("isRing", "%s", Arrays.toString(isRing));
+        myLOpMode.telemetry.addData("ringCount", "%d", ringCount);
 
         myLOpMode.telemetry.update();
 
@@ -324,10 +302,12 @@ public class IncepVision {
             if (Recognitions != null) {
                 for (Recognition recognition : Recognitions) {
                     if (recognition.getLabel().equals(LABEL_QUAD)) {
-                        imageLeft   = (int)recognition.getLeft();
-                        imageTop    = (int)recognition.getTop();
-                        imageRight  = 640-(int)recognition.getRight();
-                        imageBottom = 480-(int)recognition.getBottom();
+                        // TensorFow is always capturing just a little more on the top of the
+                        // ring stack than we'd like.  Lets help it a little
+                        clipTop    = (int)(recognition.getTop() + (recognition.getHeight()*0.15));
+                        clipBottom = 480-(int)recognition.getBottom();
+                        clipLeft   = (int)recognition.getLeft();
+                        clipRight  = 640-(int)recognition.getRight();
                     }
                 }
             }
@@ -345,7 +325,7 @@ public class IncepVision {
                     if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
                         //Log.d("Vuforia", "Success");
                         if (clip == true) {
-                            tfod.setClippingMargins(imageLeft,imageTop,imageRight,imageBottom);
+                            tfod.setClippingMargins(clipLeft,clipTop,clipRight,clipBottom);
                         } else{
                             tfod.setClippingMargins(0, 0, 0, 0);
                         }

@@ -32,6 +32,7 @@ package Inception.UltimateGoal;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.Range;
 
 /**
  * This file houses Autonomous code
@@ -74,46 +75,42 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         robot.initAutonomous(this);
         vision.initAutonomous(this);
 
-        // Wait until we're told to go and look for the block
+        // Stare at the rings really hard until its time to go or stop
+        vision.initAutonomous(this);
+        vision.clip = false;
+        int deltaX=0, deltaY=0;
+        while (!isStarted() && (!isStopRequested())) {
+            ringCount = vision.countRings();
+            if ( gamepad1.dpad_left ) { IncepVision.clipLeft -= 1; }
+            if ( gamepad1.dpad_right ) { IncepVision.clipLeft += 1; }
+            if ( gamepad1.dpad_down ) { IncepVision.clipTop += 1; }
+            if ( gamepad1.dpad_up ) { IncepVision.clipTop -= 1; }
+            if ( gamepad1.x ) { IncepVision.clipRight += 1; }
+            if ( gamepad1.b ) { IncepVision.clipRight -= 1; }
+            if ( gamepad1.a ) { IncepVision.clipBottom -= 1; }
+            if ( gamepad1.y ) { IncepVision.clipBottom += 1; }
+            if ( gamepad1.left_bumper ) { vision.tfod.deactivate(); vision.tfodState=false;}
+            if ( gamepad1.right_bumper ) { vision.clip = true; }
 
-        /*
-        while (!isStarted()) {
-            ringCount = vision.ringCount();
+            // Move the entire box with the joystick.
+            deltaY = (int)(gamepad1.left_stick_y * 2.1);
+            deltaX = (int)(gamepad1.left_stick_x * 2.1);
+            deltaY += (int)(gamepad1.right_stick_y * 2.1);
+            deltaX += (int)(gamepad1.right_stick_x * 2.1);
+            IncepVision.clipTop += deltaY;
+            IncepVision.clipBottom -= deltaY;
+            IncepVision.clipLeft += deltaX;
+            IncepVision.clipRight -= deltaX;
+
+            // Observe some limits
+            IncepVision.clipLeft   = Range.clip(IncepVision.clipLeft,  5,635);
+            IncepVision.clipRight  = Range.clip(IncepVision.clipRight, 5,635);
+            IncepVision.clipTop    = Range.clip(IncepVision.clipTop,   5,475);
+            IncepVision.clipBottom = Range.clip(IncepVision.clipBottom,5,475);
         }
         vision.shutdown();
 
-        if (rings == 0) {
-            goalPos = 1;
-        } else if (rings == 1) {
-            goalPos = 2;
-        } else if (rings == 4) {
-            goalPos = 3;
-        else {
-            goalPos = 3;
-        }
-        */
-
-        // Wait for the game to start (driver presses PLAY)
-        //waitForStart();
-
-        int goalPos = 0;
-
-        //just for testing purposes, use before vision is finished
-        while (!isStarted()) {
-           if(gamepad1.dpad_up)
-               goalPos = 1;
-            if(gamepad1.dpad_left)
-                goalPos = 2;
-            if(gamepad1.dpad_down)
-                goalPos = 3;
-            if(gamepad1.dpad_right)
-                goalPos = 4;
-
-            telemetry.addData("Current Auto: ",  goalPos);
-            telemetry.update();
-        }
-
-        if (goalPos == 1) {
+        if (ringCount == 0) {
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, 56, 60, P);
 
@@ -126,7 +123,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
             // We had a strange twitch in the previous strafe, this delay was added to see if it
             // made any difference.  May not be necessary.
-            sleep(500);
+            //sleep(500);
 
             // Shoot sequence
             robot.shoot1_motor.setPower(0.475);
@@ -174,7 +171,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             sleep(2000);
 
 
-        } else if (goalPos == 2){
+        } else if (ringCount == 1){
             // Drive to drop zone
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, 87, 60, P);
@@ -273,7 +270,9 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             robot.claw.setPosition(1.0);
             sleep(1000);
 
-        } else if (goalPos == 3){
+        } else {
+            // If it's not 0 or 1, assume 4 (highest possible point total)
+
             // Full speed length of field to the target zone
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, 112, 60, P);
@@ -389,19 +388,6 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             robot.straightA = a;
             a = robot.fastEncoderStraight(DRIVE_SPEED, 24.0, 60, P);
 
-        } else if (goalPos==4){
-            robot.claw.setPosition(0);
-            sleep(500);
-             robot.setWobblePosition(1,wobble_power);
-            sleep(2000);
-            robot.straightA = a;
-            a = robot.fastEncoderStraight(DRIVE_SPEED, -10, 60, P);
-            robot.claw.setPosition(1);
-            sleep(2000);
-            robot.setWobblePosition(2,wobble_power);
-            sleep(2000);
         }
-
-
     }
 }

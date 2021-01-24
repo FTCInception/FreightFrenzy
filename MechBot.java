@@ -232,22 +232,19 @@ public class MechBot {
 
         resetIntHeading();
 
-        //colorSensor = hardwareMap.colorSensor.get("color");
-        //colorSensor.enableLed(false);
-
         // Adjust our overall power based on a 12.5V battery.
         // Set some min and max to avoid anything crazy.
         // This may need some more characterization and it may be battery specific.
-        double volts = Range.clip(getBatteryVoltage(),11.0,13.0);
-        KpL = fKpL * (12.5 / volts);
-        KpR = fKpR * (12.5 / volts);
+        //double volts = Range.clip(getBatteryVoltage(),11.0,13.0);
+        //KpL = fKpL * (12.5 / volts);
+        //KpR = fKpR * (12.5 / volts);
 
         KpL = fKpL;
         KpR = fKpR;
 
         myLOpMode.telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
-        myLOpMode.telemetry.addData("voltage", "%.1f, KpR: %.3f, KpL: %.3f", volts, KpR, KpL);
-        composeTelemetry();
+        //myLOpMode.telemetry.addData("voltage", "%.1f, KpR: %.3f, KpL: %.3f", volts, KpR, KpL);
+        //composeTelemetry();
         myLOpMode.telemetry.update();
 
         logger.logD("MechLogCSV",String.format(",rt,heading,lfEnc,lbEnc,rfEnc,rbEnc,lfPwr,lbPwr,rfPwr,rbPwr"));
@@ -1368,7 +1365,7 @@ public class MechBot {
             //  using something like a 'heading' instead of a angular delta. Then we don't really
             //  need to carry error forward, it's just known from the heading value.
             //  Then we also don't need the delay here either.
-            myLOpMode.sleep(500);
+            myLOpMode.sleep(250);
             // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
             logger.logD("MechLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
             return (normalizeAngle((getHeading() - tgtHeading)));
@@ -1631,7 +1628,7 @@ public class MechBot {
             //  using something like a 'heading' instead of a angular delta. Then we don't really
             //  need to carry error forward, it's just known from the heading value.
             //  Then we also don't need the delay here either.
-            myLOpMode.sleep(500);
+            myLOpMode.sleep(250);
             // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
             logger.logD("MechLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
             return (normalizeAngle((getHeading() - tgtHeading)));
