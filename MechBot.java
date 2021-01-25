@@ -117,6 +117,9 @@ public class MechBot {
     static final double RIGHT = 1;
     static final double LEFT = 0;
 
+    // FIXME: Why do we need to wait on the gyro to stabilize? REduce this if possible.
+    static final long gyroWait = 250;
+
     //final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0; // 30 RPM 6mm d-shaft (5202 series)
     //final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0; // 60 RPM 6mm d-shaft (5202 series)
     final double WOBBLE_TICKS_PER_DEGREE = 3892.0/360.0; // 43 RPM 8mm REX (5203 series)
@@ -308,29 +311,7 @@ public class MechBot {
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
 
-    /* Check color sensor */
-    /*
-    public boolean isColorSensorYellow() {
-        int argb = colorSensor.argb();
-        int a = argb >> 24 & 0xFF;
-        int r = argb >> 16 & 0xFF;
-        int g = argb >> 8 & 0xFF;
-        int b = argb >> 0 & 0xFF;
-
-        // Pure yellow == 100% r + 100% g + 0% b
-        // For us, r/2 > b and g/2 > b is sufficent
-        // a < 5 is too far away to be accurate.
-        if ( a < 0x5 ) {
-            return false;
-        } else if ((r>>1 > b ) && (g>>1 > b)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-    */
-
-        /* Initialize standard Hardware interfaces */
+    /* Initialize standard Hardware interfaces */
     public void init(HardwareMap ahwMap) {
         // Save reference to Hardware map
         hardwareMap = ahwMap;
@@ -497,33 +478,33 @@ public class MechBot {
         DcMotor  IFDrive ;
         DcMotor  IBDrive ;
 
-        // Define inner and outer motors
-        if (LorR == RIGHT) {
-            OFDrive = l_f_motor ;
-            OBDrive = l_b_motor ;
-            IFDrive = r_f_motor ;
-            IBDrive = r_b_motor ;
-            KpO = KpL ;
-            KpI = KpR ;
-            InnerDist *= RIGHT_ARC_COEFFICENT ;
-            OuterDist *= RIGHT_ARC_COEFFICENT ;
-            tgtPos *= RIGHT_ARC_COEFFICENT ;
-        } else {
-            OFDrive = r_f_motor ;
-            OBDrive = r_b_motor ;
-            IFDrive = l_f_motor ;
-            IBDrive = l_b_motor ;
-            KpO = KpR ;
-            KpI = KpL ;
-            //KpO = 1.0 ;
-            //KpI = 1.0 ;
-            InnerDist *= LEFT_ARC_COEFFICENT ;
-            OuterDist *= LEFT_ARC_COEFFICENT ;
-            tgtPos *= LEFT_ARC_COEFFICENT ;
-        }
-
         // Ensure that the opmode is still active
-        if (myLOpMode.opModeIsActive()) {
+        if (myLOpMode.opModeIsActive() && !myLOpMode.isStopRequested()) {
+
+            // Define inner and outer motors
+            if (LorR == RIGHT) {
+                OFDrive = l_f_motor ;
+                OBDrive = l_b_motor ;
+                IFDrive = r_f_motor ;
+                IBDrive = r_b_motor ;
+                KpO = KpL ;
+                KpI = KpR ;
+                InnerDist *= RIGHT_ARC_COEFFICENT ;
+                OuterDist *= RIGHT_ARC_COEFFICENT ;
+                tgtPos *= RIGHT_ARC_COEFFICENT ;
+            } else {
+                OFDrive = r_f_motor ;
+                OBDrive = r_b_motor ;
+                IFDrive = l_f_motor ;
+                IBDrive = l_b_motor ;
+                KpO = KpR ;
+                KpI = KpL ;
+                //KpO = 1.0 ;
+                //KpI = 1.0 ;
+                InnerDist *= LEFT_ARC_COEFFICENT ;
+                OuterDist *= LEFT_ARC_COEFFICENT ;
+                tgtPos *= LEFT_ARC_COEFFICENT ;
+            }
 
             OFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             OBDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -550,6 +531,7 @@ public class MechBot {
 
             // keep looping while we are still active, and there is time left, and the motors haven't reached end point
             while (myLOpMode.opModeIsActive() &&
+                    !myLOpMode.isStopRequested() &&
                     (runtime.seconds() < timeoutS) &&
                     (Math.max(0,(tgtPos - (curPos = Math.abs(OFDrive.getCurrentPosition())))) > CLOSE_ENOUGH)) {
 
@@ -599,42 +581,6 @@ public class MechBot {
         }
     }
 
-
-    /**
-            l_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            l_f_motor.setTargetPosition(ticks);
-            // Turn On RUN_TO_POSITION
-            l_f_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            l_f_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-            // reset the timeout time and start motion at the minimum speed.
-            runtime.reset();
-            l_f_motor.setPower(speed);
-
-            // keep looping while we are still active, and there is time left, and both motors are running.
-            // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
-            // its target position, the motion will stop.  This is "safer" in the event that the robot will
-            // always end the motion as soon as possible.
-            // However, if you require that BOTH motors have finished their moves before the robot continues
-            // onto the next step, use (isBusy() || isBusy()) in the loop test.
-            while (myLOpMode.opModeIsActive() &&
-                    (runtime.seconds() < timeoutS) &&
-                    (l_b_motor.isBusy() && r_b_motor.isBusy())) {
-
-            }
-
-            // Stop all motion;
-            l_f_motor.setPower(0);
-
-            // Turn off RUN_TO_POSITION
-            l_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            }
-
-        myLOpMode.sleep(500);
-        logger.logD("MechLog",String.format("encoderTest end: %d, %d",l_b_motor.getCurrentPosition(),r_b_motor.getCurrentPosition()));
-    }
-    **/
-
     public double getHeading()
     {
         Orientation     gyroOrien;
@@ -681,7 +627,7 @@ public class MechBot {
 
         lastAngles = gyroOrien;
 
-        //logger.logD("MechLog",String.format(" getIntHeading: %f, %f", delta*IMU_CORR, globalHeading));
+        logger.logD("MechLog",String.format(" getIntHeading: %f, %f", delta*IMU_CORR, globalHeading));
 
         return( globalHeading );
     }
@@ -758,31 +704,25 @@ public class MechBot {
         double delta, sign=1.0;
         double rt = 0.0;
 
-        // The gyro is still changing at this point. Try to dump values and understand why.
-        //for(int i=0; i<10; i++) {
-        //    logger.logD("MechLogfoostart", String.format("getHeading: %f", getHeading()));
-        //    myLOpMode.sleep(100);
-        //}
-
-        // Get the current Heading
-        startHeading = curHeading = getHeading();
-        // Where we are headed
-        tgtHeading = normalizeAngle(curHeading + degrees) ;
-        // Initialize toGo
-        toGo = Math.abs(degrees);
-
-        logger.logD("MechLog",String.format("gyroTurn: start: %f, tgt: %f", startHeading, tgtHeading));
-
-        if (DEBUG) {
-            myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f",degrees,curHeading,startHeading,tgtHeading,normalizeAngle(curHeading - tgtHeading));
-            myLOpMode.telemetry.update();
-            //myLOpMode.sleep(3000);
-        }
-
-        // FIXME: Let's assume the caller has made sure our left/right power will turn the same direction as our degrees for now
-
         // Ensure that the opmode is still active
-        if (myLOpMode.opModeIsActive()) {
+        if (myLOpMode.opModeIsActive() && !myLOpMode.isStopRequested()) {
+
+            // Get the current Heading
+            startHeading = curHeading = getHeading();
+            // Where we are headed
+            tgtHeading = normalizeAngle(curHeading + degrees) ;
+            // Initialize toGo
+            toGo = Math.abs(degrees);
+
+            logger.logD("MechLog",String.format("gyroTurn: start: %f, tgt: %f", startHeading, tgtHeading));
+
+            if (DEBUG) {
+                myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f",degrees,curHeading,startHeading,tgtHeading,normalizeAngle(curHeading - tgtHeading));
+                myLOpMode.telemetry.update();
+                //myLOpMode.sleep(3000);
+            }
+
+            // FIXME: Let's assume the caller has made sure our left/right power will turn the same direction as our degrees for now
 
             l_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             r_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -831,7 +771,6 @@ public class MechBot {
             if (DEBUG) {
                 myLOpMode.telemetry.addData("gyro", "KL: %.3f, KR: %.3f, max: %.2f",KsL, KsR,maxPower);
                 myLOpMode.telemetry.update();
-                //myLOpMode.sleep(5000);
             }
 
             // reset the timeout time and start motion at the minimum speed.
@@ -850,6 +789,7 @@ public class MechBot {
             // Use done to jump out of loop when you get close enough to the end
             // Keep looping while we are still active, and there is time left, and we haven't reached the target
             while (myLOpMode.opModeIsActive() &&
+                    !myLOpMode.isStopRequested() &&
                     ((rt=runtime.seconds()) < timeoutS)) {
 
                 // Check if we're done
@@ -892,31 +832,6 @@ public class MechBot {
                     myLOpMode.telemetry.update();
                 }
                 // FIXME -- Read the front encoders only for logging
-                /*
-                Orientation gyroOrien = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-                Quaternion q = imu.getQuaternionOrientation();
-                double t=q.x*q.y + q.z*q.w;
-                double h,a,b;
-                if (t > 0.4999) {
-                    h = 2*Math.atan2(q.x,q.w);
-                    a = Math.PI/2;
-                    b = 0;
-                } else if (t <  -0.4999) {
-                    h = -2*Math.atan2(q.x,q.w);
-                    a = -Math.PI/2;
-                    b = 0;
-                } else {
-                    double sqx = q.x * q.x;
-                    double sqy = q.y * q.y;
-                    double sqz = q.z * q.z;
-                    h = Math.atan2(2 * q.y * q.w - 2 * q.x * q.z, 1 - 2 * sqy - 2 * sqz);
-                    a = Math.asin(2 * t);
-                    b = Math.atan2(2 * q.x * q.w - 2 * q.y * q.z, 1 - 2 * sqx - 2 * sqz);
-                }
-                logger.logD("MechLogfooTurn", String.format("quat: h:%f, a:%f, b:%f", (h/Math.PI)*180, (a/Math.PI)*180, (b/Math.PI)*180 ));
-                logger.logD("MechLogfooTurn", String.format("getHeading: x:%f, y:%f, z:%f", AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.thirdAngle), AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.secondAngle), AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle) ));
-                */
-                //logger.logD("MechLogfooTurnCSV",String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", rt, getHeading(), l_f_motor.getCurrentPosition(), l_b_motor.getCurrentPosition(), r_f_motor.getCurrentPosition(), r_b_motor.getCurrentPosition(), Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpL * KsL)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR)), Math.max(-1.0, Math.min(1.0, newSpeed * KpR * KsR))));
             }
 
             // Stop all motion;
@@ -936,41 +851,13 @@ public class MechBot {
                 myLOpMode.telemetry.update();
                 myLOpMode.sleep(1000);
             }
+
+            double tmpHeading = getHeading();
+            logger.logD("MechLog",String.format("turn done: final: %f, get: %f, tgt: %f, err: %f", curHeading, tmpHeading, tgtHeading, tmpHeading - tgtHeading ));
+            return(normalizeAngle(tmpHeading - tgtHeading));
         }
 
-        /*
-        // The gyro is still changing at this point. Try to dump values and understand why.
-        for(int i=0; i<20; i++) {
-            Orientation gyroOrien = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            Quaternion q = imu.getQuaternionOrientation();
-            double t=q.x*q.y + q.z*q.w;
-            double h,a,b;
-            if (t > 0.4999) {
-                h = 2*Math.atan2(q.x,q.w);
-                a = Math.PI/2;
-                b = 0;
-            } else if (t <  -0.4999) {
-                h = -2*Math.atan2(q.x,q.w);
-                a = -Math.PI/2;
-                b = 0;
-            } else {
-                double sqx = q.x * q.x;
-                double sqy = q.y * q.y;
-                double sqz = q.z * q.z;
-                h = Math.atan2(2 * q.y * q.w - 2 * q.x * q.z, 1 - 2 * sqy - 2 * sqz);
-                a = Math.asin(2 * t);
-                b = Math.atan2(2 * q.x * q.w - 2 * q.y * q.z, 1 - 2 * sqx - 2 * sqz);
-            }
-            logger.logD("MechLogfooend", String.format("quat: h:%f, a:%f, b:%f", (h/Math.PI)*180, (a/Math.PI)*180, (b/Math.PI)*180 ));
-            logger.logD("MechLogfooend", String.format("getHeading: x:%f, y:%f, z:%f", AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.thirdAngle), AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.secondAngle), AngleUnit.DEGREES.fromUnit(gyroOrien.angleUnit, gyroOrien.firstAngle) ));
-            logger.logD("MechLogfooTurnCSV",String.format(",%f,%f,%d,%d,%d,%d,%f,%f,%f,%f", runtime.seconds(), getHeading(), l_f_motor.getCurrentPosition(), l_b_motor.getCurrentPosition(), r_f_motor.getCurrentPosition(), r_b_motor.getCurrentPosition(), 0.0,0.0,0.0,0.0));
-            myLOpMode.sleep(100);
-        }
-        */
-
-        // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
-        logger.logD("MechLog",String.format("turn done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
-        return(normalizeAngle(getHeading() - tgtHeading));
+        return(0.0);
     }
 
 
@@ -1090,27 +977,6 @@ public class MechBot {
             speedRampDown = speedRampDownT;
         }
 
-        /**
-        // Experimentally determined driving results.
-        // The accel curves produce some shift in projected distances.
-        // These adjustments approximate the actual distances.
-        if (leftInches == rightInches) {
-            if (Math.abs(leftInches) <= 12.0) {
-                leftInches *= (477/COUNTS_PER_MOTOR_REV);
-                rightInches = leftInches;
-            } else if (Math.abs(leftInches) <= 24.0) {
-                leftInches *= (487/COUNTS_PER_MOTOR_REV);
-                rightInches = leftInches;
-            } else if (Math.abs(leftInches) <= 48.0) {
-                leftInches *= (508 / COUNTS_PER_MOTOR_REV);
-                rightInches = leftInches;
-            } else if (Math.abs(leftInches) <= 96.0) {
-                leftInches *= (508 / COUNTS_PER_MOTOR_REV);
-                rightInches = leftInches;
-            }
-        }
-        **/
-
         return(fastEncoderDrive( speed, leftInches, rightInches, timeoutS, P, flickL, flickR, speedRampUp, speedRampDown));
     }
 
@@ -1127,8 +993,6 @@ public class MechBot {
                                double timeoutS, double P,
                                double flickL, double flickR,
                                double[] up, double[] down) {
-
-
         int newLeftFTarget;
         int newRightFTarget;
         int newLeftBTarget;
@@ -1150,16 +1014,16 @@ public class MechBot {
         double rt = 0.0;
         double fRT = 0.0;
 
-        // Get the current Heading and update for the correction angle
-        curHeading = tgtHeading = getHeading();
-        logger.logD("MechLog",String.format("fastEncodeDrive: tgt: %f, A: %f", tgtHeading, straightA));
-        tgtHeading = normalizeAngle(tgtHeading - straightA) ;
-
-        // now clear the correction angle so it's never used again
-        straightA = 0.0;
-
         // Ensure that the opmode is still active
-        if (myLOpMode.opModeIsActive()) {
+        if (myLOpMode.opModeIsActive() && !myLOpMode.isStopRequested()) {
+
+            // Get the current Heading and update for the correction angle
+            curHeading = tgtHeading = getHeading();
+            logger.logD("MechLog",String.format("fastEncodeDrive: tgt: %f, A: %f", tgtHeading, straightA));
+            tgtHeading = normalizeAngle(tgtHeading - straightA) ;
+
+            // now clear the correction angle so it's never used again
+            straightA = 0.0;
 
             // Reset encoders
             l_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -1222,6 +1086,7 @@ public class MechBot {
 
             // Keep looping while we are still active, and there is time left, and we haven't reached the target
             while (myLOpMode.opModeIsActive() &&
+                    !myLOpMode.isStopRequested() &&
                     ((rt=runtime.seconds()) < timeoutS) &&
                     ( !doneL || !doneR)) {
 
@@ -1321,7 +1186,9 @@ public class MechBot {
                     actSpeedR = newSpeedR;
                 }
 
-                logger.logD("MechLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f,%d,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f", rt, deltaHeading, KhL, KhR, curPosLf, curPosL, l_f_motor.getCurrentPosition(),l_b_motor.getCurrentPosition(), newLeftBTarget, curPosRf, curPosR, r_f_motor.getCurrentPosition(), r_b_motor.getCurrentPosition(), newRightBTarget, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
+                if ( logger.LOGLEVEL == logger.LOGDEBUG ) {
+                    logger.logD("MechLogDriveCSV", String.format(",%f,%f,%f,%f,%f,%f,%d,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f", rt, deltaHeading, KhL, KhR, curPosLf, curPosL, l_f_motor.getCurrentPosition(), l_b_motor.getCurrentPosition(), newLeftBTarget, curPosRf, curPosR, r_f_motor.getCurrentPosition(), r_b_motor.getCurrentPosition(), newRightBTarget, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
+                }
 
                 if (DEBUG) {
                     myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
@@ -1351,27 +1218,28 @@ public class MechBot {
             l_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        }
+            // FIXME
+            //while (runtime.seconds() < fRT) { };
+            if ((flickL != 0.0) || (flickR != 0.0)) {
+                flicker.setPosition(0.0);
+            }
 
-        // FIXME
-        //while (runtime.seconds() < fRT) { };
-        if ((flickL != 0.0) || (flickR != 0.0)) {
-            flicker.setPosition(0.0);
-        }
+            if (leftInches == rightInches) {
+                // FIXME -- do we really need to burn 500ms every move here?
+                //  Seems like the gyro is still moving a little here. We might consider switching to
+                //  using something like a 'heading' instead of a angular delta. Then we don't really
+                //  need to carry error forward, it's just known from the heading value.
+                //  Then we also don't need the delay here either.
+                myLOpMode.sleep(gyroWait);
 
-        if (leftInches == rightInches) {
-            // FIXME -- do we really need to burn 500ms every move here?
-            //  Seems like the gyro is still moving a little here. We might consider switching to
-            //  using something like a 'heading' instead of a angular delta. Then we don't really
-            //  need to carry error forward, it's just known from the heading value.
-            //  Then we also don't need the delay here either.
-            myLOpMode.sleep(250);
-            // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
-            logger.logD("MechLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
-            return (normalizeAngle((getHeading() - tgtHeading)));
-        } else {
-            return(0.0);
+                double tmpHeading = getHeading();
+                logger.logD("MechLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, tmpHeading, tgtHeading, tmpHeading - tgtHeading ));
+                return (normalizeAngle((tmpHeading - tgtHeading)));
+            } else {
+                return(0.0);
+            }
         }
+        return(0.0);
     }
 
     /*
@@ -1411,16 +1279,16 @@ public class MechBot {
         double rt = 0.0;
         double fRT = 0.0;
 
-        // Get the current Heading and update for the correction angle
-        curHeading = tgtHeading = getHeading();
-        logger.logD("MechLog",String.format("fastEncodeDrive2: tgt: %f, A: %f", tgtHeading, straightA));
-        tgtHeading = normalizeAngle(tgtHeading - straightA) ;
-
-        // now clear the correction angle so it's never used again
-        straightA = 0.0;
-
         // Ensure that the opmode is still active
-        if (myLOpMode.opModeIsActive()) {
+        if (myLOpMode.opModeIsActive() && !myLOpMode.isStopRequested()) {
+
+            // Get the current Heading and update for the correction angle
+            curHeading = tgtHeading = getHeading();
+            logger.logD("MechLog",String.format("fastEncodeDrive2: tgt: %f, A: %f", tgtHeading, straightA));
+            tgtHeading = normalizeAngle(tgtHeading - straightA) ;
+
+            // now clear the correction angle so it's never used again
+            straightA = 0.0;
 
             // Reset encoders
             l_f_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -1477,6 +1345,7 @@ public class MechBot {
 
             // Keep looping while we are still active, and there is time left, and we haven't reached the target
             while (myLOpMode.opModeIsActive() &&
+                    !myLOpMode.isStopRequested() &&
                     ((rt=runtime.seconds()) < timeoutS) &&
                     ( !doneL || !doneR)) {
 
@@ -1584,7 +1453,9 @@ public class MechBot {
                     actSpeedR = newSpeedR;
                 }
 
-                logger.logD("MechLogDriveCSV",String.format(",%f,%f,%f,%f,%f,%f,%d,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f", rt, deltaHeading, KhL, KhR, curPosLf, curPosL, l_f_motor.getCurrentPosition(),l_b_motor.getCurrentPosition(), newLeftBTarget, curPosRf, curPosR, r_f_motor.getCurrentPosition(), r_b_motor.getCurrentPosition(), newRightBTarget, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
+                if ( logger.LOGLEVEL == logger.LOGDEBUG ) {
+                    logger.logD("MechLogDriveCSV", String.format(",%f,%f,%f,%f,%f,%f,%d,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f", rt, deltaHeading, KhL, KhR, curPosLf, curPosL, l_f_motor.getCurrentPosition(), l_b_motor.getCurrentPosition(), newLeftBTarget, curPosRf, curPosR, r_f_motor.getCurrentPosition(), r_b_motor.getCurrentPosition(), newRightBTarget, Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedL)), Math.max(-1.0, Math.min(1.0, newSpeedR)), Math.max(-1.0, Math.min(1.0, newSpeedR))));
+                }
 
                 if (DEBUG) {
                     myLOpMode.telemetry.addData("left", "up: %1.3f, dn: %1.3f, s: %1.3f, p: %5d, t: %5d, g: %5d", spdUpL, spdDnL, newSpeedL, (int) curPosL, newLeftBTarget, (int) toGoL);
@@ -1614,27 +1485,28 @@ public class MechBot {
             l_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        }
+            // FIXME
+            //while (runtime.seconds() < fRT) { };
+            if ((flickL != 0.0) || (flickR != 0.0)) {
+                flicker.setPosition(0.0);
+            }
 
-        // FIXME
-        //while (runtime.seconds() < fRT) { };
-        if ((flickL != 0.0) || (flickR != 0.0)) {
-            flicker.setPosition(0.0);
-        }
+            if (leftInches == rightInches) {
+                // FIXME -- do we really need to burn 500ms every move here?
+                //  Seems like the gyro is still moving a little here. We might consider switching to
+                //  using something like a 'heading' instead of a angular delta. Then we don't really
+                //  need to carry error forward, it's just known from the heading value.
+                //  Then we also don't need the delay here either.
+                myLOpMode.sleep(gyroWait);
 
-        if (leftInches == rightInches) {
-            // FIXME -- do we really need to burn 500ms every move here?
-            //  Seems like the gyro is still moving a little here. We might consider switching to
-            //  using something like a 'heading' instead of a angular delta. Then we don't really
-            //  need to carry error forward, it's just known from the heading value.
-            //  Then we also don't need the delay here either.
-            myLOpMode.sleep(250);
-            // FIXME - this is three calls to getHeading(), need to fix this up to use a variable.
-            logger.logD("MechLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, getHeading(), tgtHeading, getHeading() - tgtHeading ));
-            return (normalizeAngle((getHeading() - tgtHeading)));
-        } else {
-            return(0.0);
+                double tmpHeading = getHeading();
+                logger.logD("MechLog",String.format("straight done: final: %f, get: %f, tgt: %f, err: %f", curHeading, tmpHeading, tgtHeading, tmpHeading - tgtHeading ));
+                return (normalizeAngle((tmpHeading - tgtHeading)));
+            } else {
+                return(0.0);
+            }
         }
+        return(0.0);
     }
 
     public void setWobblePosition(int wobblePos, double power){
@@ -1643,7 +1515,7 @@ public class MechBot {
         wobble_motor.setPower(power);
     }
 
-
+/*
     public void MotorCal( DcMotor motorToTest, String name, double K ) {
         //double[] speedsToTest = { 0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0 };
         double[] speedsToTest = { 0.1,0.3,0.5,0.7,0.9 };
@@ -1688,5 +1560,6 @@ public class MechBot {
             Thread.currentThread().interrupt();
         }
     }
+  */
 }
 

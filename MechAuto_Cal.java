@@ -53,6 +53,7 @@ import com.vuforia.Image;
  */
 
 @Autonomous(name="Mech: Auto Cal", group="Mechbot")
+@Disabled
 public class MechAuto_Cal extends LinearOpMode {
     /* Declare OpMode members. */
 
@@ -88,7 +89,7 @@ public class MechAuto_Cal extends LinearOpMode {
         vision.initAutonomous(this);
         vision.clip = false;
         int deltaX=0, deltaY=0;
-        while (!isStarted() && (!isStopRequested())) {
+        do {
             rings = vision.countRings();
             if ( gamepad1.dpad_left ) { IncepVision.clipLeft -= 1; }
             if ( gamepad1.dpad_right ) { IncepVision.clipLeft += 1; }
@@ -116,7 +117,7 @@ public class MechAuto_Cal extends LinearOpMode {
             IncepVision.clipRight  = Range.clip(IncepVision.clipRight, 5,635);
             IncepVision.clipTop    = Range.clip(IncepVision.clipTop,   5,475);
             IncepVision.clipBottom = Range.clip(IncepVision.clipBottom,5,475);
-        }
+        } while (!isStarted() && (!isStopRequested())) ;
         vision.shutdown();
 
         /*

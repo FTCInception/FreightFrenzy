@@ -73,6 +73,7 @@ public class IncepVision {
     public static int clipBottom=155;
     public boolean clip=false;
     public boolean tfodState=false;
+    private int ringCount = -1 ;
 
     /***
      * Initialize the Target Tracking and navigation interface
@@ -139,7 +140,7 @@ public class IncepVision {
         }
     }
 
-    public int processImage( Image image ) {
+    public void processImage( Image image ) {
 
         int bufWidth = image.getBufferWidth();
         int bufHeight = image.getBufferHeight();
@@ -251,7 +252,6 @@ public class IncepVision {
         //ringCount is the actual amount of rings present
         // Count the ring slices
         int ringSlices = 0 ;
-        int ringCount = -1 ;
         for(int i = 0; i<isRing.length; i++){
             if(isRing[i]==1){
                 ringSlices++;
@@ -290,8 +290,6 @@ public class IncepVision {
         myLOpMode.telemetry.addData("ringCount", "%d", ringCount);
 
         myLOpMode.telemetry.update();
-
-        return ringCount;
     }
 
     public int countRings() {
@@ -329,14 +327,13 @@ public class IncepVision {
                         } else{
                             tfod.setClippingMargins(0, 0, 0, 0);
                         }
-                        return processImage(frame.getImage(i));
+                        processImage(frame.getImage(i));
                     }
                 }
             }
         }
 
-        // Unknown rings on any error.
-        return -1;
+        return ringCount;
     }
 
     public void shutdown() {
