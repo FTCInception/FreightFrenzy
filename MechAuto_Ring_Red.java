@@ -97,7 +97,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             if ( gamepad1.a ) { IncepVision.clipBottom -= 1; }
             if ( gamepad1.y ) { IncepVision.clipBottom += 1; }
             if ( gamepad1.left_bumper ) { vision.tfod.deactivate(); vision.tfodState=false;}
-            if ( gamepad1.right_bumper ) { vision.clip = true; }
+            if ( (gamepad1.right_bumper) && (!vision.tfodState) ) { vision.clip = true; }
 
             // Move the entire box with the joystick.
             deltaY = (int)(gamepad1.left_stick_y * 2.1);
@@ -117,412 +117,427 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         } while (!isStarted() && (!isStopRequested())) ;
         vision.shutdown();
 
-        bailout:
+        // FIXME: Test the stopping in auto here again.
         if (opModeIsActive()) {
             if (ringCount == 0) {
-
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, 57, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.intake_motor.setPower(0.6);
-                sleep(600);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.intake_motor.setPower(0);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.straightA = a;
-                a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Shoot sequence
-                robot.shoot1_motor.setPower(0.475);
-                robot.shoot2_motor.setPower(0.475);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(1.0);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(0.0);
-                sleep(750);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(1.0);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(0.0);
-                sleep(750);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(1.0);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.shoot1_motor.setPower(0.0);
-                robot.shoot2_motor.setPower(0.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(0.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                //prime some stuff for wobble
-                robot.claw.setPosition(0);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.setWobblePosition(1, wobble_power);
-                sleep(2000);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.straightA = a;
-                a = robot.fastEncoderStrafe(DRIVE_SPEED, 13, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.claw.setPosition(1);
-                sleep(1000);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.setWobblePosition(3, wobble_power);
-                sleep(1000);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, 50, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                a = robot.gyroRotate(TURN_SPEED, 90 - a, 4);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, -21, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.claw.setPosition(0);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.setWobblePosition(0, wobble_power);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.claw.setPosition(1.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                a = robot.fastEncoderStraight(DRIVE_SPEED, 11, 60, P);
-                sleep(1000);
-                if(!opModeIsActive()){ break bailout; }
-
+                Ring0();
             } else if (ringCount == 1) {
-                // Drive to drop zone
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, 87, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.straightA = a;
-                a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Drop the wobble
-                robot.intake_motor.setPower(0.6);
-                sleep(600);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.intake_motor.setPower(0);
-                if(!opModeIsActive()){ break bailout; }
-
-
-                // Back to shooting zone
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, -30, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-
-                // Start the shooter
-                robot.shoot1_motor.setPower(0.475);
-                robot.shoot2_motor.setPower(0.475);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Fire away
-                robot.flicker.setPosition(1.0);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(0.0);
-                sleep(750);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(1.0);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Get ready for wobble
-                robot.claw.setPosition(0.25);
-                robot.setWobblePosition(1, wobble_power);
-                robot.flicker.setPosition(0.0);
-                sleep(750);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(1.0);
-                sleep(200);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.shoot1_motor.setPower(0.0);
-                robot.shoot2_motor.setPower(0.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Line up for wobble
-                robot.straightA = a;
-                a = robot.fastEncoderStrafe(DRIVE_SPEED, 13, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(0.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Back up to wobble
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Grab wobble
-                robot.claw.setPosition(1);
-                sleep(750);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.setWobblePosition(3, wobble_power);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Strafe to line up on ring
-                robot.straightA = a;
-                a = robot.fastEncoderStrafe(DRIVE_SPEED, -18, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Turn on intake
-                robot.intake_motor.setPower(1.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Intake ring and drive to shoot distance
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, 29, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Line up for shot
-                robot.straightA = a;
-                a = robot.fastEncoderStrafe(DRIVE_SPEED, 7, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Turn off intake
-                robot.intake_motor.setPower(1.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Shoot the ring
-                robot.intake_motor.setPower(0);
-                robot.shoot1_motor.setPower(0.475);
-                robot.shoot2_motor.setPower(0.475);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(1.0);
-                sleep(300);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(0.0);
-                robot.shoot1_motor.setPower(0.0);
-                robot.shoot2_motor.setPower(0.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                a = robot.gyroRotate(TURN_SPEED, 165 - a, 60);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, -22, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.claw.setPosition(0.0);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.setWobblePosition(0, wobble_power);
-                sleep(1000);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.claw.setPosition(1.0);
-                sleep(1000);
-                if(!opModeIsActive()){ break bailout; }
-
+                Ring1();
             } else {
                 // If it's not 0 or 1, assume 4 (highest possible point total)
-
-                // Full speed length of field to the target zone
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, 112, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Drop the wobble and run
-                robot.intake_motor.setPower(0.6);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Back up to a good shooting distance
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, -58, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Turn off intake now
-                robot.intake_motor.setPower(0);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Move to line up shot
-                robot.straightA = a;
-                a = robot.fastEncoderStrafe(DRIVE_SPEED, 28, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Fire away
-                robot.shoot1_motor.setPower(0.475);
-                robot.shoot2_motor.setPower(0.475);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(1.0);
-                sleep(300);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(0.0);
-                sleep(650);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(1.0);
-                sleep(300);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.claw.setPosition(0.25);
-                robot.setWobblePosition(1, wobble_power);
-                robot.flicker.setPosition(0.0);
-                sleep(650);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(1.0);
-                sleep(100);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.shoot1_motor.setPower(0.0);
-                robot.shoot2_motor.setPower(0.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Line up for wobble pickup
-                robot.straightA = a;
-                a = robot.fastEncoderStrafe(DRIVE_SPEED, 9, 60, P);
-                robot.flicker.setPosition(0.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Back to wobble
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, -30, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Grab the wobble
-                robot.claw.setPosition(1);
-                sleep(750);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.setWobblePosition(3, wobble_power);
-                sleep(500);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Line up over 4-stack
-                robot.straightA = a;
-                a = robot.fastEncoderStrafe(DRIVE_SPEED, -18, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Get ready to intake and shoot
-                robot.intake_motor.setPower(1.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.shoot1_motor.setPower(0.475);
-                robot.shoot2_motor.setPower(0.475);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Go intake a few and shoot one
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, 17.0, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Turn a little towards the goal
-                a = robot.gyroRotate(.8, 5 - a, 4);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Wait for the rings to settle
-                sleep(500);
-                robot.flicker.setPosition(1.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Turn a little back
-                a = robot.gyroRotate(TURN_SPEED, -5 - a, 4);
-                robot.flicker.setPosition(0.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Intake the reset and shoot them
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, 17.0, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(1.0);
-                sleep(650);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(0.0);
-                sleep(350);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(1.0);
-                sleep(650);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(0.0);
-                sleep(350);
-                if(!opModeIsActive()){ break bailout; }
-
-                robot.flicker.setPosition(1.0);
-                sleep(250);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Stop the shooter
-                robot.shoot1_motor.setPower(0.0);
-                robot.shoot2_motor.setPower(0.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Stop the intake
-                robot.intake_motor.setPower(0);
-
-                // Turn around and back the wobble in
-                a = robot.gyroRotate(TURN_SPEED, 157 - a, 4);
-                robot.flicker.setPosition(0.0);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Drive the wobble in
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, -40.0, 60, P);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Drop it off
-                robot.claw.setPosition(0);
-                sleep(250);
-                robot.setWobblePosition(0, wobble_power);
-                if(!opModeIsActive()){ break bailout; }
-
-                // Run like heck
-                robot.straightA = a;
-                a = robot.fastEncoderStraight(DRIVE_SPEED, 24.0, 60, P);
-                if(!opModeIsActive()){ break bailout; }
+                Ring4();
             }
         }
+    }
+
+    private void Ring0() {
+
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, 57, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        robot.intake_motor.setPower(0.6);
+        sleep(600);
+        if(!opModeIsActive()){ return; }
+
+        robot.intake_motor.setPower(0);
+        if(!opModeIsActive()){ return; }
+
+        robot.straightA = a;
+        a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Shoot sequence
+        robot.shoot1_motor.setPower(0.475);
+        robot.shoot2_motor.setPower(0.475);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.shoot1_motor.setPower(0.0);
+        robot.shoot2_motor.setPower(0.0);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        if(!opModeIsActive()){ return; }
+
+        //prime some stuff for wobble
+        robot.claw.setPosition(0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.setWobblePosition(1, wobble_power);
+        sleep(2000);
+        if(!opModeIsActive()){ return; }
+
+        robot.straightA = a;
+        a = robot.fastEncoderStrafe(DRIVE_SPEED, 13, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        robot.claw.setPosition(1);
+        sleep(1000);
+        if(!opModeIsActive()){ return; }
+
+        robot.setWobblePosition(3, wobble_power);
+        sleep(1000);
+        if(!opModeIsActive()){ return; }
+
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, 50, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        a = robot.gyroRotate(TURN_SPEED, 90 - a, 4);
+        if(!opModeIsActive()){ return; }
+
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, -21, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        robot.claw.setPosition(0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.setWobblePosition(0, wobble_power);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.claw.setPosition(1.0);
+        if(!opModeIsActive()){ return; }
+
+        a = robot.fastEncoderStraight(DRIVE_SPEED, 11, 60, P);
+        sleep(1000);
+        if(!opModeIsActive()){ return; }
+    }
+
+    private void Ring1() {
+
+        // Drive to drop zone
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, 87, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        robot.straightA = a;
+        a = robot.fastEncoderStrafe(DRIVE_SPEED, 25, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Drop the wobble
+        robot.intake_motor.setPower(0.6);
+        sleep(600);
+        if(!opModeIsActive()){ return; }
+
+        robot.intake_motor.setPower(0);
+        if(!opModeIsActive()){ return; }
+
+        // Back to shooting zone
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, -30, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Start the shooter
+        robot.shoot1_motor.setPower(0.475);
+        robot.shoot2_motor.setPower(0.475);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        // Fire away
+        robot.flicker.setPosition(1.0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        // Get ready for wobble
+        robot.claw.setPosition(0.25);
+        robot.setWobblePosition(1, wobble_power);
+        robot.flicker.setPosition(0.0);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(200);
+        if(!opModeIsActive()){ return; }
+
+        // Line up for wobble
+        robot.straightA = a;
+        a = robot.fastEncoderStrafe(DRIVE_SPEED, 12, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        robot.shoot1_motor.setPower(0.0);
+        robot.shoot2_motor.setPower(0.0);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        if(!opModeIsActive()){ return; }
+
+        // Back up to wobble
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Grab wobble
+        robot.claw.setPosition(1);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        robot.setWobblePosition(3, wobble_power);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        // Strafe to line up on ring
+        robot.straightA = a;
+        a = robot.fastEncoderStrafe(DRIVE_SPEED, -18, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Turn on intake
+        robot.intake_motor.setPower(1.0);
+        if(!opModeIsActive()){ return; }
+
+        // Intake ring and drive to shoot distance
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, 29, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Line up for shot
+        robot.straightA = a;
+        a = robot.fastEncoderStrafe(DRIVE_SPEED, 5, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Turn off intake
+        robot.intake_motor.setPower(1.0);
+        if(!opModeIsActive()){ return; }
+
+        // Shoot the ring
+        robot.intake_motor.setPower(0);
+        robot.shoot1_motor.setPower(0.475);
+        robot.shoot2_motor.setPower(0.475);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(300);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        robot.shoot1_motor.setPower(0.0);
+        robot.shoot2_motor.setPower(0.0);
+        if(!opModeIsActive()){ return; }
+
+        a = robot.gyroRotate(TURN_SPEED, 170 - a, 60);
+        if(!opModeIsActive()){ return; }
+
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, -22, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        robot.claw.setPosition(0.0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.setWobblePosition(0, wobble_power);
+        sleep(1000);
+        if(!opModeIsActive()){ return; }
+
+        robot.claw.setPosition(1.0);
+        sleep(1000);
+        if(!opModeIsActive()){ return; }
+    }
+
+    private void Ring4() {
+
+        // Full speed length of field to the target zone
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, 115, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Drop the wobble and run
+        robot.intake_motor.setPower(0.6);
+        if(!opModeIsActive()){ return; }
+
+        // Back up to a good shooting distance
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, -58, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Turn off intake now
+        robot.intake_motor.setPower(0);
+        if(!opModeIsActive()){ return; }
+
+        // Move to line up shot
+        robot.straightA = a;
+        a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Fire away
+        robot.shoot1_motor.setPower(0.475);
+        robot.shoot2_motor.setPower(0.475);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.claw.setPosition(0.25);
+        robot.setWobblePosition(1, wobble_power);
+        robot.flicker.setPosition(0.0);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(300);
+        if(!opModeIsActive()){ return; }
+
+        // Line up for wobble pickup
+        robot.straightA = a;
+        a = robot.fastEncoderStrafe(DRIVE_SPEED, 13, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        robot.shoot1_motor.setPower(0.0);
+        robot.shoot2_motor.setPower(0.0);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        if(!opModeIsActive()){ return; }
+
+        // Back to wobble
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Grab the wobble
+        robot.claw.setPosition(1);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        robot.setWobblePosition(3, wobble_power);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        // Line up over 4-stack
+        robot.straightA = a;
+        a = robot.fastEncoderStrafe(DRIVE_SPEED, -18, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Get ready to intake and shoot
+        robot.intake_motor.setPower(1.0);
+        if(!opModeIsActive()){ return; }
+
+        robot.shoot1_motor.setPower(0.475);
+        robot.shoot2_motor.setPower(0.475);
+        if(!opModeIsActive()){ return; }
+
+        // Go intake a few and shoot one
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, 15, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Turn a little towards the goal
+        a = robot.gyroRotate(.8, 7 - a, 4);
+        if(!opModeIsActive()){ return; }
+
+        // Wait for the rings to settle
+        sleep(500);
+        robot.flicker.setPosition(1.0);
+        if(!opModeIsActive()){ return; }
+
+        // Turn a little back
+        a = robot.gyroRotate(TURN_SPEED, -7 - a, 4);
+        robot.flicker.setPosition(0.0);
+        if(!opModeIsActive()){ return; }
+
+        // Intake the reset and shoot them
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, 14, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(300);
+        if(!opModeIsActive()){ return; }
+
+        // Stop the shooter
+        robot.shoot1_motor.setPower(0.0);
+        robot.shoot2_motor.setPower(0.0);
+        if(!opModeIsActive()){ return; }
+
+        // Stop the intake
+        robot.intake_motor.setPower(0);
+
+        // Turn around and back the wobble in
+        a = robot.gyroRotate(TURN_SPEED, 157 - a, 4);
+        robot.flicker.setPosition(0.0);
+        if(!opModeIsActive()){ return; }
+
+        // Drive the wobble in
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, -48.0, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        // Drop it off
+        robot.claw.setPosition(0);
+        sleep(250);
+        robot.setWobblePosition(0, wobble_power);
+        if(!opModeIsActive()){ return; }
+
+        // Run like heck
+        robot.straightA = a;
+        a = robot.fastEncoderStraight(DRIVE_SPEED, 28.0, 60, P);
+        if(!opModeIsActive()){ return; }
+
+        robot.claw.setPosition(1.0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
     }
 }
