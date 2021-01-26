@@ -514,6 +514,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
         // Stop the intake
         robot.intake_motor.setPower(0);
+        if(!opModeIsActive()){ return; }
 
         // Turn around and back the wobble in
         a = robot.gyroRotate(TURN_SPEED, 157 - a, 4);
