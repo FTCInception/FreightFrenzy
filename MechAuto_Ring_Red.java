@@ -143,26 +143,32 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         robot.intake_motor.setPower(0);
         if(!opModeIsActive()){ return; }
 
+        // Start shooter 1 move early
+        robot.shoot1_motor.setPower(0.480);
+        robot.shoot2_motor.setPower(0.480);
+
+        // Strafe to shooting position
         robot.straightA = a;
         a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Shoot sequence
-        robot.shoot1_motor.setPower(0.475);
-        robot.shoot2_motor.setPower(0.475);
         sleep(500);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(1.0);
-        sleep(500);
+        sleep(750);
         if(!opModeIsActive()){ return; }
+
+        robot.shoot1_motor.setPower(0.475);
+        robot.shoot2_motor.setPower(0.475);
 
         robot.flicker.setPosition(0.0);
         sleep(750);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(1.0);
-        sleep(500);
+        sleep(750);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(0.0);
@@ -251,28 +257,33 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         robot.intake_motor.setPower(0);
         if(!opModeIsActive()){ return; }
 
+        // Start the shooter early
+        robot.shoot1_motor.setPower(0.480);
+        robot.shoot2_motor.setPower(0.480);
+        if(!opModeIsActive()){ return; }
+
         // Back to shooting zone
         robot.straightA = a;
         a = robot.fastEncoderStraight(DRIVE_SPEED, -30, 60, P);
         if(!opModeIsActive()){ return; }
 
-        // Start the shooter
-        robot.shoot1_motor.setPower(0.475);
-        robot.shoot2_motor.setPower(0.475);
         sleep(500);
         if(!opModeIsActive()){ return; }
 
         // Fire away
         robot.flicker.setPosition(1.0);
-        sleep(500);
+        sleep(750);
         if(!opModeIsActive()){ return; }
+
+        robot.shoot1_motor.setPower(0.475);
+        robot.shoot2_motor.setPower(0.475);
 
         robot.flicker.setPosition(0.0);
         sleep(750);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(1.0);
-        sleep(500);
+        sleep(750);
         if(!opModeIsActive()){ return; }
 
         // Get ready for wobble
@@ -326,6 +337,11 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         a = robot.fastEncoderStraight(DRIVE_SPEED, 29, 60, P);
         if(!opModeIsActive()){ return; }
 
+        // Power up early
+        robot.shoot1_motor.setPower(0.480);
+        robot.shoot2_motor.setPower(0.480);
+        if(!opModeIsActive()){ return; }
+
         // Line up for shot
         robot.straightA = a;
         a = robot.fastEncoderStrafe(DRIVE_SPEED, 5, 60, P);
@@ -337,13 +353,11 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
         // Shoot the ring
         robot.intake_motor.setPower(0);
-        robot.shoot1_motor.setPower(0.475);
-        robot.shoot2_motor.setPower(0.475);
         sleep(500);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(1.0);
-        sleep(300);
+        sleep(400);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(0.0);
@@ -391,20 +405,26 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         robot.intake_motor.setPower(0);
         if(!opModeIsActive()){ return; }
 
+        // Power up early
+        robot.shoot1_motor.setPower(0.475);
+        robot.shoot2_motor.setPower(0.475);
+        if(!opModeIsActive()){ return; }
+
         // Move to line up shot
         robot.straightA = a;
         a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Fire away
-        robot.shoot1_motor.setPower(0.475);
-        robot.shoot2_motor.setPower(0.475);
         sleep(500);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(1.0);
         sleep(500);
         if(!opModeIsActive()){ return; }
+
+        robot.shoot1_motor.setPower(0.475);
+        robot.shoot2_motor.setPower(0.475);
 
         robot.flicker.setPosition(0.0);
         sleep(750);
@@ -459,6 +479,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         robot.intake_motor.setPower(1.0);
         if(!opModeIsActive()){ return; }
 
+        // Power up early
         robot.shoot1_motor.setPower(0.475);
         robot.shoot2_motor.setPower(0.475);
         if(!opModeIsActive()){ return; }
@@ -469,16 +490,20 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Turn a little towards the goal
-        a = robot.gyroRotate(.8, 7 - a, 4);
+        a = robot.gyroRotate(.8, 5 - a, 60);
         if(!opModeIsActive()){ return; }
 
         // Wait for the rings to settle
         sleep(500);
         robot.flicker.setPosition(1.0);
+        sleep(200);
         if(!opModeIsActive()){ return; }
 
+        robot.shoot1_motor.setPower(0.475);
+        robot.shoot2_motor.setPower(0.475);
+
         // Turn a little back
-        a = robot.gyroRotate(TURN_SPEED, -7 - a, 4);
+        a = robot.gyroRotate(TURN_SPEED, -4 - a, 60);
         robot.flicker.setPosition(0.0);
         if(!opModeIsActive()){ return; }
 
@@ -517,13 +542,13 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Turn around and back the wobble in
-        a = robot.gyroRotate(TURN_SPEED, 157 - a, 4);
+        a = robot.gyroRotate(TURN_SPEED, 155 - a, 60);
         robot.flicker.setPosition(0.0);
         if(!opModeIsActive()){ return; }
 
         // Drive the wobble in
         robot.straightA = a;
-        a = robot.fastEncoderStraight(DRIVE_SPEED, -48.0, 60, P);
+        a = robot.fastEncoderStraight(DRIVE_SPEED, -49.0, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Drop it off
