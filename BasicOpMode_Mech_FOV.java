@@ -63,7 +63,7 @@ import com.qualcomm.robotcore.hardware.PIDCoefficients;
  * Right bumper is intake (toggle)
  * Shooter is toggle high/low on dpad
  * left/right dpad is power shot rotate
- * Left bumper trigger
+ * Left bumper: flicker
  * B forwards for wobble cycle
  * X backwards for wobble cycle
  * Logitech button to reset shooter, reset intake, return arm and claw to defaults.
@@ -87,7 +87,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
     double MAX_INTAKE_POWER = 1.0;
 
     private BotLog logger = new BotLog();
-    private boolean enableCSVLogging = true;
+    private boolean enableCSVLogging = false;
 
     // Mech drive related variables
     double[] speedModifier = new double[] {0.75,0.75};
@@ -148,8 +148,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         boolean[] guidePrev = new boolean[]{false, false};
 
         final double CLAW_OPEN = 0.0, CLAW_CLOSED=1.0;
-        final double FLICKER_SHOOT = 1.0, FLICKER_WAIT=0.0;
-        final double SHOOTER_NORMAL=0.475, SHOOTER_POWER_SHOT=0.432;
+        final double FLICKER_SHOOT = 0.7, FLICKER_WAIT=0.0;
+        final double SHOOTER_NORMAL=0.475, SHOOTER_POWER_SHOT=0.447;
         //wobble stuff
         //final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0; // 30 RPM 6mm d-shaft (5202 series)
         //final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0; // 60 RPM 6mm d-shaft (5202 series)
@@ -169,6 +169,9 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         double[] speedSet = {0.75, 1.0};
         double[] shooterSet = {0.0, SHOOTER_NORMAL};
         int flickerIdx=0, clawIdx=0, intakeIdx=0, speedIdx=0, shooterIdx=0, wobbleIdx=0;
+        double flickerRelease=0.0, flickerRearm=0.0;
+        double prevLTrigVal=0.0;
+        double prevRTrigVal=0.0;
 
         double rt, nextLog = 0.0;
 
@@ -187,6 +190,12 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
+
+        /*************************************************************/
+        /************ No movement allowed during init! ***************/
+        /************ No movement allowed during init! ***************/
+        /************ No movement allowed during init! ***************/
+        /*************************************************************/
 
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
@@ -261,6 +270,11 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Status", "Waiting for start...");
         telemetry.update();
+        /*************************************************************/
+        /************ No movement allowed during init! ***************/
+        /************ No movement allowed during init! ***************/
+        /************ No movement allowed during init! ***************/
+        /*************************************************************/
 
         waitForStart();
         runtime.reset();
@@ -280,11 +294,72 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 shooterSet[1] = SHOOTER_POWER_SHOT;
             }
 
-            // Shoot the flicker
-            if (gamepad1.left_bumper) {
-                flicker.setPosition(FLICKER_SHOOT);
+            // Left trigger is a flicker override to help un-jam if needed.
+            // Move flicker to the trigger position if non-zero or
+            // recently used the trigger to send a '0' position.
+            if ((gamepad1.left_trigger > 0.0) || (prevLTrigVal > 0.0)) {
+                prevLTrigVal = gamepad1.left_trigger;
+                flicker.setPosition(prevLTrigVal);
+            }
+
+            // Right trigger is shooter reverse to help un-jam if needed.
+            // Drive shooter at 40% trigger position if non-zero or
+            // recently used the trigger to send a '0' position.
+            if (((gamepad1.right_trigger > 0.0) || (prevRTrigVal > 0.0)) &&
+                 (shooterIdx == 0)) {
+                prevRTrigVal = gamepad1.right_trigger * 0.30 ;
+                shoot1_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                shoot2_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                shoot1_motor.setPower(-prevRTrigVal);
+                shoot2_motor.setPower(-prevRTrigVal);
+            }
+
+            // One-button timed flick
+            // States:  Release and Rearm
+            // Release == 0 and rearm == 0 ==> at rest
+            // Release > 0  and rearm == 0 ==> waiting for flicker to reach max, release in the future
+            // Release == 0 and rearm > 0  ==> waiting for flicker to reach home, prevent re-flick until done
+            // Release > 0  and Rearm > 0  ==> illegal
+            if ((flickerRelease == 0.0) && (flickerRearm == 0.0)) {
+                // This is the 'normal'/'at-rest' case.  No flick in progress.
+                // Only flick if the shooter is running.
+                // Shoot the flicker
+                if ((gamepad1.left_bumper) && (shooterIdx == 1)) {
+                    // Set a future time to return flicker to rest
+                    flicker.setPosition(FLICKER_SHOOT);
+                    flickerRelease = rt + .25;
+                } else {
+                    if (prevLTrigVal == 0.0) {
+                        // Just keep asking to return to wait position
+                        flicker.setPosition(FLICKER_WAIT);
+                    }
+                }
+            } else if (flickerRelease > 0.0) {
+                // This is the case that the flick is in progress of pushing the ring in
+                if (flickerRelease < rt) {
+                    // Once the time has elapsed, move to the next state
+                    // and set a timer to wait for release
+                    flickerRelease = 0.0;
+                    flickerRearm = rt + 0.30;
+                } else {
+                    // Just keep asking to flick
+                    flicker.setPosition(FLICKER_SHOOT);
+                }
+            } else if (flickerRearm > 0.0) {
+                // This is when we are waiting for flicker to return to rest
+                if (flickerRearm < rt) {
+                    // Once time has elapsed, leave the state
+                    flickerRearm = 0.0;
+                } else {
+                    // keep asking
+                    flicker.setPosition(FLICKER_WAIT);
+                }
             } else {
+                // OK, something is messed up, lets just go back to steady-state
+                // Not sure it's possible to get here.
                 flicker.setPosition(FLICKER_WAIT);
+                flickerRelease = 0.0;
+                flickerRearm = 0.0;
             }
 
             // Start/stop the intake
@@ -391,7 +466,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                     shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                    shoot2_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                     shoot1_motor.setPower(shooterSet[shooterIdx]);
                     shoot2_motor.setPower(shooterSet[shooterIdx]);
 
@@ -415,11 +490,11 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
             // Rotate a little left
             if (gamepad1.dpad_left) {
-                rotate[0] -= 0.3 ;
+                rotate[0] -= 0.25 ;
             }
             // Rotate a little right
             if (gamepad1.dpad_right) {
-                rotate[0] -= 0.3 ;
+                rotate[0] += 0.25 ;
             }
 
             // This adds the powers from both controllers together scaled for each controller and FOV
