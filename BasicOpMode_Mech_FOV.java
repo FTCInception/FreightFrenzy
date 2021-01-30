@@ -149,7 +149,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
         final double CLAW_OPEN = 0.0, CLAW_CLOSED=1.0;
         final double FLICKER_SHOOT = 0.7, FLICKER_WAIT=0.0;
-        final double SHOOTER_NORMAL=0.475, SHOOTER_POWER_SHOT=0.447;
+        final double SHOOTER_NORMAL=0.475, SHOOTER_POWER_SHOT=0.4375;
         //wobble stuff
         //final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0; // 30 RPM 6mm d-shaft (5202 series)
         //final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0; // 60 RPM 6mm d-shaft (5202 series)
@@ -166,14 +166,14 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         double[] flickerSet = {FLICKER_WAIT, FLICKER_SHOOT};
         double[] clawSet = {CLAW_CLOSED, CLAW_OPEN};
         double[] intakeSet = {0.0, MAX_INTAKE_POWER};
-        double[] speedSet = {0.75, 1.0};
+        double[] speedSet = {0.75, 0.90};
         double[] shooterSet = {0.0, SHOOTER_NORMAL};
         int flickerIdx=0, clawIdx=0, intakeIdx=0, speedIdx=0, shooterIdx=0, wobbleIdx=0;
         double flickerRelease=0.0, flickerRearm=0.0;
         double prevLTrigVal=0.0;
         double prevRTrigVal=0.0;
 
-        double rt, nextLog = 0.0;
+        double maxLag, prt, rt, nextLog = 0.0, iter=0.0;
 
         double maxPwr = 0.0;
 
@@ -278,6 +278,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
         waitForStart();
         runtime.reset();
+        iter = 0.0;
+        prt = rt = maxLag = 0.0;
 
         if (enableCSVLogging) {
             // Lay down a header for our logging
@@ -288,10 +290,17 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
+            prt = rt ;
             rt = runtime.seconds() ;
+            maxLag = Math.max(maxLag, ((rt-prt)*1000.0));
+            iter += 1;
 
-            if (rt > 120) {
+            if ((rt > 120) && (shooterSet[1] != SHOOTER_POWER_SHOT)) {
                 shooterSet[1] = SHOOTER_POWER_SHOT;
+                shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                shoot1_motor.setPower(shooterSet[shooterIdx]);
+                shoot2_motor.setPower(shooterSet[shooterIdx]);
             }
 
             // Left trigger is a flicker override to help un-jam if needed.
@@ -473,6 +482,9 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                     intakeIdx=0;
                     intake_motor.setPower(intakeSet[intakeIdx]);
 
+                    // Reset lag
+                    maxLag = ((rt-prt)*1000.0);
+
                     dDownPrev[0] = true;
                 }
             } else {
@@ -561,7 +573,9 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
+            telemetry.addData("Lag:", "avg: %.2f ms, max: %2f ms", ((rt/iter)*1000.0), maxLag);
             telemetry.addData("Shooter:", "%.3f, %.0f", shooterSet[shooterIdx], (tps/(28.0/2.0))*60.0);
+            telemetry.addData("Wobble:", "pwr: %.2f, pos: %.1f", wobble_motor.getPower(), wobble_motor.getCurrentPosition()/WOBBLE_TICKS_PER_DEGREE);
             telemetry.update();
         }
 
