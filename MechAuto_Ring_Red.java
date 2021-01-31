@@ -99,11 +99,32 @@ public class MechAuto_Ring_Red extends LinearOpMode {
             if ( gamepad1.left_bumper ) { vision.tfod.deactivate(); vision.tfodState=false;}
             if ( (gamepad1.right_bumper) && (!vision.tfodState) ) { vision.clip = true; }
 
+            if ( gamepad2.dpad_left ) { IncepVision.clipLeft -= 1; }
+            if ( gamepad2.dpad_right ) { IncepVision.clipLeft += 1; }
+            if ( gamepad2.dpad_down ) { IncepVision.clipTop += 1; }
+            if ( gamepad2.dpad_up ) { IncepVision.clipTop -= 1; }
+            if ( gamepad2.x ) { IncepVision.clipRight += 1; }
+            if ( gamepad2.b ) { IncepVision.clipRight -= 1; }
+            if ( gamepad2.a ) { IncepVision.clipBottom -= 1; }
+            if ( gamepad2.y ) { IncepVision.clipBottom += 1; }
+            if ( gamepad2.left_bumper ) { vision.tfod.deactivate(); vision.tfodState=false;}
+            if ( (gamepad2.right_bumper) && (!vision.tfodState) ) { vision.clip = true; }
+
             // Move the entire box with the joystick.
             deltaY = (int)(gamepad1.left_stick_y * 2.1);
             deltaX = (int)(gamepad1.left_stick_x * 2.1);
             deltaY += (int)(gamepad1.right_stick_y * 2.1);
             deltaX += (int)(gamepad1.right_stick_x * 2.1);
+            IncepVision.clipTop += deltaY;
+            IncepVision.clipBottom -= deltaY;
+            IncepVision.clipLeft += deltaX;
+            IncepVision.clipRight -= deltaX;
+
+            // Move the entire box with the joystick.
+            deltaY += (int)(gamepad2.left_stick_y * 2.1);
+            deltaX += (int)(gamepad2.left_stick_x * 2.1);
+            deltaY += (int)(gamepad2.right_stick_y * 2.1);
+            deltaX += (int)(gamepad2.right_stick_x * 2.1);
             IncepVision.clipTop += deltaY;
             IncepVision.clipBottom -= deltaY;
             IncepVision.clipLeft += deltaX;
@@ -246,7 +267,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         robot.straightA = a;
-        a = robot.fastEncoderStrafe(DRIVE_SPEED, 25, 60, P);
+        a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Drop the wobble
@@ -299,7 +320,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
 
         // Line up for wobble
         robot.straightA = a;
-        a = robot.fastEncoderStrafe(DRIVE_SPEED, 12, 60, P);
+        a = robot.fastEncoderStrafe(DRIVE_SPEED, 13, 60, P);
         if(!opModeIsActive()){ return; }
 
         robot.shoot1_motor.setPower(0.0);
@@ -369,7 +390,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         robot.straightA = a;
-        a = robot.fastEncoderStraight(DRIVE_SPEED, -22, 60, P);
+        a = robot.fastEncoderStraight(DRIVE_SPEED, -24, 60, P);
         if(!opModeIsActive()){ return; }
 
         robot.claw.setPosition(0.0);

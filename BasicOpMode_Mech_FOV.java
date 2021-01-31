@@ -159,8 +159,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 {CLAW_OPEN,   0.8, 225*WOBBLE_TICKS_PER_DEGREE},
                 {CLAW_CLOSED, 0.8, 225*WOBBLE_TICKS_PER_DEGREE},
                 {CLAW_CLOSED, 0.5,  90*WOBBLE_TICKS_PER_DEGREE},
-                {CLAW_CLOSED, 0.5, 175*WOBBLE_TICKS_PER_DEGREE},
-                {CLAW_OPEN,   0.5, 175*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_CLOSED, 0.5, 170*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_OPEN,   0.5, 170*WOBBLE_TICKS_PER_DEGREE},
         };
 
         double[] flickerSet = {FLICKER_WAIT, FLICKER_SHOOT};
@@ -174,6 +174,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         double prevRTrigVal=0.0;
 
         double maxLag, prt, rt, nextLog = 0.0, iter=0.0;
+        boolean gp1Present = false, gp2Present = false;
 
         double maxPwr = 0.0;
 
@@ -290,12 +291,24 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
+            if (!gp1Present) {
+                if (!gamepad1.atRest()) {
+                    gp1Present = true ;
+                }
+            }
+
+            if (!gp2Present) {
+                if (!gamepad2.atRest()) {
+                    gp2Present = true ;
+                }
+            }
+
             prt = rt ;
             rt = runtime.seconds() ;
             maxLag = Math.max(maxLag, ((rt-prt)*1000.0));
             iter += 1;
 
-            if ((rt > 120) && (shooterSet[1] != SHOOTER_POWER_SHOT)) {
+            if ((rt > 90) && (shooterSet[1] != SHOOTER_POWER_SHOT)) {
                 shooterSet[1] = SHOOTER_POWER_SHOT;
                 shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -303,192 +316,403 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 shoot2_motor.setPower(shooterSet[shooterIdx]);
             }
 
-            // Left trigger is a flicker override to help un-jam if needed.
-            // Move flicker to the trigger position if non-zero or
-            // recently used the trigger to send a '0' position.
-            if ((gamepad1.left_trigger > 0.0) || (prevLTrigVal > 0.0)) {
-                prevLTrigVal = gamepad1.left_trigger;
-                flicker.setPosition(prevLTrigVal);
-            }
+            if (gp1Present) {
+                // Left trigger is a flicker override to help un-jam if needed.
+                // Move flicker to the trigger position if non-zero or
+                // recently used the trigger to send a '0' position.
+                if ((gamepad1.left_trigger > 0.0) || (prevLTrigVal > 0.0)) {
+                    prevLTrigVal = gamepad1.left_trigger;
+                    flicker.setPosition(prevLTrigVal);
+                }
 
-            // Right trigger is shooter reverse to help un-jam if needed.
-            // Drive shooter at 40% trigger position if non-zero or
-            // recently used the trigger to send a '0' position.
-            if (((gamepad1.right_trigger > 0.0) || (prevRTrigVal > 0.0)) &&
-                 (shooterIdx == 0)) {
-                prevRTrigVal = gamepad1.right_trigger * 0.30 ;
-                shoot1_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-                shoot2_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-                shoot1_motor.setPower(-prevRTrigVal);
-                shoot2_motor.setPower(-prevRTrigVal);
-            }
+                // Right trigger is shooter reverse to help un-jam if needed.
+                // Drive shooter at 40% trigger position if non-zero or
+                // recently used the trigger to send a '0' position.
+                if (((gamepad1.right_trigger > 0.0) || (prevRTrigVal > 0.0)) &&
+                        (shooterIdx == 0)) {
+                    prevRTrigVal = gamepad1.right_trigger * 0.30;
+                    shoot1_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    shoot2_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    shoot1_motor.setPower(-prevRTrigVal);
+                    shoot2_motor.setPower(-prevRTrigVal);
+                }
 
-            // One-button timed flick
-            // States:  Release and Rearm
-            // Release == 0 and rearm == 0 ==> at rest
-            // Release > 0  and rearm == 0 ==> waiting for flicker to reach max, release in the future
-            // Release == 0 and rearm > 0  ==> waiting for flicker to reach home, prevent re-flick until done
-            // Release > 0  and Rearm > 0  ==> illegal
-            if ((flickerRelease == 0.0) && (flickerRearm == 0.0)) {
-                // This is the 'normal'/'at-rest' case.  No flick in progress.
-                // Only flick if the shooter is running.
-                // Shoot the flicker
-                if ((gamepad1.left_bumper) && (shooterIdx == 1)) {
-                    // Set a future time to return flicker to rest
-                    flicker.setPosition(FLICKER_SHOOT);
-                    flickerRelease = rt + .25;
-                } else {
-                    if (prevLTrigVal == 0.0) {
-                        // Just keep asking to return to wait position
+                // One-button timed flick
+                // States:  Release and Rearm
+                // Release == 0 and rearm == 0 ==> at rest
+                // Release > 0  and rearm == 0 ==> waiting for flicker to reach max, release in the future
+                // Release == 0 and rearm > 0  ==> waiting for flicker to reach home, prevent re-flick until done
+                // Release > 0  and Rearm > 0  ==> illegal
+                if ((flickerRelease == 0.0) && (flickerRearm == 0.0)) {
+                    // This is the 'normal'/'at-rest' case.  No flick in progress.
+                    // Only flick if the shooter is running.
+                    // Shoot the flicker
+                    if ((gamepad1.left_bumper) && (shooterIdx == 1)) {
+                        // Set a future time to return flicker to rest
+                        flicker.setPosition(FLICKER_SHOOT);
+                        flickerRelease = rt + .25;
+                    } else {
+                        if (prevLTrigVal == 0.0) {
+                            // Just keep asking to return to wait position
+                            flicker.setPosition(FLICKER_WAIT);
+                        }
+                    }
+                } else if (flickerRelease > 0.0) {
+                    // This is the case that the flick is in progress of pushing the ring in
+                    if (flickerRelease < rt) {
+                        // Once the time has elapsed, move to the next state
+                        // and set a timer to wait for release
+                        flickerRelease = 0.0;
+                        flickerRearm = rt + 0.30;
+                    } else {
+                        // Just keep asking to flick
+                        flicker.setPosition(FLICKER_SHOOT);
+                    }
+                } else if (flickerRearm > 0.0) {
+                    // This is when we are waiting for flicker to return to rest
+                    if (flickerRearm < rt) {
+                        // Once time has elapsed, leave the state
+                        flickerRearm = 0.0;
+                    } else {
+                        // keep asking
                         flicker.setPosition(FLICKER_WAIT);
                     }
-                }
-            } else if (flickerRelease > 0.0) {
-                // This is the case that the flick is in progress of pushing the ring in
-                if (flickerRelease < rt) {
-                    // Once the time has elapsed, move to the next state
-                    // and set a timer to wait for release
-                    flickerRelease = 0.0;
-                    flickerRearm = rt + 0.30;
                 } else {
-                    // Just keep asking to flick
-                    flicker.setPosition(FLICKER_SHOOT);
-                }
-            } else if (flickerRearm > 0.0) {
-                // This is when we are waiting for flicker to return to rest
-                if (flickerRearm < rt) {
-                    // Once time has elapsed, leave the state
-                    flickerRearm = 0.0;
-                } else {
-                    // keep asking
+                    // OK, something is messed up, lets just go back to steady-state
+                    // Not sure it's possible to get here.
                     flicker.setPosition(FLICKER_WAIT);
+                    flickerRelease = 0.0;
+                    flickerRearm = 0.0;
                 }
-            } else {
-                // OK, something is messed up, lets just go back to steady-state
-                // Not sure it's possible to get here.
-                flicker.setPosition(FLICKER_WAIT);
-                flickerRelease = 0.0;
-                flickerRearm = 0.0;
-            }
 
-            // Start/stop the intake
-            if (gamepad1.right_bumper) {
-                if(!rBumpPrev[0]) {
-                    intakeIdx = (intakeIdx + 1 ) % intakeSet.length ;
-                    intake_motor.setPower(intakeSet[intakeIdx]);
-                    rBumpPrev[0] = true;
-                }
-            } else {
-                rBumpPrev[0] = false;
-            }
-
-            // Change the chassis speed
-            if (gamepad1.a) {
-                if(!aPrev[0]) {
-                    speedIdx = (speedIdx + 1) % speedSet.length;
-                    speedModifier[0] = speedSet[speedIdx];
-                    aPrev[0] = true;
-                }
-            } else {
-                aPrev[0] = false;
-            }
-
-            // Advance the wobble sequence
-            if (gamepad1.b) {
-                if(!bPrev[0]) {
-                    wobbleIdx = (wobbleIdx + 1) % wobbleSeq.length;
-                    wobble_motor.setTargetPosition((int)wobbleSeq[wobbleIdx][2]);
-                    wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
-                    claw.setPosition(wobbleSeq[wobbleIdx][0]);
-                    bPrev[0] = true;
-                }
-            } else {
-                bPrev[0] = false;
-            }
-
-            // Backup the wobble sequence
-            if (gamepad1.x) {
-                if(!xPrev[0]) {
-                    if (wobbleIdx == 0) {
-                        wobbleIdx = (wobbleSeq.length - 1);
-                    } else {
-                        wobbleIdx = (wobbleIdx - 1) % wobbleSeq.length;
+                // Start/stop the intake
+                if (gamepad1.right_bumper) {
+                    if (!rBumpPrev[0]) {
+                        intakeIdx = (intakeIdx + 1) % intakeSet.length;
+                        intake_motor.setPower(intakeSet[intakeIdx]);
+                        rBumpPrev[0] = true;
                     }
-                    wobble_motor.setTargetPosition((int)wobbleSeq[wobbleIdx][2]);
-                    wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
-                    claw.setPosition(wobbleSeq[wobbleIdx][0]);
-                    xPrev[0] = true;
+                } else {
+                    rBumpPrev[0] = false;
                 }
-            } else {
-                xPrev[0] = false;
-            }
 
-            // Let's turn off wobble motor when we're in the parked position.
-            if ( (wobble_motor.getCurrentPosition() <= ( 7.0 * WOBBLE_TICKS_PER_DEGREE ) ) && ( wobbleIdx == 0 ) ) {
-                wobble_motor.setPower(0);
-            }
-
-            // Stop the intake, then reverse power, and start again
-            if (gamepad1.y) {
-                if(!yPrev[0]) {
-                    intake_motor.setPower(0.0);
-                    for( int i=0; i < intakeSet.length; i++) { intakeSet[i] *= -1.0; }
-                    sleep(250);
-                    intake_motor.setPower(intakeSet[intakeIdx]);
-                    yPrev[0] = true;
+                // Change the chassis speed
+                if (gamepad1.a) {
+                    if (!aPrev[0]) {
+                        speedIdx = (speedIdx + 1) % speedSet.length;
+                        speedModifier[0] = speedSet[speedIdx];
+                        aPrev[0] = true;
+                    }
+                } else {
+                    aPrev[0] = false;
                 }
-            } else {
-                yPrev[0] = false;
-            }
 
-            if (gamepad1.dpad_up) {
-                if(!dUpPrev[0]) {
-                    shooterIdx = (shooterIdx + 1) % shooterSet.length;
-                    if (shooterSet[shooterIdx] > 0.0) {
-                        shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                        shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                    } else {
+                // Advance the wobble sequence
+                if (gamepad1.b) {
+                    if (!bPrev[0]) {
+                        wobbleIdx = (wobbleIdx + 1) % wobbleSeq.length;
+                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][2]);
+                        wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
+                        claw.setPosition(wobbleSeq[wobbleIdx][0]);
+                        bPrev[0] = true;
+                    }
+                } else {
+                    bPrev[0] = false;
+                }
+
+                // Backup the wobble sequence
+                if (gamepad1.x) {
+                    if (!xPrev[0]) {
+                        if (wobbleIdx == 0) {
+                            wobbleIdx = (wobbleSeq.length - 1);
+                        } else {
+                            wobbleIdx = (wobbleIdx - 1) % wobbleSeq.length;
+                        }
+                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][2]);
+                        wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
+                        claw.setPosition(wobbleSeq[wobbleIdx][0]);
+                        xPrev[0] = true;
+                    }
+                } else {
+                    xPrev[0] = false;
+                }
+
+                // Let's turn off wobble motor when we're in the parked position.
+                if ((wobble_motor.getCurrentPosition() <= (7.0 * WOBBLE_TICKS_PER_DEGREE)) && (wobbleIdx == 0)) {
+                    wobble_motor.setPower(0);
+                }
+
+                // Stop the intake, then reverse power, and start again
+                if (gamepad1.y) {
+                    if (!yPrev[0]) {
+                        intake_motor.setPower(0.0);
+                        for (int i = 0; i < intakeSet.length; i++) {
+                            intakeSet[i] *= -1.0;
+                        }
+                        sleep(250);
+                        intake_motor.setPower(intakeSet[intakeIdx]);
+                        yPrev[0] = true;
+                    }
+                } else {
+                    yPrev[0] = false;
+                }
+
+                if (gamepad1.dpad_up) {
+                    if (!dUpPrev[0]) {
+                        shooterIdx = (shooterIdx + 1) % shooterSet.length;
+                        if (shooterSet[shooterIdx] > 0.0) {
+                            shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                            shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                        } else {
+                            shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                            shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        }
+                        shoot1_motor.setPower(shooterSet[shooterIdx]);
+                        shoot2_motor.setPower(shooterSet[shooterIdx]);
+
+                        dUpPrev[0] = true;
+                    }
+                } else {
+                    dUpPrev[0] = false;
+                }
+
+                if (gamepad1.dpad_down) {
+                    if (!dDownPrev[0]) {
+                        // Reset all indices and assign them
+                        flickerIdx = 0;
+                        flicker.setPosition(flickerSet[flickerIdx]);
+
+                        wobbleIdx = 0;
+                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][2]);
+                        wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
+                        claw.setPosition(wobbleSeq[wobbleIdx][0]);
+
+                        shooterIdx = 0;
                         shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    }
-                    shoot1_motor.setPower(shooterSet[shooterIdx]);
-                    shoot2_motor.setPower(shooterSet[shooterIdx]);
+                        shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                        shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                        shoot1_motor.setPower(shooterSet[shooterIdx]);
+                        shoot2_motor.setPower(shooterSet[shooterIdx]);
 
-                    dUpPrev[0] = true;
+                        // Stop intake, set to positive
+                        intakeIdx = 0;
+                        intake_motor.setPower(intakeSet[intakeIdx]);
+                        for (int i = 0; i < intakeSet.length; i++) {
+                            intakeSet[i] = Math.abs(intakeSet[i]);
+                        }
+
+                        // Reset lag
+                        maxLag = ((rt - prt) * 1000.0);
+
+                        dDownPrev[0] = true;
+                    }
+                } else {
+                    dDownPrev[0] = false;
                 }
-            } else {
-                dUpPrev[0] = false;
             }
 
-            if (gamepad1.dpad_down) {
-                if(!dDownPrev[0]) {
-                    // Reset all indices and assign them
-                    flickerIdx = 0;
-                    flicker.setPosition(flickerSet[flickerIdx]);
-
-                    wobbleIdx = 0;
-                    wobble_motor.setTargetPosition((int)wobbleSeq[wobbleIdx][2]);
-                    wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
-                    claw.setPosition(wobbleSeq[wobbleIdx][0]);
-
-                    shooterIdx=0;
-                    shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                    shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                    shoot1_motor.setPower(shooterSet[shooterIdx]);
-                    shoot2_motor.setPower(shooterSet[shooterIdx]);
-
-                    intakeIdx=0;
-                    intake_motor.setPower(intakeSet[intakeIdx]);
-
-                    // Reset lag
-                    maxLag = ((rt-prt)*1000.0);
-
-                    dDownPrev[0] = true;
+            if (gp2Present) {
+                // Left trigger is a flicker override to help un-jam if needed.
+                // Move flicker to the trigger position if non-zero or
+                // recently used the trigger to send a '0' position.
+                if ((gamepad2.left_trigger > 0.0) || (prevLTrigVal > 0.0)) {
+                    prevLTrigVal = gamepad2.left_trigger;
+                    flicker.setPosition(prevLTrigVal);
                 }
-            } else {
-                dDownPrev[0] = false;
+
+                if (gamepad2.right_trigger > 0.3) {
+                    if (!rTrigPrev[1]) {
+                        shooterIdx = (shooterIdx + 1) % shooterSet.length;
+                        if (shooterSet[shooterIdx] > 0.0) {
+                            shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                            shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                        } else {
+                            shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                            shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        }
+                        shoot1_motor.setPower(shooterSet[shooterIdx]);
+                        shoot2_motor.setPower(shooterSet[shooterIdx]);
+
+                        rTrigPrev[1] = true;
+                    }
+                } else {
+                    rTrigPrev[1] = false;
+                }
+
+                // One-button timed flick
+                // States:  Release and Rearm
+                // Release == 0 and rearm == 0 ==> at rest
+                // Release > 0  and rearm == 0 ==> waiting for flicker to reach max, release in the future
+                // Release == 0 and rearm > 0  ==> waiting for flicker to reach home, prevent re-flick until done
+                // Release > 0  and Rearm > 0  ==> illegal
+                if ((flickerRelease == 0.0) && (flickerRearm == 0.0)) {
+                    // This is the 'normal'/'at-rest' case.  No flick in progress.
+                    // Only flick if the shooter is running.
+                    // Shoot the flicker
+                    if ((gamepad2.left_bumper) && (shooterIdx == 1)) {
+                        // Set a future time to return flicker to rest
+                        flicker.setPosition(FLICKER_SHOOT);
+                        flickerRelease = rt + .25;
+                    } else {
+                        if (prevLTrigVal == 0.0) {
+                            // Just keep asking to return to wait position
+                            flicker.setPosition(FLICKER_WAIT);
+                        }
+                    }
+                } else if (flickerRelease > 0.0) {
+                    // This is the case that the flick is in progress of pushing the ring in
+                    if (flickerRelease < rt) {
+                        // Once the time has elapsed, move to the next state
+                        // and set a timer to wait for release
+                        flickerRelease = 0.0;
+                        flickerRearm = rt + 0.30;
+                    } else {
+                        // Just keep asking to flick
+                        flicker.setPosition(FLICKER_SHOOT);
+                    }
+                } else if (flickerRearm > 0.0) {
+                    // This is when we are waiting for flicker to return to rest
+                    if (flickerRearm < rt) {
+                        // Once time has elapsed, leave the state
+                        flickerRearm = 0.0;
+                    } else {
+                        // keep asking
+                        flicker.setPosition(FLICKER_WAIT);
+                    }
+                } else {
+                    // OK, something is messed up, lets just go back to steady-state
+                    // Not sure it's possible to get here.
+                    flicker.setPosition(FLICKER_WAIT);
+                    flickerRelease = 0.0;
+                    flickerRearm = 0.0;
+                }
+
+                // Start/stop the intake
+                if (gamepad2.right_bumper) {
+                    if (!rBumpPrev[0]) {
+                        intakeIdx = (intakeIdx + 1) % intakeSet.length;
+                        intake_motor.setPower(intakeSet[intakeIdx]);
+                        rBumpPrev[0] = true;
+                    }
+                } else {
+                    rBumpPrev[0] = false;
+                }
+
+                // Change the chassis speed
+                if (gamepad2.a) {
+                    if (!aPrev[0]) {
+                        speedIdx = (speedIdx + 1) % speedSet.length;
+                        speedModifier[1] = speedSet[speedIdx];
+                        aPrev[0] = true;
+                    }
+                } else {
+                    aPrev[0] = false;
+                }
+
+                // Advance the wobble sequence
+                if (gamepad2.b) {
+                    if (!bPrev[0]) {
+                        wobbleIdx = (wobbleIdx + 1) % wobbleSeq.length;
+                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][2]);
+                        wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
+                        claw.setPosition(wobbleSeq[wobbleIdx][0]);
+                        bPrev[0] = true;
+                    }
+                } else {
+                    bPrev[0] = false;
+                }
+
+                // Backup the wobble sequence
+                if (gamepad2.x) {
+                    if (!xPrev[0]) {
+                        if (wobbleIdx == 0) {
+                            wobbleIdx = (wobbleSeq.length - 1);
+                        } else {
+                            wobbleIdx = (wobbleIdx - 1) % wobbleSeq.length;
+                        }
+                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][2]);
+                        wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
+                        claw.setPosition(wobbleSeq[wobbleIdx][0]);
+                        xPrev[0] = true;
+                    }
+                } else {
+                    xPrev[0] = false;
+                }
+
+                // Let's turn off wobble motor when we're in the parked position.
+                if ((wobble_motor.getCurrentPosition() <= (7.0 * WOBBLE_TICKS_PER_DEGREE)) && (wobbleIdx == 0)) {
+                    wobble_motor.setPower(0);
+                }
+
+                // Stop the intake, then reverse power, and start again
+                if (gamepad2.y) {
+                    if (!yPrev[0]) {
+                        intake_motor.setPower(0.0);
+                        for (int i = 0; i < intakeSet.length; i++) {
+                            intakeSet[i] *= -1.0;
+                        }
+                        sleep(250);
+                        intake_motor.setPower(intakeSet[intakeIdx]);
+                        yPrev[0] = true;
+                    }
+                } else {
+                    yPrev[0] = false;
+                }
+
+                if (gamepad2.dpad_up) {
+                    if (!dUpPrev[0]) {
+                        shooterIdx = (shooterIdx + 1) % shooterSet.length;
+                        if (shooterSet[shooterIdx] > 0.0) {
+                            shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                            shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                        } else {
+                            shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                            shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        }
+                        shoot1_motor.setPower(shooterSet[shooterIdx]);
+                        shoot2_motor.setPower(shooterSet[shooterIdx]);
+
+                        dUpPrev[0] = true;
+                    }
+                } else {
+                    dUpPrev[0] = false;
+                }
+
+                if (gamepad2.dpad_down) {
+                    if (!dDownPrev[0]) {
+                        // Reset all indices and assign them
+                        flickerIdx = 0;
+                        flicker.setPosition(flickerSet[flickerIdx]);
+
+                        wobbleIdx = 0;
+                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][2]);
+                        wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
+                        claw.setPosition(wobbleSeq[wobbleIdx][0]);
+
+                        shooterIdx = 0;
+                        shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                        shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                        shoot1_motor.setPower(shooterSet[shooterIdx]);
+                        shoot2_motor.setPower(shooterSet[shooterIdx]);
+
+                        // Stop intake, set to positive
+                        intakeIdx = 0;
+                        intake_motor.setPower(intakeSet[intakeIdx]);
+                        for (int i = 0; i < intakeSet.length; i++) {
+                            intakeSet[i] = Math.abs(intakeSet[i]);
+                        }
+
+                        // Reset lag
+                        maxLag = ((rt - prt) * 1000.0);
+
+                        dDownPrev[0] = true;
+                    }
+                } else {
+                    dDownPrev[0] = false;
+                }
             }
 
             // Read the controller 1 (driver) stick positions
@@ -496,17 +720,66 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             forward[0] = -gamepad1.left_stick_y;
             rotate[0] = gamepad1.right_stick_x;
 
+            // Remove 15% deadzone
+            if (strafe[0] >= 0.025) {
+                strafe[0] = (strafe[0] * 0.85) + 0.15;
+            }
+            if (forward[0] >= 0.025) {
+                forward[0] = (forward[0] * 0.85) + 0.15;
+            }
+            if (rotate[0] >= 0.025) {
+                rotate[0] = (rotate[0] * 0.85) + 0.15;
+            }
+            if (strafe[0] <= -0.025) {
+                strafe[0] = (strafe[0] * 0.85) - 0.15;
+            }
+            if (forward[0] <= -0.025) {
+                forward[0] = (forward[0] * 0.85) - 0.15;
+            }
+            if (rotate[0] <= -0.025) {
+                rotate[0] = (rotate[0] * 0.85) - 0.15;
+            }
+
+            // Rotate a little left
+            if (gamepad1.dpad_left) {
+                rotate[0] -= 0.25;
+            }
+            // Rotate a little right
+            if (gamepad1.dpad_right) {
+                rotate[0] += 0.25;
+            }
+
             strafe[1] = gamepad2.left_stick_x;
             forward[1] = -gamepad2.left_stick_y;
             rotate[1] = gamepad2.right_stick_x;
 
+            // Remove 15% deadzone
+            if (strafe[1] >= 0.025) {
+                strafe[1] = (strafe[1] * 0.85) + 0.15;
+            }
+            if (forward[1] >= 0.025) {
+                forward[1] = (forward[1] * 0.85) + 0.15;
+            }
+            if (rotate[1] >= 0.025) {
+                rotate[1] = (rotate[1] * 0.85) + 0.15;
+            }
+            if (strafe[1] <= -0.025) {
+                strafe[1] = (strafe[1] * 0.85) - 0.15;
+            }
+            if (forward[1] <= -0.025) {
+                forward[1] = (forward[1] * 0.85) - 0.15;
+            }
+            if (rotate[1] <= -0.025) {
+                rotate[1] = (rotate[1] * 0.85) - 0.15;
+            }
+
             // Rotate a little left
-            if (gamepad1.dpad_left) {
-                rotate[0] -= 0.25 ;
+            if (gamepad2.dpad_left) {
+                rotate[1] -= 0.25;
             }
             // Rotate a little right
-            if (gamepad1.dpad_right) {
-                rotate[0] += 0.25 ;
+            if (gamepad2.dpad_right) {
+                rotate[1] += 0.25;
             }
 
             // This adds the powers from both controllers together scaled for each controller and FOV
@@ -575,7 +848,7 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.addData("Lag:", "avg: %.2f ms, max: %2f ms", ((rt/iter)*1000.0), maxLag);
             telemetry.addData("Shooter:", "%.3f, %.0f", shooterSet[shooterIdx], (tps/(28.0/2.0))*60.0);
-            telemetry.addData("Wobble:", "pwr: %.2f, pos: %.1f", wobble_motor.getPower(), wobble_motor.getCurrentPosition()/WOBBLE_TICKS_PER_DEGREE);
+            //telemetry.addData("Wobble:", "pwr: %.2f, pos: %.1f", wobble_motor.getPower(), wobble_motor.getCurrentPosition()/WOBBLE_TICKS_PER_DEGREE);
             telemetry.update();
         }
 

@@ -145,7 +145,7 @@ public class IncepVision {
         int bufWidth = image.getBufferWidth();
         int bufHeight = image.getBufferHeight();
 
-        Bitmap bitmap = Bitmap.createBitmap(image.getBufferWidth(), image.getBufferHeight(),
+        Bitmap bitmap = Bitmap.createBitmap(image.getWidth(), image.getHeight(),
                 Bitmap.Config.RGB_565);
         bitmap.copyPixelsFromBuffer(image.getPixels());
 
@@ -179,6 +179,13 @@ public class IncepVision {
         int ringRight  = bufWidth - clipRight ;
         int ringLeft   = clipLeft ;
         int ringWidth = ringRight - ringLeft ;
+
+        // FIXME -- We need to bounds-check our x and y against the edge of the image
+        // Maybe add some telemetry to say something is suspicious if the box
+        // is very far outside our expectations?
+        //myLOpMode.telemetry.addData("bufsize", "w: %d x h: %d", bitmap.getWidth(),bitmap.getHeight());
+        //myLOpMode.telemetry.addData("clipping", "%d, %d, %d, %d", ringTop, ringBottom, ringRight, ringLeft);
+        //myLOpMode.telemetry.update();
 
         // For each slice
         for ( sIdx = 0 ; sIdx < NUM_SLICES ; sIdx++ ) {
