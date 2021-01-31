@@ -155,12 +155,12 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         //final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0; // 60 RPM 6mm d-shaft (5202 series)
         final double WOBBLE_TICKS_PER_DEGREE = 3892.0/360.0; // 43 RPM 8mm REX (5203 series)
         final double[][] wobbleSeq = {
-                {CLAW_CLOSED, 0.5,   5*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_CLOSED, 0.75,   5*WOBBLE_TICKS_PER_DEGREE},
                 {CLAW_OPEN,   0.8, 225*WOBBLE_TICKS_PER_DEGREE},
                 {CLAW_CLOSED, 0.8, 225*WOBBLE_TICKS_PER_DEGREE},
-                {CLAW_CLOSED, 0.5,  90*WOBBLE_TICKS_PER_DEGREE},
-                {CLAW_CLOSED, 0.5, 170*WOBBLE_TICKS_PER_DEGREE},
-                {CLAW_OPEN,   0.5, 170*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_CLOSED, 0.75,  45*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_CLOSED, 0.75, 170*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_OPEN,   0.75, 170*WOBBLE_TICKS_PER_DEGREE},
         };
 
         double[] flickerSet = {FLICKER_WAIT, FLICKER_SHOOT};
