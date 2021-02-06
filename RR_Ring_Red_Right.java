@@ -297,7 +297,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
     }
 
-    /*
+
 
     private void Ring1() {
 
@@ -305,11 +305,21 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         int TIdx = 0;
 
         // Drive to drop zone
-        a = robot.fastEncoderStraight(DRIVE_SPEED, 87, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(startPose)
+                .forward(87)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        // robot.straightA = a;
+        //a = robot.fastEncoderStraight(DRIVE_SPEED, 87, 60, P);
         if(!opModeIsActive()){ return; }
 
-        robot.straightA = a;
-        a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .strafeLeft(24)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 60, P);
+
         if(!opModeIsActive()){ return; }
 
         // Drop the wobble
@@ -326,7 +336,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Back to shooting zone
-        a = robot.fastEncoderStraight(DRIVE_SPEED, -30, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .back(30)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStraight(DRIVE_SPEED, -30, 60, P);
         if(!opModeIsActive()){ return; }
 
         sleep(500);
@@ -360,7 +375,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Line up for wobble
-        a = robot.fastEncoderStrafe(DRIVE_SPEED, 13, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .strafeLeft(13)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStrafe(DRIVE_SPEED, 13, 60, P);
         if(!opModeIsActive()){ return; }
 
         robot.shoot1_motor.setPower(0.0);
@@ -371,7 +391,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Back up to wobble
-        a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .back(32)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        // robot.straightA = a;
+        //a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Grab wobble
@@ -384,7 +409,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Strafe to line up on ring
-        a = robot.fastEncoderStrafe(DRIVE_SPEED, -18, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .strafeRight(18)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        // robot.straightA = a;
+        //a = robot.fastEncoderStrafe(DRIVE_SPEED, -18, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Turn on intake
@@ -392,7 +422,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Intake ring and drive to shoot distance
-        a = robot.fastEncoderStraight(DRIVE_SPEED, 29, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .forward(29)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStraight(DRIVE_SPEED, 29, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Power up early
@@ -401,7 +436,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Line up for shot
-        a = robot.fastEncoderStrafe(DRIVE_SPEED, 5, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .strafeLeft(5)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStrafe(DRIVE_SPEED, 5, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Turn off intake
@@ -422,10 +462,16 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         robot.shoot2_motor.setPower(0.0);
         if(!opModeIsActive()){ return; }
 
-        a = robot.gyroRotate(TURN_SPEED, 170 - a, 60);
+        robot.drive.turn(Math.toRadians(170));
+        //a = robot.gyroRotate(TURN_SPEED, 170 - a, 60);
         if(!opModeIsActive()){ return; }
 
-        a = robot.fastEncoderStraight(DRIVE_SPEED, -24, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .back(24)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStraight(DRIVE_SPEED, -24, 60, P);
         if(!opModeIsActive()){ return; }
 
         robot.claw.setPosition(0.0);
@@ -441,13 +487,19 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
     }
 
+
     private void Ring4() {
 
         Trajectory[] traj = new Trajectory[25];
         int TIdx = 0;
 
         // Full speed length of field to the target zone
-        a = robot.fastEncoderStraight(DRIVE_SPEED, 115, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(startPose)
+                .forward(115)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStraight(DRIVE_SPEED, 115, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Drop the wobble and run
@@ -455,7 +507,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Back up to a good shooting distance
-        a = robot.fastEncoderStraight(DRIVE_SPEED, -58, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .back(58)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStraight(DRIVE_SPEED, -58, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Turn off intake now
@@ -468,7 +525,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Move to line up shot
-        a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .strafeLeft(24)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStrafe(DRIVE_SPEED, 24, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Fire away
@@ -501,7 +563,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Line up for wobble pickup
-        a = robot.fastEncoderStrafe(DRIVE_SPEED, 13, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .strafeLeft(13)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStrafe(DRIVE_SPEED, 13, 60, P);
         if(!opModeIsActive()){ return; }
 
         robot.shoot1_motor.setPower(0.0);
@@ -512,7 +579,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Back to wobble
-        a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .back(32)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStraight(DRIVE_SPEED, -32, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Grab the wobble
@@ -525,7 +597,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Line up over 4-stack
-        a = robot.fastEncoderStrafe(DRIVE_SPEED, -18, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .strafeRight(18)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStrafe(DRIVE_SPEED, -18, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Get ready to intake and shoot
@@ -538,11 +615,17 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Go intake a few and shoot one
-        a = robot.fastEncoderStraight(DRIVE_SPEED, 15, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .forward(15)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStraight(DRIVE_SPEED, 15, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Turn a little towards the goal
-        a = robot.gyroRotate(.8, 5 - a, 60);
+        robot.drive.turn(Math.toRadians(5));
+        //a = robot.gyroRotate(.8, 5 - a, 60);
         if(!opModeIsActive()){ return; }
 
         // Wait for the rings to settle
@@ -555,12 +638,18 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         robot.shoot2_motor.setPower(0.475);
 
         // Turn a little back
-        a = robot.gyroRotate(TURN_SPEED, -4 - a, 60);
+        robot.drive.turn(Math.toRadians(-4));
+        //a = robot.gyroRotate(TURN_SPEED, -4 - a, 60);
         robot.flicker.setPosition(0.0);
         if(!opModeIsActive()){ return; }
 
         // Intake the reset and shoot them
-        a = robot.fastEncoderStraight(DRIVE_SPEED, 14, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .forward(14)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStraight(DRIVE_SPEED, 14, 60, P);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(1.0);
@@ -593,12 +682,18 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Turn around and back the wobble in
-        a = robot.gyroRotate(TURN_SPEED, 155 - a, 60);
+        robot.drive.turn(Math.toRadians(155));
+        //a = robot.gyroRotate(TURN_SPEED, 155 - a, 60);
         robot.flicker.setPosition(0.0);
         if(!opModeIsActive()){ return; }
 
         // Drive the wobble in
-        a = robot.fastEncoderStraight(DRIVE_SPEED, -49.0, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .back(49)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStraight(DRIVE_SPEED, -49.0, 60, P);
         if(!opModeIsActive()){ return; }
 
         // Drop it off
@@ -608,12 +703,17 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Run like heck
-        a = robot.fastEncoderStraight(DRIVE_SPEED, 28.0, 60, P);
+        traj[TIdx] = robot.drive.trajectoryBuilder(traj[TIdx-1].end())
+                .forward(28)
+                .build();
+        robot.drive.followTrajectory(traj[TIdx++]);
+        //robot.straightA = a;
+        //a = robot.fastEncoderStraight(DRIVE_SPEED, 28.0, 60, P);
         if(!opModeIsActive()){ return; }
 
         robot.claw.setPosition(1.0);
         sleep(500);
         if(!opModeIsActive()){ return; }
     }
-    */
+
 }
