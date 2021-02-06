@@ -254,6 +254,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         robot.claw.setPosition(1.0);
         if(!opModeIsActive()){ return; }
 
+        robot.straightA = a;
         a = robot.fastEncoderStraight(DRIVE_SPEED, 11, 60, P);
         sleep(1000);
         if(!opModeIsActive()){ return; }

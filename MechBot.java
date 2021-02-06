@@ -434,6 +434,14 @@ public class MechBot {
         }
     }
 
+    public double gyroRotatePrecise(double speed, double degrees, double timeoutS) {
+        if (degrees > 0){
+            return(gyroTurnPrecise( degrees, -speed, speed, timeoutS ));
+        } else {
+            return(gyroTurnPrecise( degrees, speed, -speed, timeoutS ));
+        }
+    }
+
     public double gyroPivot(double speed, double degrees, double timeoutS) {
         // +speed and +degrees requires right power
         // -speed and -degrees requires right power
@@ -680,7 +688,47 @@ public class MechBot {
         return(gyroTurn(degrees, leftPower, rightPower, timeoutS, speedRampUp, speedRampDown));
     }
 
-    /*
+    // Calling with an unknown accel/decel profile, try to find a good one for the caller.
+    public double gyroTurnPrecise(double degrees,
+                           double leftPower, double rightPower,
+                           double timeoutS) {
+
+        // This profile is a hold over from the straight commands
+        double[] speedRampUp = {0.225, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDown = {0.20, 0.225, 0.25, 0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+
+        // This profile is for rotate
+        double[] speedRampUpR = {0.225, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownR = {0.20, 0.225, 0.25, 0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+
+        // This profile is for the foundation movement which is the only thing with Pivot right now.  Better to let foundation manage
+        // it special profile fro itself and build a general purpose pivot here.
+        double[] speedRampUpP = {0.225, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownP = {0.20, 0.225, 0.25, 0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+
+        // If this is a rotate, use rotate profile
+        if (leftPower == -rightPower) {
+            speedRampUp = speedRampUpR;
+            speedRampDown = speedRampDownR;
+        }
+
+        // If this is a Pivot, use Pivot profile
+        if ((leftPower == 0) || (rightPower == 0) ) {
+            speedRampUp = speedRampUpP;
+            speedRampDown = speedRampDownP;
+        }
+
+        return(gyroTurn(degrees, leftPower, rightPower, timeoutS, speedRampUp, speedRampDown, 0.25));
+    }
+
+    public double gyroTurn(double degrees,
+                           double leftPower, double rightPower,
+                           double timeoutS, double[] up, double[] down) {
+
+        return(gyroTurn(degrees, leftPower, rightPower, timeoutS, up, down, CLOSE_ENOUGH_DEGREE));
+
+    }
+        /*
      *  Method to perfmorm an arbitrary turn with differential wheel power and gyro feedback
      *  Move will stop if any of three conditions occur:
      *  1) Move gets to the desired heading
@@ -689,7 +737,8 @@ public class MechBot {
      */
     public double gyroTurn(double degrees,
                            double leftPower, double rightPower,
-                           double timeoutS, double[] up, double[] down) {
+                           double timeoutS, double[] up, double[] down,
+                           double precision ) {
         double toGo;
         double maxPower;
         double actSpeed=0.0;
@@ -798,7 +847,7 @@ public class MechBot {
 
                 // Look to see if our delta is really close or if we over rotated already (sign changed on delta)
                 delta = normalizeAngle(curHeading - tgtHeading);
-                if (((Math.abs(delta)) < CLOSE_ENOUGH_DEGREE) || (delta/Math.abs(delta) != sign)) {
+                if (((Math.abs(delta)) < precision) || (delta/Math.abs(delta) != sign)) {
                         break;
                 }
 
