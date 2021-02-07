@@ -70,7 +70,7 @@ import com.qualcomm.robotcore.hardware.PIDCoefficients;
  * Reverse shooter on trigger?
  */
 
-@TeleOp(name="Mech FOV", group="Linear Opmode")
+@TeleOp(name="BasicMech", group="Linear Opmode")
 public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
     // Declare OpMode members.
