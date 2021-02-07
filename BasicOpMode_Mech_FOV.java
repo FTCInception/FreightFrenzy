@@ -223,6 +223,18 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         l_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         r_f_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         r_b_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        // If we drive the 'normal' teleop after a RoadRunner Autonomous,
+        // we will inherit the PIDF from RR.  This makes the driving super
+        // jerky, restore the PIDF here to something more sane for humans
+        l_f_motor.setVelocityPIDFCoefficients(10.0,3.0,0.0,0.0);
+        l_b_motor.setVelocityPIDFCoefficients(10.0,3.0,0.0,0.0);
+        r_f_motor.setVelocityPIDFCoefficients(10.0,3.0,0.0,0.0);
+        r_b_motor.setVelocityPIDFCoefficients(10.0,3.0,0.0,0.0);
+        // This is a guess at some PIDF from default roadrunner
+        //l_f_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        //l_b_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        //r_f_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        //r_b_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
 
         intake_motor = hardwareMap.dcMotor.get("intake");
         intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
