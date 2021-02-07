@@ -29,14 +29,23 @@ Instructions to create repo with separate TeamCode repo:
 After the above is run, your directory is setup and can be imported into Android Studio.  Import the top-level "FtcRobotController" directory. Once in Andriod Studio, you will be able to commit changes to either the FTC FtcRobotController repo or to the Inception UltimateGoal (this) repo.
 
 To be able to build with RoadRunner, you will need to add the following to your gradle files:
+
     TeamCode/build.release.gradle:
+
         implementation 'org.apache.commons:commons-math3:3.6.1'
+
         implementation 'com.acmerobotics.roadrunner:core:0.5.3'
+
         implementation 'com.acmerobotics.dashboard:dashboard:0.4.0'
+
     FtcRobotController/build.release.gradle:
+
         implementation 'com.acmerobotics.dashboard:dashboard:0.4.0'
+
     build.common.gradle (Change VERSION_1_7 to VERSION_1_8:
+
          sourceCompatibility JavaVersion.VERSION_1_8
+
          targetCompatibility JavaVersion.VERSION_1_8
 
 ## References:
