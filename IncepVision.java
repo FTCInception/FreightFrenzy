@@ -334,7 +334,16 @@ public class IncepVision {
                         } else{
                             tfod.setClippingMargins(0, 0, 0, 0);
                         }
-                        processImage(frame.getImage(i));
+                        try {
+                            processImage(frame.getImage(i));
+                        } catch(Exception e) {
+                            myLOpMode.telemetry.addData("TENSOR FLOW BARFED -- You need to align the camera or 'freeze' and manually align","");
+                            clipLeft=280;
+                            clipTop=260;
+                            clipRight=260;
+                            clipBottom=155;
+                            myLOpMode.telemetry.update();
+                        }
                     }
                 }
             }
