@@ -211,9 +211,9 @@ public class RRMech_Teleop extends LinearOpMode {
 
         // We want to turn off velocity control for teleop
         // Velocity control per wheel is not necessary outside of motion profiled auto
-        //drive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        drive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         // This is a more sane PIDF for humans compared to the Autonomous
-        drive.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(10.0,3.0,0.0,0.0));
+        //drive.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(10.0,3.0,0.0,0.0));
         // This is a guess at some PIDF from default roadrunner
         //drive.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(2.0,0.5,0.0,11.1));
 
@@ -349,6 +349,7 @@ public class RRMech_Teleop extends LinearOpMode {
                         // Set a future time to return flicker to rest
                         flicker.setPosition(FLICKER_SHOOT);
                         flickerRelease = rt + .25;
+                        shootingPose = drive.getPoseEstimate();
                     } else {
                         if (prevLTrigVal == 0.0) {
                             // Just keep asking to return to wait position
@@ -718,12 +719,6 @@ public class RRMech_Teleop extends LinearOpMode {
                 */
             }
 
-            // Update the drive class
-            drive.update();
-
-            // Read pose
-            Pose2d poseEstimate = drive.getPoseEstimate();
-
             // Read the controller 1 (driver) stick positions
             strafe[0] = gamepad1.left_stick_x;
             forward[0] = -gamepad1.left_stick_y;
@@ -815,6 +810,12 @@ public class RRMech_Teleop extends LinearOpMode {
                 r_b_motor_power /= maxPwr;
             }
 
+            // Update the drive class
+            drive.update();
+
+            // Read pose
+            Pose2d poseEstimate = drive.getPoseEstimate();
+
             // We follow different logic based on whether we are in manual driver control or switch
             // control to the automatic mode
             switch (currentMode) {
@@ -824,7 +825,7 @@ public class RRMech_Teleop extends LinearOpMode {
 
                    if ((gamepad1.dpad_down) || (gamepad2.dpad_down)) {
                        if (!dDownPrev[0]) {
-                           Trajectory traj1 = drive.trajectoryBuilder(poseEstimate)
+                           Trajectory traj1 = drive.trajectoryBuilder(drive.getPoseEstimate())
                                    .lineToLinearHeading(shootingPose)
                                    .build();
 
