@@ -35,7 +35,7 @@ public class DriveConstants {
     //public static PIDFCoefficients MOTOR_VELO_PID = new PIDFCoefficients(0, 0, 0,
     //        getMotorVelocityF(MAX_RPM / 60 * TICKS_PER_REV));
 
-    public static PIDFCoefficients MOTOR_VELO_PID = new PIDFCoefficients(35.0, 0, 12.0,12.8 );
+    public static PIDFCoefficients MOTOR_VELO_PID = new PIDFCoefficients(35.0, 0, 9.0,12.8 );
 
     /*
      * These are physical constants that can be determined from your robot (including the track
@@ -69,8 +69,7 @@ public class DriveConstants {
     public static double MAX_VEL = (57.3*0.85);    // Measured 57.3 a few times
     public static double MAX_ACCEL = 40.0;
     public static double MAX_ANG_VEL = Math.toRadians(195.34*0.85);
-    public static double MAX_ANG_ACCEL = Math.toRadians(90.0);
-
+    public static double MAX_ANG_ACCEL = Math.toRadians(75.0);
 
     public static double encoderTicksToInches(double ticks) {
         return WHEEL_RADIUS * 2 * Math.PI * GEAR_RATIO * ticks / TICKS_PER_REV;
