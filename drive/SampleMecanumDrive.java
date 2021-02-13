@@ -60,10 +60,12 @@ import static org.firstinspires.ftc.teamcode.drive.DriveConstants.kV;
  */
 @Config
 public class SampleMecanumDrive extends MecanumDrive {
-    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(3, 0, 0);
-    public static PIDCoefficients HEADING_PID = new PIDCoefficients(3, 0, 0);
 
-    public static double LATERAL_MULTIPLIER = (53.6772 / 47.75);
+    public org.firstinspires.ftc.teamcode.drive.StandardTrackingWheelLocalizer localizer ;
+    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(0, 0, 0);
+    public static PIDCoefficients HEADING_PID = new PIDCoefficients(0, 0, 0);
+
+    public static double LATERAL_MULTIPLIER = 1.469;
 
     public static double VX_WEIGHT = 1;
     public static double VY_WEIGHT = 1;
@@ -131,11 +133,11 @@ public class SampleMecanumDrive extends MecanumDrive {
             module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         }
 
-        // TODO: adjust the names of the following hardware devices to match your configuration
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
-        imu.initialize(parameters);
+        //// TODO: adjust the names of the following hardware devices to match your configuration
+        //imu = hardwareMap.get(BNO055IMU.class, "imu");
+        //BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        //parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+        //imu.initialize(parameters);
 
         leftFront = hardwareMap.get(DcMotorEx.class, "left_front");
         leftRear = hardwareMap.get(DcMotorEx.class, "left_back");
@@ -164,7 +166,9 @@ public class SampleMecanumDrive extends MecanumDrive {
         leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // TODO: if desired, use setLocalizer() to change the localization method
-        // for instance, setLocalizer(new ThreeTrackingWheelLocalizer(...));
+        // TODO: This is terrible, fix the packages?
+        localizer = new org.firstinspires.ftc.teamcode.drive.StandardTrackingWheelLocalizer(hardwareMap);
+        setLocalizer(localizer);
     }
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose) {
@@ -392,8 +396,15 @@ public class SampleMecanumDrive extends MecanumDrive {
         rightFront.setPower(v3);
     }
 
+    /*
     @Override
     public double getRawExternalHeading() {
         return imu.getAngularOrientation().firstAngle;
     }
+    */
+    @Override
+    public double getRawExternalHeading() {
+        return(0);
+    }
+
 }

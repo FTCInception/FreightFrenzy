@@ -17,6 +17,7 @@ import com.qualcomm.robotcore.util.RobotLog;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 
 import java.util.Objects;
+import java.util.List;
 
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.MAX_ACCEL;
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.MAX_VEL;
@@ -43,7 +44,6 @@ import static org.firstinspires.ftc.teamcode.drive.DriveConstants.kV;
  * control back to the tuning process.
  */
 @Config
-@Disabled
 @Autonomous(group = "drive")
 public class ManualFeedforwardTuner extends LinearOpMode {
     public static double DISTANCE = 72; // in
@@ -92,6 +92,13 @@ public class ManualFeedforwardTuner extends LinearOpMode {
         MotionProfile activeProfile = generateProfile(true);
         double profileStart = clock.seconds();
 
+        List<Double> prev_foo = drive.localizer.getWheelVelocities() ;
+        List<Double> foo  = drive.localizer.getWheelVelocities() ;
+        List<Double> enc = drive.localizer.getWheelPositions() ;
+
+        List<Double> prev_crazy = drive.localizer.getWheelVelocities() ;
+        List<Double> crazy  = drive.localizer.getWheelVelocities() ;
+
 
         while (!isStopRequested()) {
             telemetry.addData("mode", mode);
@@ -121,10 +128,26 @@ public class ManualFeedforwardTuner extends LinearOpMode {
                     Pose2d poseVelo = Objects.requireNonNull(drive.getPoseVelocity(), "poseVelocity() must not be null. Ensure that the getWheelVelocities() method has been overridden in your localizer.");
                     double currentVelo = poseVelo.getX();
 
+                    prev_foo = foo ;
+                    foo  = drive.localizer.getWheelVelocities() ;
+                    enc  = drive.localizer.getCurrentPositions() ;
+
+                    if(currentVelo > 70) {
+                        prev_crazy = prev_foo ;
+                        crazy  = foo;
+                    }
+
                     // update telemetry
                     telemetry.addData("targetVelocity", motionState.getV());
                     telemetry.addData("measuredVelocity", currentVelo);
                     telemetry.addData("error", motionState.getV() - currentVelo);
+                    telemetry.addData("left", enc.get(0));
+                    telemetry.addData("right", enc.get(1) );
+                    telemetry.addData("back", enc.get(2));
+
+                    telemetry.addData("pvel", "left: %.1f, right %.1f, back %.1f", prev_crazy.get(0), prev_crazy.get(1), prev_crazy.get(2));
+                    telemetry.addData(" vel", "left: %.1f, right %.1f, back %.1f", crazy.get(0), crazy.get(1), crazy.get(2));
+
                     break;
                 case DRIVER_MODE:
                     if (gamepad1.a) {
