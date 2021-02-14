@@ -120,10 +120,16 @@ public class MechBot {
     // FIXME: Why do we need to wait on the gyro to stabilize? REduce this if possible.
     static final long gyroWait = 250;
 
+    public int WOBBLE_START = 0;
+    public int WOBBLE_PICKUP = 1;
+    public int WOBBLE_CARRY = 2;
+    public int WOBBLE_DROP = 3;
+
     //final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0; // 30 RPM 6mm d-shaft (5202 series)
     //final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0; // 60 RPM 6mm d-shaft (5202 series)
+    final double startingAngle = 15.0;
     final double WOBBLE_TICKS_PER_DEGREE = 3892.0/360.0; // 43 RPM 8mm REX (5203 series)
-    final int wobbleTargets[] = {(int)(5*WOBBLE_TICKS_PER_DEGREE),(int)(225*WOBBLE_TICKS_PER_DEGREE), (int)(90*WOBBLE_TICKS_PER_DEGREE), (int)(175*WOBBLE_TICKS_PER_DEGREE)};
+    final int wobbleTargets[] = {(int)(5*WOBBLE_TICKS_PER_DEGREE),(int)((235-startingAngle)*WOBBLE_TICKS_PER_DEGREE), (int)((180-startingAngle)*WOBBLE_TICKS_PER_DEGREE),(int)((225-startingAngle)*WOBBLE_TICKS_PER_DEGREE)};
 
     static double KpL;
     static double KpR;
@@ -360,11 +366,13 @@ public class MechBot {
         intake_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         intake_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        //intake_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         // Zero out the wobble motor in the auto init
         wobble_motor = hardwareMap.get(DcMotorEx.class,"wobble");
         wobble_motor.setPower(0.0);
-        wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        //wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        wobble_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         wobble_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         wobble_motor.setTargetPosition(0);
         wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -1562,6 +1570,21 @@ public class MechBot {
         wobble_motor.setTargetPosition(wobbleTargets[wobblePos]);
         wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         wobble_motor.setPower(power);
+    }
+
+    public void intakeStop(){
+        intake_motor.setPower(0.0);
+        intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void intakeEjectWobble(double power){
+        intake_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        intake_motor.setPower(power);
+    }
+
+    public void intakePickupRing(double power){
+        intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        intake_motor.setPower(power);
     }
 
 /*

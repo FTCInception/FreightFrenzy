@@ -147,20 +147,21 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         boolean[] dRightPrev = new boolean[]{false, false};
         boolean[] guidePrev = new boolean[]{false, false};
 
-        final double CLAW_OPEN = 0.0, CLAW_CLOSED=1.0;
+        final double CLAW_OPEN = 0.0, CLAW_CLOSED=1.0, CLAW_HALF=0.5;
         final double FLICKER_SHOOT = 0.7, FLICKER_WAIT=0.0;
         final double SHOOTER_NORMAL=0.475, SHOOTER_POWER_SHOT=0.4375;
         //wobble stuff
         //final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0; // 30 RPM 6mm d-shaft (5202 series)
         //final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0; // 60 RPM 6mm d-shaft (5202 series)
+        final double startingAngle = 15.0;
         final double WOBBLE_TICKS_PER_DEGREE = 3892.0/360.0; // 43 RPM 8mm REX (5203 series)
         final double[][] wobbleSeq = {
-                {CLAW_CLOSED, 0.75,   5*WOBBLE_TICKS_PER_DEGREE},
-                {CLAW_OPEN,   0.8, 225*WOBBLE_TICKS_PER_DEGREE},
-                {CLAW_CLOSED, 0.8, 225*WOBBLE_TICKS_PER_DEGREE},
-                {CLAW_CLOSED, 0.75,  45*WOBBLE_TICKS_PER_DEGREE},
-                {CLAW_CLOSED, 0.75, 170*WOBBLE_TICKS_PER_DEGREE},
-                {CLAW_OPEN,   0.75, 170*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_CLOSED,   0, 0.65,                  5*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_OPEN,     0, 0.8, (235-startingAngle)*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_CLOSED,   0, 0.8, (235-startingAngle)*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_CLOSED,   0, 0.65,( 45-startingAngle)*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_CLOSED,   0, 0.65,(180-startingAngle)*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_OPEN,   500, 0.65,                  5*WOBBLE_TICKS_PER_DEGREE},
         };
 
         double[] flickerSet = {FLICKER_WAIT, FLICKER_SHOOT};
@@ -246,7 +247,8 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
         // in case something bad happened.  DO NOT STOP_AND_RESET_ENCODER here to preserve the '0' postion.
         wobble_motor = hardwareMap.get(DcMotorEx.class,"wobble");
         wobble_motor.setPower(0.0);
-        wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        //wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        wobble_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         wobble_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         if (wobble_motor.getMode() != DcMotor.RunMode.RUN_TO_POSITION) {
             // We already set power to 0 so it should be safe to set a target position
@@ -423,9 +425,10 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 if (gamepad1.b) {
                     if (!bPrev[0]) {
                         wobbleIdx = (wobbleIdx + 1) % wobbleSeq.length;
-                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][2]);
-                        wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
                         claw.setPosition(wobbleSeq[wobbleIdx][0]);
+                        sleep((long) wobbleSeq[wobbleIdx][1]);
+                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][3]);
+                        wobble_motor.setPower(wobbleSeq[wobbleIdx][2]);
                         bPrev[0] = true;
                     }
                 } else {
@@ -440,8 +443,9 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                         } else {
                             wobbleIdx = (wobbleIdx - 1) % wobbleSeq.length;
                         }
-                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][2]);
-                        wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
+                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][3]);
+                        wobble_motor.setPower(wobbleSeq[wobbleIdx][2]);
+                        sleep((long) wobbleSeq[wobbleIdx][1]);
                         claw.setPosition(wobbleSeq[wobbleIdx][0]);
                         xPrev[0] = true;
                     }
@@ -626,9 +630,10 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                 if (gamepad2.b) {
                     if (!bPrev[0]) {
                         wobbleIdx = (wobbleIdx + 1) % wobbleSeq.length;
-                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][2]);
-                        wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
                         claw.setPosition(wobbleSeq[wobbleIdx][0]);
+                        sleep((long) wobbleSeq[wobbleIdx][1]);
+                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][3]);
+                        wobble_motor.setPower(wobbleSeq[wobbleIdx][2]);
                         bPrev[0] = true;
                     }
                 } else {
@@ -643,8 +648,9 @@ public class BasicOpMode_Mech_FOV extends LinearOpMode {
                         } else {
                             wobbleIdx = (wobbleIdx - 1) % wobbleSeq.length;
                         }
-                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][2]);
-                        wobble_motor.setPower(wobbleSeq[wobbleIdx][1]);
+                        wobble_motor.setTargetPosition((int) wobbleSeq[wobbleIdx][3]);
+                        wobble_motor.setPower(wobbleSeq[wobbleIdx][2]);
+                        sleep((long) wobbleSeq[wobbleIdx][1]);
                         claw.setPosition(wobbleSeq[wobbleIdx][0]);
                         xPrev[0] = true;
                     }

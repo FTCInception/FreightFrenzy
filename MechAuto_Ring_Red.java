@@ -59,6 +59,9 @@ public class MechAuto_Ring_Red extends LinearOpMode {
     private static final double wobble_power = 0.6;
     private String className = this.getClass().getSimpleName().toLowerCase();
 
+    private static final double intake_eject_wobble = 0.6;
+    private static final double intake_pickup_ring = 1.0;
+
     private IncepVision vision = new IncepVision();
     private int block;
     private double P = 0.075;
@@ -157,11 +160,11 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         a = robot.fastEncoderStraight(DRIVE_SPEED, 57, 60, P);
         if(!opModeIsActive()){ return; }
 
-        robot.intake_motor.setPower(0.6);
+        robot.intakeEjectWobble(intake_eject_wobble);
         sleep(600);
         if(!opModeIsActive()){ return; }
 
-        robot.intake_motor.setPower(0);
+        robot.intakeStop();
         if(!opModeIsActive()){ return; }
 
         // Start shooter 1 move early
@@ -272,11 +275,11 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Drop the wobble
-        robot.intake_motor.setPower(0.6);
+        robot.intakeEjectWobble(intake_eject_wobble);
         sleep(600);
         if(!opModeIsActive()){ return; }
 
-        robot.intake_motor.setPower(0);
+        robot.intakeStop();
         if(!opModeIsActive()){ return; }
 
         // Start the shooter early
@@ -351,7 +354,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Turn on intake
-        robot.intake_motor.setPower(1.0);
+        robot.intakePickupRing(intake_pickup_ring);
         if(!opModeIsActive()){ return; }
 
         // Intake ring and drive to shoot distance
@@ -369,12 +372,8 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         a = robot.fastEncoderStrafe(DRIVE_SPEED, 5, 60, P);
         if(!opModeIsActive()){ return; }
 
-        // Turn off intake
-        robot.intake_motor.setPower(1.0);
-        if(!opModeIsActive()){ return; }
-
         // Shoot the ring
-        robot.intake_motor.setPower(0);
+        robot.intakeStop();
         sleep(500);
         if(!opModeIsActive()){ return; }
 
@@ -415,7 +414,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Drop the wobble and run
-        robot.intake_motor.setPower(0.6);
+        robot.intakeEjectWobble(intake_eject_wobble);
         if(!opModeIsActive()){ return; }
 
         // Back up to a good shooting distance
@@ -424,7 +423,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Turn off intake now
-        robot.intake_motor.setPower(0);
+        robot.intakeStop();
         if(!opModeIsActive()){ return; }
 
         // Power up early
@@ -498,7 +497,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Get ready to intake and shoot
-        robot.intake_motor.setPower(1.0);
+        robot.intakePickupRing(intake_pickup_ring);
         if(!opModeIsActive()){ return; }
 
         // Power up early
@@ -560,7 +559,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Stop the intake
-        robot.intake_motor.setPower(0);
+        robot.intakeStop();
         if(!opModeIsActive()){ return; }
 
         // Turn around and back the wobble in
