@@ -61,7 +61,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
     private final int RINGP1=4;
 
     private double RING0_TURN1;
-    private double RING1_TURN1;
+    private double RING1_TURN1, RING1_TURN2;
     private double RING4_TURN1, RING4_TURN2, RING4_TURN3;
     private double RINGP0_TURN1, RINGP0_TURN2;
     private double RINGP1_TURN1, RINGP1_TURN2, RINGP1_TURN3;
@@ -73,6 +73,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
     private static final double intake_eject_wobble = 0.6;
     private static final double intake_pickup_ring = 1.0;
+
+    private static final double high_tower_power = 0.475;
 
     private IncepVision vision = new IncepVision();
     private int ringCount = -1;
@@ -292,8 +294,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         sleep(500);
         if(!opModeIsActive()){ return; }
 
-        robot.shoot1_motor.setPower(0.475);
-        robot.shoot2_motor.setPower(0.475);
+        robot.shoot1_motor.setPower(high_tower_power);
+        robot.shoot2_motor.setPower(high_tower_power);
 
         robot.drive.followTrajectory(traj[TIdx++]);
         if(!opModeIsActive()){ return; }
@@ -328,16 +330,14 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         robot.drive.followTrajectory(traj[TIdx++]);
         if(!opModeIsActive()){ return; }
 
-        robot.drive.followTrajectory(traj[TIdx++]);
-        if(!opModeIsActive()){ return; }
-
         robot.setWobblePosition(robot.WOBBLE_START, 0.8);
-        sleep(500);
+        robot.claw.setPosition(1.0);
         if(!opModeIsActive()){ return; }
 
-        robot.claw.setPosition(1.0);
-        sleep(500);
+        robot.drive.followTrajectory(traj[TIdx++]);
+        sleep(1000);
         if(!opModeIsActive()){ return; }
+
     }
 
     private void BuildPowerRing1() {
@@ -484,8 +484,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         robot.intakePickupRing(intake_pickup_ring);
 
         // Turn on shooter
-        robot.shoot1_motor.setPower(0.475);
-        robot.shoot2_motor.setPower(0.475);
+        robot.shoot1_motor.setPower(high_tower_power);
+        robot.shoot2_motor.setPower(high_tower_power);
 
         // Drive over ring
         robot.drive.followTrajectory(traj[TIdx++]);
@@ -539,6 +539,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         // Face forward
         robot.drive.turn(Math.toRadians(RINGP1_TURN3));
+        sleep(1000);
         if(!opModeIsActive()){ return; }
     }
 
@@ -633,8 +634,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Power up early
-        robot.shoot1_motor.setPower(0.475);
-        robot.shoot2_motor.setPower(0.475);
+        robot.shoot1_motor.setPower(high_tower_power);
+        robot.shoot2_motor.setPower(high_tower_power);
         if(!opModeIsActive()){ return; }
 
         // Move to line up shot
@@ -651,8 +652,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         sleep(500);
         if(!opModeIsActive()){ return; }
 
-        robot.shoot1_motor.setPower(0.475);
-        robot.shoot2_motor.setPower(0.475);
+        robot.shoot1_motor.setPower(high_tower_power);
+        robot.shoot2_motor.setPower(high_tower_power);
 
         robot.flicker.setPosition(0.0);
         sleep(650);
@@ -725,8 +726,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         sleep(200);
         if(!opModeIsActive()){ return; }
 
-        robot.shoot1_motor.setPower(0.475);
-        robot.shoot2_motor.setPower(0.475);
+        robot.shoot1_motor.setPower(high_tower_power);
+        robot.shoot2_motor.setPower(high_tower_power);
 
         // Turn a little back
         robot.drive.turn(Math.toRadians(RING4_TURN2));
@@ -799,37 +800,61 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         int TIdx = 0;
 
+
         trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .forward(57)
+                .lineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(25.0)))
                 .build();
+
         trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING0][TIdx-2].end())
-                .strafeLeft(24)
+                .lineToLinearHeading(new Pose2d(14,-50, Math.toRadians(-90.0)))
                 .build();
+
+        // Drop wobble
+
+        // Drive to second wobble
+        trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING0][TIdx-2].end(),true)
+                .splineTo(new Vector2d(-22,-18), Math.toRadians(180.0))
+                .splineTo(new Vector2d(-33,-18), Math.toRadians(180.0))
+                .build();
+
+        // Grab wobble
+        // Drive to final shot
         trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING0][TIdx-2].end())
-                .strafeLeft(13)
+                .lineTo(new Vector2d(-7,-31))
                 .build();
-        trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING0][TIdx-2].end())
-                .back(32)
-                .build();
-        trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING0][TIdx-2].end())
-                .forward(50)
-                .build();
-        RING0_TURN1 = 90.0;
+        // Shoot
+
+        // Turn to drop wobble
+        RING0_TURN1 = 110;
         //robot.drive.turn(Math.toRadians(RING0_TURN1));
+
+        // Drive to drop wobble
         trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING0][TIdx-2].end().plus(new Pose2d(0, 0, Math.toRadians(RING0_TURN1))))
-                .back(21)
+                .back(10)
                 .build();
+
+        // Drop wobble
+        // Park
         trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING0][TIdx-2].end())
-                .forward(11)
+                .forward(5)
+                .build();
+
+        trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING0][TIdx-2].end())
+                .strafeRight(14)
                 .build();
     }
 
     private void Ring0(Trajectory[] traj) {
         int TIdx = 0;
 
+        // Go to wobble drop
         robot.drive.followTrajectory(traj[TIdx++]);
         if(!opModeIsActive()){ return; }
 
+        robot.drive.followTrajectory(traj[TIdx++]);
+        if(!opModeIsActive()){ return; }
+
+        // Drop wobble
         robot.intakeEjectWobble(intake_eject_wobble);
         sleep(600);
         if(!opModeIsActive()){ return; }
@@ -837,31 +862,45 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         robot.intakeStop();
         if(!opModeIsActive()){ return; }
 
-        // Start shooter 1 move early
-        robot.shoot1_motor.setPower(0.480);
-        robot.shoot2_motor.setPower(0.480);
+        //prime some stuff for wobble
+        robot.claw.setPosition(0);
+        if(!opModeIsActive()){ return; }
 
-        // Strafe to shooting position
+        robot.setWobblePosition(robot.WOBBLE_PICKUP, 0.8);
+        if(!opModeIsActive()){ return; }
+
+        // Go to second wobble
         robot.drive.followTrajectory(traj[TIdx++]);
         if(!opModeIsActive()){ return; }
 
-        // Shoot sequence
+        // Pick up wobble
+        robot.claw.setPosition(1);
+        sleep(1000);
+        if(!opModeIsActive()){ return; }
+
+        robot.setWobblePosition(robot.WOBBLE_CARRY, 0.8);
         sleep(500);
         if(!opModeIsActive()){ return; }
 
-        robot.flicker.setPosition(1.0);
-        sleep(750);
-        if(!opModeIsActive()){ return; }
+        robot.shoot1_motor.setPower(high_tower_power);
+        robot.shoot2_motor.setPower(high_tower_power);
 
-        robot.shoot1_motor.setPower(0.475);
-        robot.shoot2_motor.setPower(0.475);
+        // Go to shooting location
+        robot.drive.followTrajectory(traj[TIdx++]);
+        if(!opModeIsActive()){ return; }
+        sleep(1000);
+
+        // Shoot 3 times
+        robot.flicker.setPosition(1.0);
+        sleep(600);
+        if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(0.0);
         sleep(750);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(1.0);
-        sleep(750);
+        sleep(600);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(0.0);
@@ -869,7 +908,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(1.0);
-        sleep(500);
+        sleep(600);
         if(!opModeIsActive()){ return; }
 
         robot.shoot1_motor.setPower(0.0);
@@ -879,99 +918,152 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         robot.flicker.setPosition(0.0);
         if(!opModeIsActive()){ return; }
 
-        //prime some stuff for wobble
-        robot.claw.setPosition(0);
-        sleep(500);
-        if(!opModeIsActive()){ return; }
-
-        robot.setWobblePosition(1, wobble_power);
-        sleep(2000);
-        if(!opModeIsActive()){ return; }
-
-        robot.drive.followTrajectory(traj[TIdx++]);
-        if(!opModeIsActive()){ return; }
-
-        robot.drive.followTrajectory(traj[TIdx++]);
-        if(!opModeIsActive()){ return; }
-
-        robot.claw.setPosition(1);
-        sleep(1000);
-        if(!opModeIsActive()){ return; }
-
-        robot.setWobblePosition(3, wobble_power);
-        sleep(1000);
-        if(!opModeIsActive()){ return; }
-
-        robot.drive.followTrajectory(traj[TIdx++]);
-        if(!opModeIsActive()){ return; }
-
+        // Turn to drop wobble
         robot.drive.turn(Math.toRadians(RING0_TURN1));
+
+        robot.shoot1_motor.setPower(0.0);
+        robot.shoot2_motor.setPower(0.0);
+
+        robot.flicker.setPosition(0.0);
         if(!opModeIsActive()){ return; }
 
+        robot.setWobblePosition(robot.WOBBLE_DROP, 0.6);
+        if(!opModeIsActive()){ return; }
+
+        // Back wobble in
         robot.drive.followTrajectory(traj[TIdx++]);
         if(!opModeIsActive()){ return; }
 
+        // Drop wobble
         robot.claw.setPosition(0);
         sleep(500);
         if(!opModeIsActive()){ return; }
 
-        robot.setWobblePosition(0, wobble_power);
-        sleep(500);
+        // Park over line
+        robot.drive.followTrajectory(traj[TIdx++]);
         if(!opModeIsActive()){ return; }
 
+        robot.setWobblePosition(robot.WOBBLE_START, 0.8);
         robot.claw.setPosition(1.0);
         if(!opModeIsActive()){ return; }
 
         robot.drive.followTrajectory(traj[TIdx++]);
         sleep(1000);
         if(!opModeIsActive()){ return; }
+
     }
+
     private void BuildRing1() {
 
         int TIdx = 0;
 
+        // Drive to shooting location
         trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .forward(87)
+                .lineToConstantHeading(new Vector2d(-7,-57))
                 .build();
+
         trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end())
-                .strafeLeft(24)
+                .lineToConstantHeading(new Vector2d(-7,-31))
                 .build();
+
+        // Shoot 3x
+
+        // Drive to wobble drop
         trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end())
-                .back(30)
+                .lineToConstantHeading(new Vector2d(25,-34))
                 .build();
+        // Drop wobble
+
+        // Drive to 2nd wobble
+        trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end(),true)
+                .splineTo(new Vector2d(-22,-18), Math.toRadians(180.0))
+                .splineTo(new Vector2d(-33.5,-18), Math.toRadians(180.0))
+                .build();
+
+        // Grab wobble
+        // Line up on ring
         trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end())
-                .strafeLeft(13)
+                .lineTo(new Vector2d(-40,-38))
                 .build();
+
+        // Turn on intake
+        // Drive over ring
         trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end())
-                .back(32)
+                .forward(33)
                 .build();
-        trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end())
-                .strafeRight(18)
-                .build();
-        trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end())
-                .forward(29)
-                .build();
-        trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end())
-                .strafeLeft(5)
-                .build();
-        RING1_TURN1 = 167.5;
-        //robot.drive.turn(Math.toRadians(RING1_TURN1));
+
+        // Shoot
+
+        // Turn to drop wobble
+        RING1_TURN1 = 165;
+        //robot.drive.turn(Math.toRadians(RINGP1_TURN2));
+
+        // Drive to drop wobble
         trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end().plus(new Pose2d(0, 0, Math.toRadians(RING1_TURN1))))
-                .back(24)
+                .back(18)
                 .build();
+
+        // Drop wobble
+        // Park
+        trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end())
+                .forward(5)
+                .build();
+
+        // Return wobble arm
+
+        // Turn to face 90
+        RING1_TURN2 = -(RING1_TURN1-90);
+        //robot.drive.turn(Math.toRadians(RINGP1_TURN3));
     }
 
     private void Ring1(Trajectory[] traj) {
         int TIdx = 0;
 
-        // Drive to drop zone
-        robot.drive.followTrajectory(traj[TIdx++]);
-        if(!opModeIsActive()){ return; }
+        // Start shooter early
+        robot.shoot1_motor.setPower(high_tower_power);
+        robot.shoot2_motor.setPower(high_tower_power);
 
         robot.drive.followTrajectory(traj[TIdx++]);
         if(!opModeIsActive()){ return; }
 
-        // Drop the wobble
+        // Go to shooting location
+        robot.drive.followTrajectory(traj[TIdx++]);
+        if(!opModeIsActive()){ return; }
+        sleep(1000);
+
+        // Shoot 3 times
+        robot.flicker.setPosition(1.0);
+        sleep(600);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(600);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        sleep(600);
+        if(!opModeIsActive()){ return; }
+
+        robot.shoot1_motor.setPower(0.0);
+        robot.shoot2_motor.setPower(0.0);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        if(!opModeIsActive()){ return; }
+
+        // Go to wobble drop
+        robot.drive.followTrajectory(traj[TIdx++]);
+        if(!opModeIsActive()){ return; }
+
+        // Drop wobble
         robot.intakeEjectWobble(intake_eject_wobble);
         sleep(600);
         if(!opModeIsActive()){ return; }
@@ -979,122 +1071,81 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         robot.intakeStop();
         if(!opModeIsActive()){ return; }
 
-        // Start the shooter early
-        robot.shoot1_motor.setPower(0.480);
-        robot.shoot2_motor.setPower(0.480);
+        //prime some stuff for wobble
+        robot.claw.setPosition(0);
+        robot.setWobblePosition(robot.WOBBLE_PICKUP, 0.8);
         if(!opModeIsActive()){ return; }
 
-        // Back to shooting zone
+        // Go to second wobble
         robot.drive.followTrajectory(traj[TIdx++]);
         if(!opModeIsActive()){ return; }
 
-        sleep(500);
-        if(!opModeIsActive()){ return; }
-
-        // Fire away
-        robot.flicker.setPosition(1.0);
-        sleep(750);
-        if(!opModeIsActive()){ return; }
-
-        robot.shoot1_motor.setPower(0.475);
-        robot.shoot2_motor.setPower(0.475);
-
-        robot.flicker.setPosition(0.0);
-        sleep(750);
-        if(!opModeIsActive()){ return; }
-
-        robot.flicker.setPosition(1.0);
-        sleep(750);
-        if(!opModeIsActive()){ return; }
-
-        // Get ready for wobble
-        robot.claw.setPosition(0.25);
-        robot.setWobblePosition(1, wobble_power);
-        robot.flicker.setPosition(0.0);
-        sleep(750);
-        if(!opModeIsActive()){ return; }
-
-        robot.flicker.setPosition(1.0);
-        sleep(200);
-        if(!opModeIsActive()){ return; }
-
-        // Line up for wobble
-        robot.drive.followTrajectory(traj[TIdx++]);
-        if(!opModeIsActive()){ return; }
-
-        robot.shoot1_motor.setPower(0.0);
-        robot.shoot2_motor.setPower(0.0);
-        if(!opModeIsActive()){ return; }
-
-        robot.flicker.setPosition(0.0);
-        if(!opModeIsActive()){ return; }
-
-        // Back up to wobble
-        robot.drive.followTrajectory(traj[TIdx++]);
-        if(!opModeIsActive()){ return; }
-
-        // Grab wobble
+        // Pick up wobble
         robot.claw.setPosition(1);
-        sleep(750);
-        if(!opModeIsActive()){ return; }
-
-        robot.setWobblePosition(3, wobble_power);
-        sleep(500);
-        if(!opModeIsActive()){ return; }
-
-        // Strafe to line up on ring
-        robot.drive.followTrajectory(traj[TIdx++]);
-        if(!opModeIsActive()){ return; }
-
-        // Turn on intake
-        robot.intakePickupRing(intake_pickup_ring);
-        if(!opModeIsActive()){ return; }
-
-        // Intake ring and drive to shoot distance
-        robot.drive.followTrajectory(traj[TIdx++]);
-        if(!opModeIsActive()){ return; }
-
-        // Power up early
-        robot.shoot1_motor.setPower(0.480);
-        robot.shoot2_motor.setPower(0.480);
-        if(!opModeIsActive()){ return; }
-
-        // Line up for shot
-        robot.drive.followTrajectory(traj[TIdx++]);
-        if(!opModeIsActive()){ return; }
-
-        // Stop the intake
-        robot.intakeStop();
-        sleep(500);
-        if(!opModeIsActive()){ return; }
-
-        // Shoot the ring
-        robot.flicker.setPosition(1.0);
-        sleep(400);
-        if(!opModeIsActive()){ return; }
-
-        robot.flicker.setPosition(0.0);
-        robot.shoot1_motor.setPower(0.0);
-        robot.shoot2_motor.setPower(0.0);
-        if(!opModeIsActive()){ return; }
-
-        robot.drive.turn(Math.toRadians(RING1_TURN1));
-        if(!opModeIsActive()){ return; }
-
-        robot.drive.followTrajectory(traj[TIdx++]);
-        if(!opModeIsActive()){ return; }
-
-        robot.claw.setPosition(0.0);
-        sleep(500);
-        if(!opModeIsActive()){ return; }
-
-        robot.setWobblePosition(0, wobble_power);
         sleep(1000);
         if(!opModeIsActive()){ return; }
 
+        robot.setWobblePosition(robot.WOBBLE_CARRY, 0.8);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        // Lineup on ring
+        robot.drive.followTrajectory(traj[TIdx++]);
+        if(!opModeIsActive()){ return; }
+
+        robot.intakePickupRing(intake_pickup_ring);
+
+        // Turn on shooter
+        robot.shoot1_motor.setPower(high_tower_power);
+        robot.shoot2_motor.setPower(high_tower_power);
+
+        // Drive over ring
+        robot.drive.followTrajectory(traj[TIdx++]);
+        if(!opModeIsActive()){ return; }
+
+        sleep(1000);
+
+        // Stop intake
+        robot.intakeStop();
+
+        // 2 shots
+        robot.flicker.setPosition(1.0);
+        sleep(750);
+        if(!opModeIsActive()){ return; }
+
+        // Turn to drop wobble
+        robot.drive.turn(Math.toRadians(RING1_TURN1));
+
+        robot.shoot1_motor.setPower(0.0);
+        robot.shoot2_motor.setPower(0.0);
+
+        robot.flicker.setPosition(0.0);
+        if(!opModeIsActive()){ return; }
+
+        robot.setWobblePosition(robot.WOBBLE_DROP, 0.6);
+        if(!opModeIsActive()){ return; }
+
+        // Back wobble in
+        robot.drive.followTrajectory(traj[TIdx++]);
+        if(!opModeIsActive()){ return; }
+
+        // Drop wobble
+        robot.claw.setPosition(0);
+        sleep(500);
+        if(!opModeIsActive()){ return; }
+
+        // Park over line
+        robot.drive.followTrajectory(traj[TIdx++]);
+        if(!opModeIsActive()){ return; }
+
+        // Return arm
+        robot.setWobblePosition(robot.WOBBLE_START, 0.8);
         robot.claw.setPosition(1.0);
+        if(!opModeIsActive()){ return; }
+
+        // Face forward
+        robot.drive.turn(Math.toRadians(RING1_TURN2));
         sleep(1000);
         if(!opModeIsActive()){ return; }
     }
-
 }
