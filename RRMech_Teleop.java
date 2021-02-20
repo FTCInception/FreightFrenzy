@@ -39,6 +39,8 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
@@ -106,6 +108,7 @@ public class RRMech_Teleop extends LinearOpMode {
     double r_f_motor_power;
     double r_b_motor_power;
 
+    double shootingAngle;
     Pose2d shootingPose;
     enum Mode {
         DRIVER_CONTROL,
@@ -163,7 +166,8 @@ public class RRMech_Teleop extends LinearOpMode {
 
         final double CLAW_OPEN = 0.0, CLAW_CLOSED=1.0, CLAW_HALF=0.5;
         final double FLICKER_SHOOT = 0.7, FLICKER_WAIT=0.0;
-        final double SHOOTER_NORMAL=0.475, SHOOTER_POWER_SHOT=0.4375;
+        //final double SHOOTER_NORMAL=0.475, SHOOTER_POWER_SHOT=0.4375;
+        final double SHOOTER_NORMAL=0.500, SHOOTER_POWER_SHOT=0.467;
         //wobble stuff
         //final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0; // 30 RPM 6mm d-shaft (5202 series)
         //final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0; // 60 RPM 6mm d-shaft (5202 series)
@@ -209,6 +213,7 @@ public class RRMech_Teleop extends LinearOpMode {
 
         // Initialize custom cancelable SampleMecanumDrive class
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
+        //SampleMecanumDrive.HEADING_PID.kP = 20;
 
         // We want to turn off velocity control for teleop
         // Velocity control per wheel is not necessary outside of motion profiled auto
@@ -221,7 +226,8 @@ public class RRMech_Teleop extends LinearOpMode {
         // Retrieve our pose from the PoseStorage.currentPose static field
         // See AutoTransferPose.java for further details
         //drive.setPoseEstimate(PoseStorage.currentPose);
-        shootingPose = drive.getPoseEstimate();
+        //shootingPose = drive.getPoseEstimate();
+        shootingAngle = drive.getRawExternalHeading();
 
         /*************************************************************/
         /************ No movement allowed during init! ***************/
@@ -268,8 +274,11 @@ public class RRMech_Teleop extends LinearOpMode {
         // 'P' is in a sweet-spot, could go down to 75 and still be OK
         // 'D' didn't make a ton of different, not sure that is tuned properly
         // Quick spin-up and recovery.  There may be a little overshoot just after a shot.
-        shoot1_motor.setVelocityPIDFCoefficients(125.0, 2.5, 5.0, 4.0);
-        shoot2_motor.setVelocityPIDFCoefficients(125.0, 2.5, 5.0, 4.0);
+        //shoot1_motor.setVelocityPIDFCoefficients(125.0, 2.5, 5.0, 4.0);
+        //shoot2_motor.setVelocityPIDFCoefficients(125.0, 2.5, 5.0, 4.0);
+
+        shoot1_motor.setVelocityPIDFCoefficients(45.0, 0, 30.0, 12.0);
+        shoot2_motor.setVelocityPIDFCoefficients(45.0, 0, 30.0, 12.0);
 
         claw = hardwareMap.servo.get("claw");
         flicker = hardwareMap.servo.get("flicker");
@@ -351,7 +360,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         // Set a future time to return flicker to rest
                         flicker.setPosition(FLICKER_SHOOT);
                         flickerRelease = rt + .25;
-                        shootingPose = drive.getPoseEstimate();
+                        //shootingPose = drive.getPoseEstimate();
+                        shootingAngle = drive.getRawExternalHeading();
                     } else {
                         if (prevLTrigVal == 0.0) {
                             // Just keep asking to return to wait position
@@ -559,7 +569,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         // Set a future time to return flicker to rest
                         flicker.setPosition(FLICKER_SHOOT);
                         flickerRelease = rt + .25;
-                        shootingPose = drive.getPoseEstimate();
+                        //shootingPose = drive.getPoseEstimate();
+                        shootingAngle = drive.getRawExternalHeading();
                     } else {
                         if (prevLTrigVal == 0.0) {
                             // Just keep asking to return to wait position
@@ -831,11 +842,14 @@ public class RRMech_Teleop extends LinearOpMode {
 
                    if ((gamepad1.dpad_down) || (gamepad2.dpad_down)) {
                        if (!dDownPrev[0]) {
-                           Trajectory traj1 = drive.trajectoryBuilder(drive.getPoseEstimate())
-                                   .lineToLinearHeading(shootingPose)
-                                   .build();
+                           //Trajectory traj1 = drive.trajectoryBuilder(drive.getPoseEstimate())
+                           //        .lineToLinearHeading(shootingPose)
+                           //        .build();
 
-                           drive.followTrajectoryAsync(traj1);
+                           //drive.followTrajectoryAsync(traj1);
+                           double angle = drive.getRawExternalHeading();
+                           angle = AngleUnit.RADIANS.normalize(shootingAngle - angle);
+                           drive.turnAsync(angle, Math.toRadians(540.0), Math.toRadians(270.0));
 
                            shooterIdx = 1;
                            shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
