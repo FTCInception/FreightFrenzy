@@ -119,7 +119,7 @@ public class SampleMecanumDrive extends MecanumDrive {
         ));
         accelConstraint = new ProfileAccelerationConstraint(MAX_ACCEL);
         follower = new HolonomicPIDVAFollower(TRANSLATIONAL_PID, TRANSLATIONAL_PID, HEADING_PID,
-                new Pose2d(0.25, 0.25, Math.toRadians(0.5)), 0.5);
+                new Pose2d(0.5, 0.5, Math.toRadians(2.0)), 0.5);
 
         poseHistory = new LinkedList<>();
 
@@ -189,6 +189,22 @@ public class SampleMecanumDrive extends MecanumDrive {
                 new MotionState(heading + angle, 0, 0, 0),
                 MAX_ANG_VEL,
                 MAX_ANG_ACCEL
+        );
+
+        turnStart = clock.seconds();
+        mode = Mode.TURN;
+    }
+
+    public void turnAsync(double angle, double VEL, double ACCEL) {
+        double heading = getPoseEstimate().getHeading();
+
+        lastPoseOnTurn = getPoseEstimate();
+
+        turnProfile = MotionProfileGenerator.generateSimpleMotionProfile(
+                new MotionState(heading, 0, 0, 0),
+                new MotionState(heading + angle, 0, 0, 0),
+                VEL,
+                ACCEL
         );
 
         turnStart = clock.seconds();
