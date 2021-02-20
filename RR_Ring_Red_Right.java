@@ -60,11 +60,11 @@ public class RR_Ring_Red_Right extends LinearOpMode {
     private final int RINGP0=3;
     private final int RINGP1=4;
 
-    private double RING0_TURN1;
-    private double RING1_TURN1, RING1_TURN2;
+    private double RING0_TURN1, RING0_TURN2;
+    private double RING1_TURN1, RING1_TURN2, RING1_TURN3;
     private double RING4_TURN1, RING4_TURN2, RING4_TURN3;
-    private double RINGP0_TURN1, RINGP0_TURN2;
-    private double RINGP1_TURN1, RINGP1_TURN2, RINGP1_TURN3;
+    private double RINGP0_TURN1, RINGP0_TURN2, RINGP0_TURN3;
+    private double RINGP1_TURN1, RINGP1_TURN2, RINGP1_TURN3, RINGP1_TURN4;
 
     private RRMechBot robot = new RRMechBot();
 
@@ -74,7 +74,13 @@ public class RR_Ring_Red_Right extends LinearOpMode {
     private static final double intake_eject_wobble = 0.6;
     private static final double intake_pickup_ring = 1.0;
 
-    private static final double high_tower_power = 0.475;
+    private static final double high_tower_power = 0.500;
+    private static final double long_shot_boost = 0.0075;
+    private static final double power_shot_power = 0.455;
+    private static final double power_offset = 0.001;
+
+    private static final double startingX = -63.0;
+    private static final double startingY = -57.0;
 
     private IncepVision vision = new IncepVision();
     private int ringCount = -1;
@@ -92,7 +98,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // Back against the -x wall, wheels aligned on first tile in -y
         // THIS MUST BE DONE BEFORE BUILDING
         // THIS MUST BE DONE AFTER THE ROBOT IS IN ITS FINAL POSITION
-        Pose2d startPose = new Pose2d(-72+9, -48-9, Math.toRadians(0));
+        Pose2d startPose = new Pose2d(startingX, startingY, Math.toRadians(0));
         robot.drive.setPoseEstimate(startPose);
 
         BuildPowerRing0();
@@ -176,73 +182,92 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         int TIdx = 0;
 
+        // Starting X,Y = -63,-57
+
+        // Pose: -8, -57, 25.0
         trajs[RINGP0][TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .lineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(25.0)))
+                .lineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(25.35)))
                 .build();
         // shoot #1
+
+        // Pose: -8, -57, 31.0
         RINGP0_TURN1 = 6.0;
         //robot.drive.turn(Math.toRadians(RINGP0_TURN1));
         // shoot #2
+
+        // Pose: 14, -50, -90.0
         trajs[RINGP0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP0][TIdx-2].end().plus(new Pose2d(0, 0, Math.toRadians(RINGP0_TURN1))))
                 .lineToLinearHeading(new Pose2d(14,-50, Math.toRadians(-90.0)))
                 .build();
+
         // Drop wobble
+
+        // Pose: -33, -18, 0
         trajs[RINGP0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP0][TIdx-2].end(),true)
                 .splineTo(new Vector2d(-22,-18), Math.toRadians(180.0))
                 .splineTo(new Vector2d(-33,-18), Math.toRadians(180.0))
                 .build();
 
         // Grab wobble
+
         // Drive to final shot
+        // Pose:  -7, -31, 0
         trajs[RINGP0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP0][TIdx-2].end())
-                .lineTo(new Vector2d(-7,-31))
+                .lineTo(new Vector2d(-7,-35))
                 .build();
         // Shoot
 
         // Turn to drop wobble
+        // Pose:  -7, -31, 110
         RINGP0_TURN2 = 110;
         //robot.drive.turn(Math.toRadians(RINGP0_TURN2));
 
         // Drive to drop wobble
+        // Pose: Trig...
         trajs[RINGP0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP0][TIdx-2].end().plus(new Pose2d(0, 0, Math.toRadians(RINGP0_TURN2))))
-                .back(10)
+                .back(6)
                 .build();
 
         // Drop wobble
         // Park
+        // Pose:  Trig...
         trajs[RINGP0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP0][TIdx-2].end())
                 .forward(5)
                 .build();
 
+        // Pose:  Trig...
         trajs[RINGP0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP0][TIdx-2].end())
                 .strafeRight(14)
                 .build();
+
+        // Turn to face 90
+        // Pose:  Trig...
+        RINGP0_TURN3 = -(RINGP0_TURN2-90);
+        //robot.drive.turn(Math.toRadians(RINGP0_TURN3));
+
     }
 
     private void RingP0(Trajectory[] traj) {
         int TIdx = 0;
 
-        // Start shooter 1 move early
-        robot.shoot1_motor.setPower(0.440);
-        robot.shoot2_motor.setPower(0.440);
-
         // Go to shooting location
         robot.drive.followTrajectory(traj[TIdx++]);
         if(!opModeIsActive()){ return; }
 
-        robot.shoot1_motor.setPower(0.437);
-        robot.shoot2_motor.setPower(0.437);
+        // Start shooter
+        robot.shoot1_motor.setPower(power_shot_power);
+        robot.shoot2_motor.setPower(power_shot_power);
 
         // Shoot sequence
-        sleep(1000);
+        sleep(1500);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(1.0);
         sleep(750);
         if(!opModeIsActive()){ return; }
 
-        robot.shoot1_motor.setPower(0.439);
-        robot.shoot2_motor.setPower(0.439);
+        robot.shoot1_motor.setPower(power_shot_power+power_offset);
+        robot.shoot2_motor.setPower(power_shot_power+power_offset);
 
         robot.drive.turn(Math.toRadians(RINGP0_TURN1));
         if(!opModeIsActive()){ return; }
@@ -335,7 +360,9 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         robot.drive.followTrajectory(traj[TIdx++]);
-        sleep(1000);
+        if(!opModeIsActive()){ return; }
+
+        robot.drive.turn(Math.toRadians(RINGP0_TURN3));
         if(!opModeIsActive()){ return; }
 
     }
@@ -344,88 +371,105 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         int TIdx = 0;
 
+        // Starting X,Y = -63,-57
+
+        // Pose: -8, -57, 25.0
         // Drive to first shot
         trajs[RINGP1][TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .lineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(25.0)))
+                .lineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(25.35)))
                 .build();
         // shoot #1
 
+        // Pose: -8, -57, 31.0
         RINGP1_TURN1 = 6.0;
         //robot.drive.turn(Math.toRadians(RINGP0_TURN1));
         // shoot #2
 
         // Drive to wobble drop
+
+        // Pose: 25, -34, 0
         trajs[RINGP1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP1][TIdx-2].end().plus(new Pose2d(0, 0, Math.toRadians(RINGP1_TURN1))))
                 .lineToLinearHeading(new Pose2d(25,-34, Math.toRadians(0.0)))
                 .build();
         // Drop wobble
 
         // Drive to 2nd wobble
+
+        // Pose: -33, -18, 0
         trajs[RINGP1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP1][TIdx-2].end(),true)
                 .splineTo(new Vector2d(-22,-18), Math.toRadians(180.0))
                 .splineTo(new Vector2d(-33,-18), Math.toRadians(180.0))
                 .build();
 
         // Grab wobble
+
         // Line up on ring
+        // Pose: -40, -38, 0
         trajs[RINGP1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP1][TIdx-2].end())
                 .lineTo(new Vector2d(-40,-38))
                 .build();
 
         // Turn on intake
         // Drive over ring
+        // Pose: -7, -38, 0
         trajs[RINGP1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP1][TIdx-2].end())
                 .forward(33)
                 .build();
 
+        // Turn to shoot just a little
+        // Pose: -7, -38, 2.5
+        RINGP1_TURN2 = 2.5;
+        //robot.drive.turn(Math.toRadians(RINGP1_TURN2));
+
         // Shoot
 
         // Turn to drop wobble
-        RINGP1_TURN2 = 165;
+        // Pose: -7, -38, 165
+        RINGP1_TURN3 = 162.5;
         //robot.drive.turn(Math.toRadians(RINGP1_TURN2));
 
         // Drive to drop wobble
-        trajs[RINGP1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP1][TIdx-2].end().plus(new Pose2d(0, 0, Math.toRadians(RINGP1_TURN2))))
-                .back(18)
+        // Pose: Trig
+        trajs[RINGP1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP1][TIdx-2].end().plus(new Pose2d(0, 0, Math.toRadians(RINGP1_TURN3+RINGP1_TURN2))))
+                .back(19)
                 .build();
 
         // Drop wobble
         // Park
+        // Pose: Trig
         trajs[RINGP1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP1][TIdx-2].end())
-                .forward(5)
+                .forward(6)
                 .build();
 
         // Return wobble arm
 
         // Turn to face 90
-        RINGP1_TURN3 = -(RINGP1_TURN2-90);
-        //robot.drive.turn(Math.toRadians(RINGP1_TURN3));
+        // Pose: Trig
+        RINGP1_TURN4 = -((RINGP1_TURN2+RINGP1_TURN3)-90);
+        //robot.drive.turn(Math.toRadians(RINGP1_TURN4));
     }
 
     private void RingP1(Trajectory[] traj) {
         int TIdx = 0;
 
-        // Start shooter 1 move early
-        robot.shoot1_motor.setPower(0.440);
-        robot.shoot2_motor.setPower(0.440);
-
         // Go to shooting location
         robot.drive.followTrajectory(traj[TIdx++]);
         if(!opModeIsActive()){ return; }
 
-        robot.shoot1_motor.setPower(0.437);
-        robot.shoot2_motor.setPower(0.437);
+        // Start shooter
+        robot.shoot1_motor.setPower(power_shot_power);
+        robot.shoot2_motor.setPower(power_shot_power);
 
         // Shoot sequence
-        sleep(1000);
+        sleep(1500);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(1.0);
         sleep(750);
         if(!opModeIsActive()){ return; }
 
-        robot.shoot1_motor.setPower(0.439);
-        robot.shoot2_motor.setPower(0.439);
+        robot.shoot1_motor.setPower(power_shot_power+power_offset);
+        robot.shoot2_motor.setPower(power_shot_power+power_offset);
 
         robot.drive.turn(Math.toRadians(RINGP1_TURN1));
         if(!opModeIsActive()){ return; }
@@ -494,6 +538,10 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // Stop intake
         robot.intakeStop();
 
+        // Turn a little to shoot
+        robot.drive.turn(Math.toRadians(RINGP1_TURN2));
+        sleep(500);
+
         // 2 shots
         robot.flicker.setPosition(1.0);
         sleep(500);
@@ -507,14 +555,14 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         sleep(750);
         if(!opModeIsActive()){ return; }
 
-        // Turn to drop wobble
-        robot.drive.turn(Math.toRadians(RINGP1_TURN2));
-
         robot.shoot1_motor.setPower(0.0);
         robot.shoot2_motor.setPower(0.0);
 
         robot.flicker.setPosition(0.0);
         if(!opModeIsActive()){ return; }
+
+        // Turn to drop wobble
+        robot.drive.turn(Math.toRadians(RINGP1_TURN3));
 
         robot.setWobblePosition(robot.WOBBLE_DROP, 0.6);
         if(!opModeIsActive()){ return; }
@@ -538,7 +586,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Face forward
-        robot.drive.turn(Math.toRadians(RINGP1_TURN3));
+        robot.drive.turn(Math.toRadians(RINGP1_TURN4));
         sleep(1000);
         if(!opModeIsActive()){ return; }
     }
@@ -546,6 +594,9 @@ public class RR_Ring_Red_Right extends LinearOpMode {
     private void BuildRing4() {
         int TIdx = 0;
 
+        // Starting X,Y = -63,-57
+
+        // Pose: 48, -57, 0.0
         // Drive to the wobble drop zone, don't put it on the wall
         trajs[RING4][TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
                 .forward(111)
@@ -553,46 +604,54 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         // Drive to the shooting location
         // Be careful here, this move is relative, not absolute x,y.
+        // Pose: -7, -33, 0.0
         trajs[RING4][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING4][TIdx-2].end())
-                .lineTo((trajs[RING4][TIdx-2].end().vec().plus(new Vector2d(-53.0, 24.0))))
+                .lineTo((trajs[RING4][TIdx-2].end().vec().plus(new Vector2d(-55.0, 24.0))))
                 .build();
 
         // Shoot all 3
 
         // The next 2 things may need to be a reverse spline move with constant heading to save time
         // Line up and back into the wobble
+        // Pose: -7, -17, 0.0
         trajs[RING4][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING4][TIdx-2].end())
                 .strafeLeft(16)
                 .build();
 
         // Back to wobble
+        // Pose: -34, -17, 0.0
         trajs[RING4][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING4][TIdx-2].end())
-                .back(29)
+                .back(27)
                 .build();
 
         // Grab wobble
 
         // Line up on ring
+        // Pose: -40, -38, 0.0
         trajs[RING4][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING4][TIdx-2].end())
                 .lineTo(new Vector2d(-40,-38))
                 .build();
 
         // Pickup 1-3 rings
+        // Pose: -24, -38, 0.0
         trajs[RING4][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING4][TIdx-2].end())
                 .forward(16)
                 .build();
 
         // Turn to line up
-        RING4_TURN1 = 3.0;
+        // Pose: -24, -38, 2.5
+        RING4_TURN1 = 2.5;
         //robot.drive.turn(Math.toRadians(RING4_TURN1));
 
         // shoot 1 ring
 
         // Turn back
-        RING4_TURN2 = -1.0;
+        // Pose: -24, -38, 2.0
+        RING4_TURN2 = 0.0;
         //robot.drive.turn(Math.toRadians(RING4_TURN2));
 
         // Go to shooting location
+        // Pose: ~(-10, -38, 2.5)
         trajs[RING4][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING4][TIdx-2].end().plus(new Pose2d(0, 0, Math.toRadians(RING4_TURN1+RING4_TURN2))))
                 .forward(14)
                 .build();
@@ -600,17 +659,20 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // Shoot 3
 
         // Turn for wobble back-in
-        RING4_TURN3 = 152.0;
+        // Pose: Trig
+        RING4_TURN3 = 152.5;
         //robot.drive.turn(Math.toRadians(RING4_TURN3));
 
         // Lower wobble
 
         // Back the wobble in
+        // Pose: Trig
         trajs[RING4][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING4][TIdx-2].end().plus(new Pose2d(0, 0, Math.toRadians(RING4_TURN3))))
                 .back(51)
                 .build();
 
         // Run to park
+        // Pose: Trig
         trajs[RING4][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING4][TIdx-2].end())
                 .forward(28)
                 .addTemporalMarker(0.25, 0.0, () -> {
@@ -651,9 +713,6 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         robot.flicker.setPosition(1.0);
         sleep(500);
         if(!opModeIsActive()){ return; }
-
-        robot.shoot1_motor.setPower(high_tower_power);
-        robot.shoot2_motor.setPower(high_tower_power);
 
         robot.flicker.setPosition(0.0);
         sleep(650);
@@ -708,8 +767,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Power up early
-        robot.shoot1_motor.setPower(0.485);
-        robot.shoot2_motor.setPower(0.485);
+        robot.shoot1_motor.setPower(high_tower_power+long_shot_boost);
+        robot.shoot2_motor.setPower(high_tower_power+long_shot_boost);
         if(!opModeIsActive()){ return; }
 
         // Go intake a few and shoot one
@@ -820,7 +879,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // Grab wobble
         // Drive to final shot
         trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING0][TIdx-2].end())
-                .lineTo(new Vector2d(-7,-31))
+                .lineTo(new Vector2d(-7,-35))
                 .build();
         // Shoot
 
@@ -830,7 +889,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         // Drive to drop wobble
         trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING0][TIdx-2].end().plus(new Pose2d(0, 0, Math.toRadians(RING0_TURN1))))
-                .back(10)
+                .back(6)
                 .build();
 
         // Drop wobble
@@ -842,6 +901,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING0][TIdx-2].end())
                 .strafeRight(14)
                 .build();
+
+        // Turn to face 90
+        // Pose:  Trig...
+        RING0_TURN2 = -(RING0_TURN1-90);
+        //robot.drive.turn(Math.toRadians(RING0_TURN3));
+
     }
 
     private void Ring0(Trajectory[] traj) {
@@ -948,6 +1013,9 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         robot.drive.followTrajectory(traj[TIdx++]);
+        if(!opModeIsActive()){ return; }
+
+        robot.drive.turn(Math.toRadians(RING0_TURN2));
         sleep(1000);
         if(!opModeIsActive()){ return; }
 
@@ -963,7 +1031,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
                 .build();
 
         trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end())
-                .lineToConstantHeading(new Vector2d(-7,-31))
+                .lineToConstantHeading(new Vector2d(-7,-35))
                 .build();
 
         // Shoot 3x
@@ -994,12 +1062,20 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         // Shoot
 
+        // Turn to shoot just a little
+        // Pose: -7, -38, 2.5
+        RING1_TURN1 = 0.0;
+        //robot.drive.turn(Math.toRadians(RING1_TURN1));
+
+        // Shoot
+
         // Turn to drop wobble
-        RING1_TURN1 = 165;
-        //robot.drive.turn(Math.toRadians(RINGP1_TURN2));
+        // Pose: -7, -38, 165
+        RING1_TURN2 = 165.0;
+        //robot.drive.turn(Math.toRadians(RING1_TURN2));
 
         // Drive to drop wobble
-        trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end().plus(new Pose2d(0, 0, Math.toRadians(RING1_TURN1))))
+        trajs[RING1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING1][TIdx-2].end().plus(new Pose2d(0, 0, Math.toRadians(RING1_TURN1+RING1_TURN2))))
                 .back(18)
                 .build();
 
@@ -1012,7 +1088,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // Return wobble arm
 
         // Turn to face 90
-        RING1_TURN2 = -(RING1_TURN1-90);
+        RING1_TURN3 = -((RING1_TURN1+RING1_TURN2)-90);
         //robot.drive.turn(Math.toRadians(RINGP1_TURN3));
     }
 
@@ -1103,6 +1179,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         robot.drive.followTrajectory(traj[TIdx++]);
         if(!opModeIsActive()){ return; }
 
+        // Turn a little to shoot
+        robot.drive.turn(Math.toRadians(RING1_TURN1));
         sleep(1000);
 
         // Stop intake
@@ -1114,7 +1192,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Turn to drop wobble
-        robot.drive.turn(Math.toRadians(RING1_TURN1));
+        robot.drive.turn(Math.toRadians(RING1_TURN2));
 
         robot.shoot1_motor.setPower(0.0);
         robot.shoot2_motor.setPower(0.0);
@@ -1144,7 +1222,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         // Face forward
-        robot.drive.turn(Math.toRadians(RING1_TURN2));
+        robot.drive.turn(Math.toRadians(RING1_TURN3));
         sleep(1000);
         if(!opModeIsActive()){ return; }
     }
