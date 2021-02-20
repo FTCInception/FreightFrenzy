@@ -164,8 +164,10 @@ public class RRMechBot {
         // 'P' is in a sweet-spot, could go down to 75 and still be OK
         // 'D' didn't make a ton of different, not sure that is tuned properly
         // Quick spin-up and recovery.  There may be a little overshoot just after a shot.
-        shoot1_motor.setVelocityPIDFCoefficients(125.0, 2.5, 5.0, 4.0);
-        shoot2_motor.setVelocityPIDFCoefficients(125.0, 2.5, 5.0, 4.0);
+        //shoot1_motor.setVelocityPIDFCoefficients(150.0, 0, 7.0, 12.0);
+        //shoot2_motor.setVelocityPIDFCoefficients(150.0, 0, 7.0, 12.0);
+        shoot1_motor.setVelocityPIDFCoefficients(45.0, 0, 30.0, 12.0);
+        shoot2_motor.setVelocityPIDFCoefficients(45.0, 0, 30.0, 12.0);
 
         claw = hardwareMap.servo.get("claw");
         claw.setPosition(1.0);
