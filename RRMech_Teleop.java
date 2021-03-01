@@ -167,7 +167,11 @@ public class RRMech_Teleop extends LinearOpMode {
         final double CLAW_OPEN = 0.0, CLAW_CLOSED=1.0, CLAW_HALF=0.5;
         final double FLICKER_SHOOT = 0.7, FLICKER_WAIT=0.0;
         //final double SHOOTER_NORMAL=0.475, SHOOTER_POWER_SHOT=0.4375;
-        final double SHOOTER_NORMAL=0.500, SHOOTER_POWER_SHOT=0.467;
+        // Green wheel
+        //final double SHOOTER_NORMAL=0.500, SHOOTER_POWER_SHOT=0.467;
+        // Blue wheel
+        final double SHOOTER_NORMAL=0.4775, SHOOTER_POWER_SHOT=0.435;
+
         //wobble stuff
         //final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0; // 30 RPM 6mm d-shaft (5202 series)
         //final double WOBBLE_TICKS_PER_DEGREE = 2786.0/360.0; // 60 RPM 6mm d-shaft (5202 series)
@@ -261,8 +265,8 @@ public class RRMech_Teleop extends LinearOpMode {
         shoot2_motor = hardwareMap.get(DcMotorEx.class,"shoot2");
         shoot1_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         shoot2_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        shoot1_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        shoot2_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        shoot1_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        shoot2_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
