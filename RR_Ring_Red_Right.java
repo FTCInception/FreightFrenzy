@@ -65,6 +65,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
     private double RING4_TURN1, RING4_TURN2, RING4_TURN3;
     private double RINGP0_TURN1, RINGP0_TURN2, RINGP0_TURN3;
     private double RINGP1_TURN1, RINGP1_TURN2, RINGP1_TURN3, RINGP1_TURN4;
+    private double POWER_SHOT_ANGLE = 24.25;
 
     private RRMechBot robot = new RRMechBot();
 
@@ -74,10 +75,10 @@ public class RR_Ring_Red_Right extends LinearOpMode {
     private static final double intake_eject_wobble = 0.6;
     private static final double intake_pickup_ring = 1.0;
 
-    private static final double high_tower_power = 0.500;
-    private static final double long_shot_boost = 0.0075;
-    private static final double power_shot_power = 0.455;
-    private static final double power_offset = 0.001;
+    private static final double high_tower_power = 0.4775;
+    private static final double long_shot_boost = 0.000;
+    private static final double power_shot_power = 0.435;
+    private static final double power_offset = 0.003;
 
     private static final double startingX = -63.0;
     private static final double startingY = -57.0;
@@ -93,6 +94,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // Init the robot and subsystems
         robot.init(hardwareMap);
         robot.initAutonomous(this);
+        //robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
         // Robot center is 9" from each edge:
         // Back against the -x wall, wheels aligned on first tile in -y
@@ -184,9 +186,9 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         // Starting X,Y = -63,-57
 
-        // Pose: -8, -57, 25.0
+        // Pose: -8, -57, 24.25
         trajs[RINGP0][TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .lineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(25.35)))
+                .lineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(POWER_SHOT_ANGLE)))
                 .build();
         // shoot #1
 
@@ -262,6 +264,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         sleep(1500);
         if(!opModeIsActive()){ return; }
 
+        //robot.logger.logD("RRMechLog PRing0-0",String.format("turn done: final: %f, exp: %f", Math.toDegrees(robot.drive.getRawExternalHeading()), POWER_SHOT_ANGLE ));
+
         robot.flicker.setPosition(1.0);
         sleep(750);
         if(!opModeIsActive()){ return; }
@@ -275,6 +279,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         robot.flicker.setPosition(0.0);
         sleep(750);
         if(!opModeIsActive()){ return; }
+
+        //robot.logger.logD("RRMechLog PRin01-1",String.format("turn done: final: %f, exp: %f", Math.toDegrees(robot.drive.getRawExternalHeading()), POWER_SHOT_ANGLE+RINGP0_TURN1 ));
 
         robot.flicker.setPosition(1.0);
         sleep(750);
@@ -373,10 +379,10 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         // Starting X,Y = -63,-57
 
-        // Pose: -8, -57, 25.0
+        // Pose: -8, -57, 24.25
         // Drive to first shot
         trajs[RINGP1][TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .lineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(25.35)))
+                .lineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(POWER_SHOT_ANGLE)))
                 .build();
         // shoot #1
 
@@ -464,6 +470,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         sleep(1500);
         if(!opModeIsActive()){ return; }
 
+        //robot.logger.logD("RRMechLog PRing1-0",String.format("turn done: final: %f, exp: %f", Math.toDegrees(robot.drive.getRawExternalHeading()), POWER_SHOT_ANGLE ));
+
         robot.flicker.setPosition(1.0);
         sleep(750);
         if(!opModeIsActive()){ return; }
@@ -477,6 +485,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         robot.flicker.setPosition(0.0);
         sleep(750);
         if(!opModeIsActive()){ return; }
+
+        //robot.logger.logD("RRMechLog PRing1-1",String.format("turn done: final: %f, exp: %f", Math.toDegrees(robot.drive.getRawExternalHeading()), POWER_SHOT_ANGLE+RINGP1_TURN1 ));
 
         robot.flicker.setPosition(1.0);
         sleep(750);
@@ -544,11 +554,11 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         // 2 shots
         robot.flicker.setPosition(1.0);
-        sleep(500);
+        sleep(750);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(0.0);
-        sleep(600);
+        sleep(750);
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(1.0);
@@ -861,7 +871,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
 
         trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .lineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(25.0)))
+                .lineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(24.25)))
                 .build();
 
         trajs[RING0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING0][TIdx-2].end())
