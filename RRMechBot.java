@@ -37,7 +37,9 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 
 
@@ -150,8 +152,8 @@ public class RRMechBot {
         shoot2_motor.setPower(0.0);
         shoot1_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         shoot2_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        shoot1_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        shoot2_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        shoot1_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        shoot2_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -195,6 +197,146 @@ public class RRMechBot {
     public void intakePickupRing(double power){
         intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         intake_motor.setPower(power);
+    }
+
+    public double gyroRotatePrecise(double speed, double degrees, double timeoutS) {
+
+        // This profile is for rotate
+        double[] speedRampUpR = {0.225, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+        double[] speedRampDownR = {0.20, 0.225, 0.25, 0.275, 0.30, 0.325, 0.35, 0.375, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0};
+
+        return(gyroRotate(degrees, speed, timeoutS, speedRampUpR, speedRampDownR, 0.25));
+    }
+
+    /*
+     *  Method to perfmorm an arbitrary turn with differential wheel power and gyro feedback
+     *  Move will stop if any of three conditions occur:
+     *  1) Move gets to the desired heading
+     *  2) Move runs out of time
+     *  3) Driver stops the opmode running.
+     */
+    public double gyroRotate(double degrees,
+                           double maxPower,
+                           double timeoutS, double[] up, double[] down,
+                           double precision ) {
+        double toGo;
+        double actSpeed=0.0;
+        double newSpeed ;
+        double spdUp, spdDn;
+        double[] speedRampUp = up;
+        double[] speedRampDown = down;
+        ElapsedTime runtime = new ElapsedTime();
+        double tgtHeading, curHeading, startHeading;
+        double KsL = 1.0;
+        double KsR = 1.0;
+        double delta, sign=1.0;
+        double rt = 0.0;
+        double KpL = 1.0;
+        double KpR = 1.0;
+
+        // Ensure that the opmode is still active
+        if (myLOpMode.opModeIsActive() && !myLOpMode.isStopRequested()) {
+
+            // Get the current Heading
+            startHeading = curHeading = Math.toDegrees(drive.getRawExternalHeading());
+            // Where we are headed
+            tgtHeading = AngleUnit.normalizeDegrees(curHeading + degrees) ;
+            // Initialize toGo
+            toGo = Math.abs(degrees);
+
+            logger.logD("RRMechLog",String.format("gyroTurn: start: %f, tgt: %f", startHeading, tgtHeading));
+
+            if (false) {
+                myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f",degrees,curHeading,startHeading,tgtHeading,AngleUnit.normalizeDegrees(curHeading - tgtHeading));
+                myLOpMode.telemetry.update();
+                //myLOpMode.sleep(3000);
+            }
+
+            // Determine rotation direction
+            if (degrees > 0){
+                KsL = -1.0;
+                KsR = 1.0;
+            } else {
+                KsL = 1.0;
+                KsR = -1.0;
+            }
+
+            if (false) {
+                myLOpMode.telemetry.addData("gyro", "KL: %.3f, KR: %.3f, max: %.2f",KsL, KsR,maxPower);
+                myLOpMode.telemetry.update();
+            }
+
+            // reset the timeout time and start motion at the minimum speed.
+            runtime.reset();
+
+            // Setting the starting speed is now handled inside the loop below on the first iteration.
+            delta = AngleUnit.normalizeDegrees(curHeading - tgtHeading);
+            if ( delta != 0) {
+                sign = delta/Math.abs(delta);
+            }
+
+            // Initialize variables before the loop
+            // Use done to jump out of loop when you get close enough to the end
+            // Keep looping while we are still active, and there is time left, and we haven't reached the target
+            while (myLOpMode.opModeIsActive() &&
+                    !myLOpMode.isStopRequested() &&
+                    ((rt=runtime.seconds()) < timeoutS)) {
+
+                // Check if we're done
+                // This code implements a soft start and soft stop.
+                curHeading = Math.toDegrees(drive.getRawExternalHeading());
+
+                // Look to see if our delta is really close or if we over rotated already (sign changed on delta)
+                delta = AngleUnit.normalizeDegrees(curHeading - tgtHeading);
+                if (((Math.abs(delta)) < precision) || (delta/Math.abs(delta) != sign)) {
+                    break;
+                }
+
+                // How much farther?
+                toGo = Math.min(toGo, Math.max(0, Math.abs(AngleUnit.normalizeDegrees(tgtHeading - curHeading))));
+
+                // Compute speed on acceleration and deceleration legs
+                spdUp = Math.min(speedRampUp[Math.min((int) (Math.abs(AngleUnit.normalizeDegrees(startHeading - curHeading)) / 5.0), speedRampUp.length - 1)], maxPower);
+                spdDn = Math.min(speedRampDown[Math.min((int) (Math.abs(toGo) / 5.0), speedRampDown.length - 1)], maxPower);
+
+                // Scale the final speed against the input power.
+                newSpeed = Math.min(spdDn, spdUp);
+
+                // Only update the motors if we really need too
+                if (newSpeed != actSpeed ) {
+
+                    // Record the new base speed
+                    actSpeed = newSpeed;
+
+                    drive.setMotorPowers(Range.clip(newSpeed * KpL * KsL,-1.0,1.0),
+                            Range.clip(newSpeed * KpL * KsL,-1.0,1.0),
+                            Range.clip(newSpeed * KpR * KsR,-1.0,1.0),
+                            Range.clip(newSpeed * KpR * KsR,-1.0,1.0));
+                }
+
+                if (false) {
+                    myLOpMode.telemetry.addData("left", "s: %1.3f",newSpeed * KpL * KsL);
+                    myLOpMode.telemetry.addData("right", "s: %1.3f",newSpeed * KpR * KsR);
+                    myLOpMode.telemetry.addData("gyro", "deg: %1.3f, curr: %1.3f, start: %1.3f, tgt: %1.3f",degrees,curHeading,startHeading,tgtHeading);
+                    myLOpMode.telemetry.update();
+                }
+                // FIXME -- Read the front encoders only for logging
+            }
+
+            // Stop all motion;
+            drive.setMotorPowers(0,0,0,0);
+
+            if (false) {
+                myLOpMode.telemetry.addData("gyro", "d: %3.1f, c: %3.1f, s: %3.1f, t: %3.1f, e: %3.1f", degrees, curHeading, startHeading, tgtHeading, AngleUnit.normalizeDegrees(curHeading - tgtHeading));
+                myLOpMode.telemetry.update();
+                myLOpMode.sleep(1000);
+            }
+
+            double tmpHeading = Math.toDegrees(drive.getRawExternalHeading());
+            logger.logD("RRMechLog",String.format("turn done: final: %f, get: %f, tgt: %f, err: %f", curHeading, tmpHeading, tgtHeading, tmpHeading - tgtHeading ));
+            return(AngleUnit.normalizeDegrees(tmpHeading - tgtHeading));
+        }
+        return(0.0);
     }
 }
 
