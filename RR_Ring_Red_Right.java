@@ -84,7 +84,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
     // These are for the SW PID...
     private static final double high_tower_RPM = 3525;
-    private static final double long_shot_RPM_boost = -35;
+    private static final double long_shot_RPM_boost = -15;
+    //private static final double long_shot_RPM_boost = 0;
     private static final double power_shot_RPM = 3250;
     private static final double power_RPM_offset = 20;
 
@@ -909,13 +910,17 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         CheckWait(true, SWPID,0,0);
         if(!opModeIsActive()){ return; }
 
+        // Force the PID to reset and maintain speed
+        robot.setShooter(high_tower_RPM+long_shot_RPM_boost, high_tower_power+long_shot_boost, SWPID );
+        if(!opModeIsActive()){ return; }
+
         // Turn a little towards the goal
         robot.drive.turnAsync(Math.toRadians(RING4_TURN1));
         CheckWait(true, SWPID,0,0);
         if(!opModeIsActive()){ return; }
 
         // Wait for the rings to settle
-        CheckWait(true, SWPID,750,0);
+        CheckWait(true, SWPID,1250,0);
         robot.flicker.setPosition(1.0);
         CheckWait(true, SWPID,flicker_shot_delay,0);
         if(!opModeIsActive()){ return; }
@@ -950,6 +955,9 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         CheckWait(true, SWPID,flicker_return_delay,0);
         if(!opModeIsActive()){ return; }
 
+        // The last ring has been a little low
+        // Let's give the motors a little time to recover
+        CheckWait(true, SWPID,250,0);
         robot.flicker.setPosition(1.0);
         CheckWait(true, SWPID,flicker_shot_delay,0);
         if(!opModeIsActive()){ return; }

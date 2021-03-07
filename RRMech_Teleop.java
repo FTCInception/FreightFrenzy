@@ -100,8 +100,12 @@ public class RRMech_Teleop extends LinearOpMode {
     private boolean enableCSVLogging = false;
 
     // Mech drive related variables
-    double[] speedModifier = new double[] {0.75,0.75};
+    double[] speedModifier = new double[] {0.65, 0.75};
     double[] forward = new double[2], strafe = new double[2], rotate = new double[2];
+    double[] prevForward = new double[2], prevStrafe = new double[2], prevRotate = new double[2];
+    double[] prevTime = new double[2];
+    double maxForwardChange=2.0, maxRotateChange=3.0, maxStrafeChange=2.0;
+    boolean smoothDrive = true;
 
     double l_f_motor_power;
     double l_b_motor_power;
@@ -170,7 +174,8 @@ public class RRMech_Teleop extends LinearOpMode {
         // Green wheel
         //final double SHOOTER_NORMAL=0.500, SHOOTER_POWER_SHOT=0.467;
         // Blue wheel
-        final double SHOOTER_NORMAL=0.4775, SHOOTER_POWER_SHOT=0.435;
+        final double SHOOTER_NORMAL=0.490, SHOOTER_POWER_SHOT=0.435;
+        //final double SHOOTER_NORMAL=0.4775, SHOOTER_POWER_SHOT=0.435;
 
         //wobble stuff
         //final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0; // 30 RPM 6mm d-shaft (5202 series)
@@ -189,7 +194,7 @@ public class RRMech_Teleop extends LinearOpMode {
         double[] flickerSet = {FLICKER_WAIT, FLICKER_SHOOT};
         double[] clawSet = {CLAW_CLOSED, CLAW_OPEN};
         double[] intakeSet = {0.0, MAX_INTAKE_POWER};
-        double[] speedSet = {0.75, 0.90};
+        double[] speedSet = {0.65, 0.75, 0.90};
         double[] shooterSet = {0.0, SHOOTER_NORMAL};
         int flickerIdx=0, clawIdx=0, intakeIdx=0, speedIdx=0, shooterIdx=0, wobbleIdx=0;
         double flickerRelease=0.0, flickerRearm=0.0;
@@ -741,9 +746,49 @@ public class RRMech_Teleop extends LinearOpMode {
             }
 
             // Read the controller 1 (driver) stick positions
-            strafe[0] = gamepad1.left_stick_x;
+            strafe[0] = gamepad1.left_stick_x*1.25;
             forward[0] = -gamepad1.left_stick_y;
-            rotate[0] = gamepad1.right_stick_x;
+            rotate[0] = gamepad1.right_stick_x*1.5;
+
+            if(smoothDrive) {
+                if ((prevStrafe[0] != 0) && (strafe[0] != 0) && (Math.signum(prevStrafe[0]) != Math.signum(strafe[0]))) {
+                    strafe[0] = 0;
+                }
+                if ((prevForward[0] != 0) && (forward[0] != 0) && (Math.signum(prevForward[0]) != Math.signum(forward[0]))) {
+                    forward[0] = 0;
+                }
+                if ((prevRotate[0] != 0) && (rotate[0] != 0) && (Math.signum(prevRotate[0]) != Math.signum(rotate[0]))) {
+                    rotate[0] = 0;
+                }
+
+                double now = runtime.seconds();
+                double deltaT = now - prevTime[0];
+                if (Math.abs(strafe[0]) > 0.20) {
+                    if (prevStrafe[0] < strafe[0]) {
+                        strafe[0] = Math.min(strafe[0], prevStrafe[0] + (maxStrafeChange * deltaT));
+                    } else {
+                        strafe[0] = Math.max(strafe[0], prevStrafe[0] - (maxStrafeChange * deltaT));
+                    }
+                }
+                if (Math.abs(forward[0]) > 0.20) {
+                    if (prevForward[0] < forward[0]) {
+                        forward[0] = Math.min(forward[0], prevForward[0] + (maxForwardChange * deltaT));
+                    } else {
+                        forward[0] = Math.max(forward[0], prevForward[0] - (maxForwardChange * deltaT));
+                    }
+                }
+                if (Math.abs(rotate[0]) > 0.20) {
+                    if (prevRotate[0] < rotate[0]) {
+                        rotate[0] = Math.min(rotate[0], prevRotate[0] + (maxRotateChange * deltaT));
+                    } else {
+                        rotate[0] = Math.max(rotate[0], prevRotate[0] - (maxRotateChange * deltaT));
+                    }
+                }
+                prevTime[0] = now;
+                prevStrafe[0] = strafe[0];
+                prevForward[0] = forward[0];
+                prevRotate[0] = rotate[0];
+            }
 
             // Remove 15% deadzone
             if (strafe[0] >= 0.025) {
@@ -777,6 +822,47 @@ public class RRMech_Teleop extends LinearOpMode {
             strafe[1] = gamepad2.left_stick_x;
             forward[1] = -gamepad2.left_stick_y;
             rotate[1] = gamepad2.right_stick_x;
+
+            if( smoothDrive ) {
+
+                if((prevStrafe[1] != 0) && (strafe[1] != 0) && (Math.signum(prevStrafe[1]) != Math.signum(strafe[1]))) {
+                    strafe[1] = 0;
+                }
+                if((prevForward[1] != 0) && (forward[1] != 0) && (Math.signum(prevForward[1]) != Math.signum(forward[1]))) {
+                    forward[1] = 0;
+                }
+                if((prevRotate[1] != 0) && (rotate[1] != 0) && (Math.signum(prevRotate[1]) != Math.signum(rotate[1]))) {
+                    rotate[1] = 0;
+                }
+
+                double now = runtime.seconds();
+                double deltaT = now - prevTime[1];
+                if (Math.abs(strafe[1]) > 0.20) {
+                    if (prevStrafe[1] < strafe[1]) {
+                        strafe[1] = Math.min(strafe[1], prevStrafe[1] + (maxStrafeChange * deltaT));
+                    } else {
+                        strafe[1] = Math.max(strafe[1], prevStrafe[1] - (maxStrafeChange * deltaT));
+                    }
+                }
+                if (Math.abs(forward[1]) > 0.20) {
+                    if (prevForward[1] < forward[1]) {
+                        forward[1] = Math.min(forward[1], prevForward[1] + (maxForwardChange * deltaT));
+                    } else {
+                        forward[1] = Math.max(forward[1], prevForward[1] - (maxForwardChange * deltaT));
+                    }
+                }
+                if (Math.abs(rotate[1]) > 0.20) {
+                    if (prevRotate[1] < rotate[1]) {
+                        rotate[1] = Math.min(rotate[1], prevRotate[1] + (maxRotateChange * deltaT));
+                    } else {
+                        rotate[1] = Math.max(rotate[1], prevRotate[1] - (maxRotateChange * deltaT));
+                    }
+                }
+                prevTime[1] = now;
+                prevStrafe[1] = strafe[1];
+                prevForward[1] = forward[1];
+                prevRotate[1] = rotate[1];
+            }
 
             // Remove 15% deadzone
             if (strafe[1] >= 0.025) {

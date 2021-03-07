@@ -230,7 +230,7 @@ public class RRMechBot {
         }
 
         // Voltage adjust F
-        vF = (F*(13.0/Vsense.getVoltage()));
+        vF = (F*(12.8/Vsense.getVoltage()));
         pid.setF(vF);
 
     }
