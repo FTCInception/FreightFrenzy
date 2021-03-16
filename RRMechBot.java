@@ -98,7 +98,7 @@ public class RRMechBot {
     MiniPID pid = new MiniPID(P,I,D,F);
     private NanoClock PIDClock = NanoClock.system();
     private double shooterRPM = 0.0 ;
-    private double PIDTime = 0.05;
+    public double PIDTime = 0.05;
     private double PIDStartTime = PIDClock.seconds();
     private double nextPID = PIDStartTime;
     private int PIDAvgSize = 10;
@@ -148,77 +148,23 @@ public class RRMechBot {
         wobble_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         wobble_motor.setTargetPosition(0);
         wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        
+
+        claw.setPosition(1.0);
+        flicker.setPosition(0.0);
     }
 
     /* Initialize standard Hardware interfaces */
-    public void init(HardwareMap ahwMap) {
+    public void acquireHW(HardwareMap ahwMap) {
         // Save reference to Hardware map
         hardwareMap = ahwMap;
 
         drive = new SampleMecanumDrive(hardwareMap);
-
-        // Initialize the hardware variables. Note that the strings used here as parameters
-        // to 'get' must correspond to the names assigned during the robot configuration
-        // step (using the FTC Robot Controller app on the phone).
-
         intake_motor = hardwareMap.dcMotor.get("intake");
-        intake_motor.setPower(0.0);
-        intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        intake_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        intake_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        //intake_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-
-        // Zero out the wobble motor in the auto init
         wobble_motor = hardwareMap.get(DcMotorEx.class,"wobble");
-        wobble_motor.setPower(0.0);
-        //wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        wobble_motor.setDirection(DcMotorSimple.Direction.FORWARD);
-        wobble_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        wobble_motor.setTargetPosition(0);
-        wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        wobble_motor.setPositionPIDFCoefficients(5.0);
-        wobble_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
-
         shoot1_motor = hardwareMap.get(DcMotorEx.class,"shoot1");
         shoot2_motor = hardwareMap.get(DcMotorEx.class,"shoot2");
-        shoot1_motor.setPower(0.0);
-        shoot2_motor.setPower(0.0);
-        shoot1_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        shoot2_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        shoot1_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        shoot2_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        // SW PID
-        ////shoot1_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        ////shoot2_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        pid.setOutputLimits(0.0,0.90);
-        pid.setMaxIOutput(0.05);
-
-        // REV PID
-        // These PIDF values seem pretty good.
-        //PIDFCoefficients pidFNew = new PIDFCoefficients(125.0, 2.5, 5.0, 4.0);
-        // Raising 'F' increases overshoot a lot
-        // Raising 'I' increases overshoot a lot
-        // 'P' is in a sweet-spot, could go down to 75 and still be OK
-        // 'D' didn't make a ton of different, not sure that is tuned properly
-        // Quick spin-up and recovery.  There may be a little overshoot just after a shot.
-        //shoot1_motor.setVelocityPIDFCoefficients(150.0, 0, 7.0, 12.0);
-        //shoot2_motor.setVelocityPIDFCoefficients(150.0, 0, 7.0, 12.0);
-        ////shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        ////shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        ////shoot1_motor.setVelocityPIDFCoefficients(45.0, 0, 30.0, 12.0);
-        ////shoot2_motor.setVelocityPIDFCoefficients(45.0, 0, 30.0, 12.0);
-
         claw = hardwareMap.servo.get("claw");
-        claw.setPosition(1.0);
-
         flicker = hardwareMap.servo.get("flicker");
-        flicker.setPosition(0.0);
 
         for (VoltageSensor sensor : hardwareMap.voltageSensor) {
             if (Vsense == null) {
@@ -229,9 +175,47 @@ public class RRMechBot {
             }
         }
 
+        pid.reset();
+        pid.setOutputLimits(0.0,0.90);
+        pid.setMaxIOutput(0.05);
         // Voltage adjust F
         vF = (F*(12.8/Vsense.getVoltage()));
-        pid.setF(vF);
+        pid.setPID(P,I,D,vF);
+    }
+
+        /* Initialize standard Hardware interfaces */
+    public void init(HardwareMap ahwMap) {
+
+        acquireHW(ahwMap);
+
+        // Initialize the hardware variables. Note that the strings used here as parameters
+        // to 'get' must correspond to the names assigned during the robot configuration
+        // step (using the FTC Robot Controller app on the phone).
+
+        intake_motor.setPower(0.0);
+        intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        intake_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        intake_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        // Zero out the wobble motor in the auto init
+        wobble_motor.setPower(0.0);
+        wobble_motor.setDirection(DcMotorSimple.Direction.FORWARD);
+        wobble_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        wobble_motor.setTargetPosition(0);
+        wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        wobble_motor.setPositionPIDFCoefficients(5.0);
+        wobble_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+
+        shoot1_motor.setPower(0.0);
+        shoot2_motor.setPower(0.0);
+        shoot1_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        shoot2_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        shoot1_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        shoot2_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
 
     }
 
@@ -429,7 +413,7 @@ public class RRMechBot {
             shoot2_motor.setVelocityPIDFCoefficients(45.0, 0, 30.0, 12.0);
 
             shoot1_motor.setPower(power);
-            shoot1_motor.setPower(power);
+            shoot2_motor.setPower(power);
         }
     }
 
@@ -448,14 +432,9 @@ public class RRMechBot {
                 shoot1Pos = shoot1_motor.getCurrentPosition();
                 double t1 = PIDClock.seconds();
 
-                shoot2Pos = shoot2_motor.getCurrentPosition();
-                double t2 = PIDClock.seconds();
-
                 int avgIndex = PIDAvgCount % PIDAvgSize;
                 Pos1[avgIndex] = shoot1Pos;
                 Time1[avgIndex] = t1;
-                Pos2[avgIndex] = shoot2Pos;
-                Time2[avgIndex] = t2;
                 PIDAvgCount++;
 
                 // Need 2 samples to do anything really useful
@@ -463,18 +442,15 @@ public class RRMechBot {
 
                     // Check instant RPM for this sample, less lag but more noise
                     myiRPM1 = (((((shoot1Pos - prevShoot1Pos) / (t1 - prevPIDTime1)) / 28.0) * shooterGearRatio) * 60.0);
-                    myiRPM2 = (((((shoot2Pos - prevShoot2Pos) / (t2 - prevPIDTime2)) / 28.0) * shooterGearRatio) * 60.0);
 
                     // Keep running without averaging until we get close to the target
-                    if ((myiRPM1 < (shooterRPM*0.90)) || (myiRPM2 < (shooterRPM*0.90))) {
+                    if (myiRPM1 < (shooterRPM*0.90)) {
                         singleMode = (int) (.5 / PIDTime);
                     }
 
                     // Now go compute RPM
                     double deltaPos1;
-                    double deltaPos2;
                     double deltaTime1;
-                    double deltaTime2;
 
                     int avgIndexH = ((PIDAvgCount-1) % PIDAvgSize);
                     int avgIndexL = (PIDAvgCount % PIDAvgSize);
@@ -484,26 +460,21 @@ public class RRMechBot {
                     }
 
                     deltaPos1 = Pos1[avgIndexH] - Pos1[avgIndexL];
-                    deltaPos2 = Pos2[avgIndexH] - Pos2[avgIndexL];
                     deltaTime1 = Time1[avgIndexH] - Time1[avgIndexL];
-                    deltaTime2 = Time2[avgIndexH] - Time2[avgIndexL];
 
                     tps1 = deltaPos1 / deltaTime1;
-                    tps2 = deltaPos2 / deltaTime2;
 
                     myRPM1 = (((tps1 / 28.0) * shooterGearRatio) * 60.0);
-                    myRPM2 = (((tps2 / 28.0) * shooterGearRatio) * 60.0);
 
                     // Compute PID values and include some time skew if there was any
                     output1 = pid.getOutput(myRPM1, shooterRPM, ((t1-prevPIDTime1)/PIDTime));
-                    output2 = pid.getOutput(myRPM2, shooterRPM, ((t2-prevPIDTime2)/PIDTime));
 
                     // Set the power
                     shoot1_motor.setPower(Range.clip(output1, 0.0, 0.9));
-                    shoot2_motor.setPower(Range.clip(output2, 0.0, 0.9));
+                    shoot2_motor.setPower(Range.clip(output1, 0.0, 0.9));
 
-                    if (false) {
-                        logger.logD("ShooterCSV", String.format(",%f,%f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.2f,%.3f,%.3f,%.3f,%f,%f,%f,%.0f", now, now - lastPIDTime, shoot1Pos, shoot2Pos, shoot1Pos - prevShoot1Pos, shoot2Pos - prevShoot2Pos, myRPM1, myRPM2, myiRPM1, myiRPM2, output1, output2));
+                    if (true) {
+                        logger.logD("ShooterCSV", String.format(",%f,%f,%.0f,%.0f,%.0f,%.0f,%.3f,%.0f", now, now - lastPIDTime, shoot1Pos, shoot1Pos - prevShoot1Pos, myRPM1, myiRPM1, output1,(((shoot1_motor.getVelocity() / 28.0) * shooterGearRatio) * 60.0)));
                     }
                 } else {
                     // just set a fake feed-forward value on the first sample.
@@ -512,10 +483,8 @@ public class RRMechBot {
                 }
 
                 prevShoot1Pos = shoot1Pos;
-                prevShoot2Pos = shoot2Pos;
 
                 prevPIDTime1 = t1;
-                prevPIDTime2 = t2;
 
                 // 'Schedule' the next PID check
                 nextPID = now + PIDTime;

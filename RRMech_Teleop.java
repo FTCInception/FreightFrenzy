@@ -96,11 +96,13 @@ public class RRMech_Teleop extends LinearOpMode {
     //Orientation angles,angles2;
     double MAX_INTAKE_POWER = 1.0;
 
-    private BotLog logger = new BotLog();
+    //private BotLog logger = new BotLog();
     private boolean enableCSVLogging = false;
 
+    private RRMechBot robot = new RRMechBot();
+
     // Mech drive related variables
-    double[] speedModifier = new double[] {0.65, 0.75};
+    double[] speedModifier = new double[] {0.90, 0.90};
     double[] forward = new double[2], strafe = new double[2], rotate = new double[2];
     double[] prevForward = new double[2], prevStrafe = new double[2], prevRotate = new double[2];
     double[] prevTime = new double[2];
@@ -111,6 +113,8 @@ public class RRMech_Teleop extends LinearOpMode {
     double l_b_motor_power;
     double r_f_motor_power;
     double r_b_motor_power;
+
+    private static boolean SWPID = true;
 
     double shootingAngle;
     Pose2d shootingPose;
@@ -169,13 +173,20 @@ public class RRMech_Teleop extends LinearOpMode {
         boolean[] guidePrev = new boolean[]{false, false};
 
         final double CLAW_OPEN = 0.0, CLAW_CLOSED=1.0, CLAW_HALF=0.5;
-        final double FLICKER_SHOOT = 0.7, FLICKER_WAIT=0.0;
+        final double FLICKER_SHOOT = 0.5, FLICKER_WAIT=0.05;
+        final double FLICKER_SHOOT_DELAY = 0.10, FLICKER_REARM_DELAY = 0.15;
         //final double SHOOTER_NORMAL=0.475, SHOOTER_POWER_SHOT=0.4375;
         // Green wheel
         //final double SHOOTER_NORMAL=0.500, SHOOTER_POWER_SHOT=0.467;
         // Blue wheel
         final double SHOOTER_NORMAL=0.490, SHOOTER_POWER_SHOT=0.435;
         //final double SHOOTER_NORMAL=0.4775, SHOOTER_POWER_SHOT=0.435;
+
+        // Blue Stealth Wheel RPM
+        final double SHOOTER_NORMAL_RPM=3525, SHOOTER_POWER_SHOT_RPM=3250;
+        // Blue BaneBot RPM
+        //final double SHOOTER_NORMAL_RPM=5200, SHOOTER_POWER_SHOT_RPM=3250;
+
 
         //wobble stuff
         //final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0; // 30 RPM 6mm d-shaft (5202 series)
@@ -194,8 +205,9 @@ public class RRMech_Teleop extends LinearOpMode {
         double[] flickerSet = {FLICKER_WAIT, FLICKER_SHOOT};
         double[] clawSet = {CLAW_CLOSED, CLAW_OPEN};
         double[] intakeSet = {0.0, MAX_INTAKE_POWER};
-        double[] speedSet = {0.65, 0.75, 0.90};
+        double[] speedSet = {0.90, 0.65, 0.75};
         double[] shooterSet = {0.0, SHOOTER_NORMAL};
+        double[] shooterSetRPM = {0.0, SHOOTER_NORMAL_RPM};
         int flickerIdx=0, clawIdx=0, intakeIdx=0, speedIdx=0, shooterIdx=0, wobbleIdx=0;
         double flickerRelease=0.0, flickerRearm=0.0;
         double prevLTrigVal=0.0;
@@ -212,17 +224,21 @@ public class RRMech_Teleop extends LinearOpMode {
 
         if (enableCSVLogging) {
             // Enable debug logging
-            logger.LOGLEVEL |= logger.LOGDEBUG;
+            robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
         }
 
-        //logger.LOGLEVEL |= logger.LOGDEBUG;
+        //robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
+        robot.acquireHW(hardwareMap);
+
+        // For Blue Banebot wheel:
+        //robot.pid.setPID(0.00012,0.0000003,0.00003,1.0/8050.0);
+
         // Initialize custom cancelable SampleMecanumDrive class
-        SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
-        //SampleMecanumDrive.HEADING_PID.kP = 20;
+        SampleMecanumDrive drive = robot.drive;
 
         // We want to turn off velocity control for teleop
         // Velocity control per wheel is not necessary outside of motion profiled auto
@@ -244,7 +260,7 @@ public class RRMech_Teleop extends LinearOpMode {
         /************ No movement allowed during init! ***************/
         /*************************************************************/
 
-        intake_motor = hardwareMap.dcMotor.get("intake");
+        intake_motor = robot.intake_motor;
         intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         intake_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         intake_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -252,7 +268,7 @@ public class RRMech_Teleop extends LinearOpMode {
 
         // The wobble keeps it's encoder value from auto, this shoudl allow us to get back to '0' position
         // in case something bad happened.  DO NOT STOP_AND_RESET_ENCODER here to preserve the '0' postion.
-        wobble_motor = hardwareMap.get(DcMotorEx.class,"wobble");
+        wobble_motor = robot.wobble_motor;
         wobble_motor.setPower(0.0);
         //wobble_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         wobble_motor.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -266,8 +282,8 @@ public class RRMech_Teleop extends LinearOpMode {
         wobble_motor.setPositionPIDFCoefficients(5.0);
         wobble_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
 
-        shoot1_motor = hardwareMap.get(DcMotorEx.class,"shoot1");
-        shoot2_motor = hardwareMap.get(DcMotorEx.class,"shoot2");
+        shoot1_motor = robot.shoot1_motor;
+        shoot2_motor = robot.shoot2_motor;
         shoot1_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         shoot2_motor.setDirection(DcMotorSimple.Direction.REVERSE);
         shoot1_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -289,8 +305,8 @@ public class RRMech_Teleop extends LinearOpMode {
         shoot1_motor.setVelocityPIDFCoefficients(45.0, 0, 30.0, 12.0);
         shoot2_motor.setVelocityPIDFCoefficients(45.0, 0, 30.0, 12.0);
 
-        claw = hardwareMap.servo.get("claw");
-        flicker = hardwareMap.servo.get("flicker");
+        claw = robot.claw;
+        flicker = robot.flicker;
 
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Status", "Waiting for start...");
@@ -327,11 +343,10 @@ public class RRMech_Teleop extends LinearOpMode {
             iter += 1;
 
             if ((rt > 90) && (shooterSet[1] != SHOOTER_POWER_SHOT)) {
+                shooterSetRPM[1] = SHOOTER_POWER_SHOT_RPM;
                 shooterSet[1] = SHOOTER_POWER_SHOT;
-                shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                shoot1_motor.setPower(shooterSet[shooterIdx]);
-                shoot2_motor.setPower(shooterSet[shooterIdx]);
+
+                robot.setShooter(shooterSetRPM[shooterIdx],shooterSet[shooterIdx],SWPID);
             }
 
             if (gp1Present) {
@@ -349,10 +364,9 @@ public class RRMech_Teleop extends LinearOpMode {
                 if (((gamepad1.right_trigger > 0.0) || (prevRTrigVal > 0.0)) &&
                         (shooterIdx == 0)) {
                     prevRTrigVal = gamepad1.right_trigger * 0.30;
-                    shoot1_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-                    shoot2_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-                    shoot1_motor.setPower(-prevRTrigVal);
-                    shoot2_motor.setPower(-prevRTrigVal);
+
+                    // make this always be just plain power
+                    robot.setShooter(0,-prevRTrigVal,false);
                 }
 
                 // One-button timed flick
@@ -368,9 +382,9 @@ public class RRMech_Teleop extends LinearOpMode {
                     if ((gamepad1.left_bumper) && (shooterIdx == 1)) {
                         // Set a future time to return flicker to rest
                         flicker.setPosition(FLICKER_SHOOT);
-                        flickerRelease = rt + .25;
+                        flickerRelease = rt + FLICKER_SHOOT_DELAY;
                         //shootingPose = drive.getPoseEstimate();
-                        shootingAngle = drive.getRawExternalHeading();
+                        //shootingAngle = drive.getRawExternalHeading();
                     } else {
                         if (prevLTrigVal == 0.0) {
                             // Just keep asking to return to wait position
@@ -383,7 +397,7 @@ public class RRMech_Teleop extends LinearOpMode {
                         // Once the time has elapsed, move to the next state
                         // and set a timer to wait for release
                         flickerRelease = 0.0;
-                        flickerRearm = rt + 0.30;
+                        flickerRearm = rt + FLICKER_REARM_DELAY;
                     } else {
                         // Just keep asking to flick
                         flicker.setPosition(FLICKER_SHOOT);
@@ -482,15 +496,7 @@ public class RRMech_Teleop extends LinearOpMode {
                 if (gamepad1.dpad_up) {
                     if (!dUpPrev[0]) {
                         shooterIdx = (shooterIdx + 1) % shooterSet.length;
-                        if (shooterSet[shooterIdx] > 0.0) {
-                            shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                            shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                        } else {
-                            shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                            shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                        }
-                        shoot1_motor.setPower(shooterSet[shooterIdx]);
-                        shoot2_motor.setPower(shooterSet[shooterIdx]);
+                        robot.setShooter(shooterSetRPM[shooterIdx],shooterSet[shooterIdx],SWPID);
 
                         dUpPrev[0] = true;
                     }
@@ -548,15 +554,7 @@ public class RRMech_Teleop extends LinearOpMode {
                 if (gamepad2.right_trigger > 0.3) {
                     if (!rTrigPrev[1]) {
                         shooterIdx = (shooterIdx + 1) % shooterSet.length;
-                        if (shooterSet[shooterIdx] > 0.0) {
-                            shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                            shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                        } else {
-                            shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                            shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                        }
-                        shoot1_motor.setPower(shooterSet[shooterIdx]);
-                        shoot2_motor.setPower(shooterSet[shooterIdx]);
+                        robot.setShooter(shooterSetRPM[shooterIdx],shooterSet[shooterIdx],SWPID);
 
                         rTrigPrev[1] = true;
                     }
@@ -577,9 +575,9 @@ public class RRMech_Teleop extends LinearOpMode {
                     if ((gamepad2.left_bumper) && (shooterIdx == 1)) {
                         // Set a future time to return flicker to rest
                         flicker.setPosition(FLICKER_SHOOT);
-                        flickerRelease = rt + .25;
+                        flickerRelease = rt + FLICKER_SHOOT_DELAY;
                         //shootingPose = drive.getPoseEstimate();
-                        shootingAngle = drive.getRawExternalHeading();
+                        //shootingAngle = drive.getRawExternalHeading();
                     } else {
                         if (prevLTrigVal == 0.0) {
                             // Just keep asking to return to wait position
@@ -592,7 +590,7 @@ public class RRMech_Teleop extends LinearOpMode {
                         // Once the time has elapsed, move to the next state
                         // and set a timer to wait for release
                         flickerRelease = 0.0;
-                        flickerRearm = rt + 0.30;
+                        flickerRearm = rt + FLICKER_REARM_DELAY;
                     } else {
                         // Just keep asking to flick
                         flicker.setPosition(FLICKER_SHOOT);
@@ -691,15 +689,8 @@ public class RRMech_Teleop extends LinearOpMode {
                 if (gamepad2.dpad_up) {
                     if (!dUpPrev[0]) {
                         shooterIdx = (shooterIdx + 1) % shooterSet.length;
-                        if (shooterSet[shooterIdx] > 0.0) {
-                            shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                            shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                        } else {
-                            shoot1_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                            shoot2_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                        }
-                        shoot1_motor.setPower(shooterSet[shooterIdx]);
-                        shoot2_motor.setPower(shooterSet[shooterIdx]);
+
+                        robot.setShooter(shooterSetRPM[shooterIdx],shooterSet[shooterIdx],SWPID);
 
                         dUpPrev[0] = true;
                     }
@@ -917,6 +908,11 @@ public class RRMech_Teleop extends LinearOpMode {
                 r_b_motor_power /= maxPwr;
             }
 
+            // Update PID
+            if (SWPID) {
+                robot.updateShooterPID();
+            }
+
             // Update the drive class
             drive.update();
 
@@ -942,10 +938,7 @@ public class RRMech_Teleop extends LinearOpMode {
                            drive.turnAsync(angle, Math.toRadians(540.0), Math.toRadians(270.0));
 
                            shooterIdx = 1;
-                           shoot1_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                           shoot2_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                           shoot1_motor.setPower(shooterSet[shooterIdx]);
-                           shoot2_motor.setPower(shooterSet[shooterIdx]);
+                           robot.setShooter(shooterSetRPM[shooterIdx],shooterSet[shooterIdx],SWPID);
 
                            currentMode = Mode.AUTOMATIC_CONTROL;
                            dDownPrev[0] = true;
@@ -987,7 +980,11 @@ public class RRMech_Teleop extends LinearOpMode {
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.addData("Lag:", "avg: %.2f ms, max: %2f ms", ((rt/iter)*1000.0), maxLag);
-            telemetry.addData("Shooter:", "%.3f, %.0f", shooterSet[shooterIdx], (tps/(28.0/2.0))*60.0);
+            if(SWPID) {
+                telemetry.addData("Shooter:", "%.0f, %.0f", shooterSetRPM[shooterIdx], (tps / (28.0 / 1.5)) * 60.0);
+            } else {
+                telemetry.addData("Shooter:", "%.3f, %.0f", shooterSet[shooterIdx], (tps / (28.0 / 1.5)) * 60.0);
+            }
             telemetry.update();
         }
 
