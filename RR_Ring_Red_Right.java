@@ -371,7 +371,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         // Drop wobble
         robot.intakeEjectWobble(intake_eject_wobble);
-        CheckWait(true, SWPID, 600, 0);
+        CheckWait(true, SWPID, 1250, 0);
         if(!opModeIsActive()){ return; }
 
         robot.intakeStop();
@@ -593,7 +593,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         // Drop wobble
         robot.intakeEjectWobble(intake_eject_wobble);
-        CheckWait(true, SWPID, 600, 0);
+        CheckWait(true, SWPID, 1250, 0);
         if(!opModeIsActive()){ return; }
 
         robot.intakeStop();
