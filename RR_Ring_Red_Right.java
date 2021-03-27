@@ -82,12 +82,20 @@ public class RR_Ring_Red_Right extends LinearOpMode {
     private static final double power_shot_power = 0.435;
     private static final double power_offset = 0.003;
 
+    // Stealth Wheel blue RPMs 3/26/21
     // These are for the SW PID...
-    private static final double high_tower_RPM = 3525;
-    private static final double long_shot_RPM_boost = -15;
+    private static final double high_tower_RPM = 3675;
+    private static final double long_shot_RPM_boost = -25;
     //private static final double long_shot_RPM_boost = 0;
-    private static final double power_shot_RPM = 3250;
-    private static final double power_RPM_offset = 20;
+    private static final double power_shot_RPM = 3300;
+    private static final double power_RPM_offset = 25;
+
+    // BaneBot Blue RPMs:
+    //private static final double high_tower_RPM = 6200;
+    //private static final double long_shot_RPM_boost = 0;
+    //private static final double long_shot_RPM_boost = 0;
+    //private static final double power_shot_RPM = 4950;
+    //private static final double power_RPM_offset = 0;
 
     private static final double flicker_shot_delay = 250;
     private static final double flicker_return_delay = 350;

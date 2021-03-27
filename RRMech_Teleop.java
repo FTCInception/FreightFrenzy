@@ -174,7 +174,7 @@ public class RRMech_Teleop extends LinearOpMode {
 
         final double CLAW_OPEN = 0.0, CLAW_CLOSED=1.0, CLAW_HALF=0.5;
         final double FLICKER_SHOOT = 0.5, FLICKER_WAIT=0.05;
-        final double FLICKER_SHOOT_DELAY = 0.10, FLICKER_REARM_DELAY = 0.15;
+        final double FLICKER_SHOOT_DELAY = 0.125, FLICKER_REARM_DELAY = 0.175;
         //final double SHOOTER_NORMAL=0.475, SHOOTER_POWER_SHOT=0.4375;
         // Green wheel
         //final double SHOOTER_NORMAL=0.500, SHOOTER_POWER_SHOT=0.467;
@@ -183,10 +183,13 @@ public class RRMech_Teleop extends LinearOpMode {
         //final double SHOOTER_NORMAL=0.4775, SHOOTER_POWER_SHOT=0.435;
 
         // Blue Stealth Wheel RPM
-        final double SHOOTER_NORMAL_RPM=3525, SHOOTER_POWER_SHOT_RPM=3250;
-        // Blue BaneBot RPM
-        //final double SHOOTER_NORMAL_RPM=5200, SHOOTER_POWER_SHOT_RPM=3250;
+        //final double SHOOTER_NORMAL_RPM=3525, SHOOTER_POWER_SHOT_RPM=3250;
+        // 3/26/21
+        final double SHOOTER_NORMAL_RPM=3675, SHOOTER_POWER_SHOT_RPM=3300;
 
+        // Blue BaneBot RPM
+        // BaneBot
+        //final double SHOOTER_NORMAL_RPM=6200, SHOOTER_POWER_SHOT_RPM=4950;
 
         //wobble stuff
         //final double WOBBLE_TICKS_PER_DEGREE = 5264.0/360.0; // 30 RPM 6mm d-shaft (5202 series)
@@ -227,7 +230,7 @@ public class RRMech_Teleop extends LinearOpMode {
             robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
         }
 
-        //robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
+        robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -235,7 +238,14 @@ public class RRMech_Teleop extends LinearOpMode {
         robot.acquireHW(hardwareMap);
 
         // For Blue Banebot wheel:
-        //robot.pid.setPID(0.00012,0.0000003,0.00003,1.0/8050.0);
+        // BaneBot
+        //robot.pid.setPID(0.00018,0.0000003/2.0,0.00003/2.0,1.0/8225.0);
+
+        // Blue Stealth
+        // 3/26/21
+        double vF = ((1.0/7825.0)*(12.8/robot.Vsense.getVoltage()));
+        robot.pid.setPID(0.00075,0.0000003/2.0,0.00007/2.0,vF);
+        robot.pid.reset();
 
         // Initialize custom cancelable SampleMecanumDrive class
         SampleMecanumDrive drive = robot.drive;

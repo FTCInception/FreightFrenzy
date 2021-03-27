@@ -88,38 +88,44 @@ public class RRMechBot {
     private static LinearOpMode myLOpMode;
 
 
+    private final double MAX_SHOOTER_PWR = 0.95;
     // Shooter PID related
-    private double P = 0.0005;
-    private double I = 0.0000003;
-    private double D = 0.00007;
-    private double F = 1.0/7250.0;  // @ 13V resting (12.8V under load)
+    // Big Blue wheel, old ring PID info
+    //private double P = 0.0005;
+    //private double I = 0.0000003;
+    //private double D = 0.00007;
+    //private double F = 1.0/7250.0;  // @ 13V resting (12.8V under load)
+
+    // Blue Stealth wheel: 3/26/21
+    private double P = 0.00075;
+    private double I = 0.0000003/2.0;
+    private double D = 0.00007/2.0;
+    private double F = 1.0/7825.0;  // @ 13V resting (12.8V under load)
     private double vF = F;          // Voltage adjusted F
+
+    // BaneBot Blue, new rings
+    //private double P = 0.00018;
+    //private double I = 0.0000003/2.0;
+    //private double D = 0.00003/2.0;
+    //private double F = 1.0/8225.0;  // @ 13V resting (12.8V under load)
+    //private double vF = F;          // Voltage adjusted F
+
     // SW PID with some limits
     MiniPID pid = new MiniPID(P,I,D,F);
     private NanoClock PIDClock = NanoClock.system();
     private double shooterRPM = 0.0 ;
-    public double PIDTime = 0.05;
+    public double PIDTime = 0.025;
     private double PIDStartTime = PIDClock.seconds();
     private double nextPID = PIDStartTime;
-    private int PIDAvgSize = 10;
+    //private int PIDAvgSize = 10;
     private int PIDAvgCount = 0;
-    private double[] Pos1 = new double[PIDAvgSize];
-    private double[] Pos2 = new double[PIDAvgSize];
-    private double[] Time1 = new double[PIDAvgSize];
-    private double[] Time2 = new double[PIDAvgSize];
     private double lastPIDTime = PIDTime;
     private double prevPIDTime1 = PIDTime;
-    private double prevPIDTime2 = PIDTime;
     private double myRPM1 = 0;
     private double myRPM2 = 0;
-    private double myiRPM1 = 0;
-    private double myiRPM2 = 0;
     private double output1 = 0;
-    private double output2 = 0;
-    private int singleMode = (int) (1/PIDTime);
-    private VoltageSensor Vsense;
+    public VoltageSensor Vsense;
     private double shooterGearRatio = 1.5;
-    private double prevShoot1Pos, prevShoot2Pos;
 
 
     /* Constructor */
@@ -176,7 +182,7 @@ public class RRMechBot {
         }
 
         pid.reset();
-        pid.setOutputLimits(0.0,0.90);
+        pid.setOutputLimits(0.0,MAX_SHOOTER_PWR);
         pid.setMaxIOutput(0.05);
         // Voltage adjust F
         vF = (F*(12.8/Vsense.getVoltage()));
@@ -383,13 +389,6 @@ public class RRMechBot {
     public void setShooter(double RPM, double power, boolean SWPID) {
 
         if (SWPID) {
-            // Run a second without averaging if the delta is large
-            if (Math.abs(RPM - shooterRPM) > 1000) {
-                singleMode = (int) (1 / PIDTime);
-            } else {
-                singleMode = (int) (.5 / PIDTime);
-            }
-
             // Set new RPM and reset PID variables
             shooterRPM = RPM;
             PIDAvgCount = 0;
@@ -419,7 +418,6 @@ public class RRMechBot {
 
     public void updateShooterPID() {
         double now = PIDClock.seconds() ;
-        double shoot1Pos, shoot2Pos;
         double tps1, tps2;
 
         // If enough time has passed
@@ -429,60 +427,33 @@ public class RRMechBot {
             if ( shooterRPM > 0.0) {
 
                 // Get each motor position, timestamp, and record it in our circular buffer
-                shoot1Pos = shoot1_motor.getCurrentPosition();
                 double t1 = PIDClock.seconds();
 
-                int avgIndex = PIDAvgCount % PIDAvgSize;
-                Pos1[avgIndex] = shoot1Pos;
-                Time1[avgIndex] = t1;
                 PIDAvgCount++;
 
                 // Need 2 samples to do anything really useful
                 if (PIDAvgCount > 1) {
 
-                    // Check instant RPM for this sample, less lag but more noise
-                    myiRPM1 = (((((shoot1Pos - prevShoot1Pos) / (t1 - prevPIDTime1)) / 28.0) * shooterGearRatio) * 60.0);
-
-                    // Keep running without averaging until we get close to the target
-                    if (myiRPM1 < (shooterRPM*0.90)) {
-                        singleMode = (int) (.5 / PIDTime);
-                    }
-
-                    // Now go compute RPM
-                    double deltaPos1;
-                    double deltaTime1;
-
-                    int avgIndexH = ((PIDAvgCount-1) % PIDAvgSize);
-                    int avgIndexL = (PIDAvgCount % PIDAvgSize);
-                    if (singleMode > 0 ) {
-                        avgIndexL = ((PIDAvgCount-2) % PIDAvgSize);
-                        singleMode--;
-                    }
-
-                    deltaPos1 = Pos1[avgIndexH] - Pos1[avgIndexL];
-                    deltaTime1 = Time1[avgIndexH] - Time1[avgIndexL];
-
-                    tps1 = deltaPos1 / deltaTime1;
-
+                    // shoot2 was the good RPM
+                    tps1 = shoot1_motor.getVelocity();
                     myRPM1 = (((tps1 / 28.0) * shooterGearRatio) * 60.0);
+                    //myRPM2 =  (((shoot2_motor.getVelocity() / 28.0) * shooterGearRatio) * 60.0);
 
                     // Compute PID values and include some time skew if there was any
                     output1 = pid.getOutput(myRPM1, shooterRPM, ((t1-prevPIDTime1)/PIDTime));
 
                     // Set the power
-                    shoot1_motor.setPower(Range.clip(output1, 0.0, 0.9));
-                    shoot2_motor.setPower(Range.clip(output1, 0.0, 0.9));
+                    shoot1_motor.setPower(Range.clip(output1, 0.0, MAX_SHOOTER_PWR));
+                    shoot2_motor.setPower(Range.clip(output1, 0.0, MAX_SHOOTER_PWR));
 
-                    if (true) {
-                        logger.logD("ShooterCSV", String.format(",%f,%f,%.0f,%.0f,%.0f,%.0f,%.3f,%.0f", now, now - lastPIDTime, shoot1Pos, shoot1Pos - prevShoot1Pos, myRPM1, myiRPM1, output1,(((shoot1_motor.getVelocity() / 28.0) * shooterGearRatio) * 60.0)));
+                    if (false) {
+                        logger.logD("ShooterCSV", String.format(",%f,%f,%.0f,%.0f,%.3f,%d", now, now - lastPIDTime, myRPM1, myRPM2, output1,PIDAvgCount));
                     }
                 } else {
                     // just set a fake feed-forward value on the first sample.
-                    shoot1_motor.setPower(Range.clip((vF * shooterRPM), 0.0, 0.9));
-                    shoot2_motor.setPower(Range.clip((vF * shooterRPM), 0.0, 0.9));
+                    shoot1_motor.setPower(Range.clip((vF * shooterRPM), 0.0, MAX_SHOOTER_PWR));
+                    shoot2_motor.setPower(Range.clip((vF * shooterRPM), 0.0, MAX_SHOOTER_PWR));
                 }
-
-                prevShoot1Pos = shoot1Pos;
 
                 prevPIDTime1 = t1;
 
