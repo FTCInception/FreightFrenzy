@@ -74,18 +74,20 @@ public class IncepVision {
     public boolean clip=false;
     public boolean tfodState=false;
     private int ringCount = -1 ;
+    private String webcamName;
 
     /***
      * Initialize the Target Tracking and navigation interface
      * @param lOpMode    pointer to OpMode
      */
 
-    public void initAutonomous(LinearOpMode lOpMode) {
+    public void initAutonomous(LinearOpMode lOpMode, String webcamName) {
 
         // Save reference to OpMode and Hardware map
         myLOpMode = lOpMode;
+        webcamName = webcamName;
 
-        initVuforia();
+        initVuforia( webcamName );
 
         initTfod();
         if (tfod != null) {
@@ -94,7 +96,7 @@ public class IncepVision {
         }
     }
 
-    public void initVuforia() {
+    public void initVuforia(String webcamName) {
 
         // This line allows the output of Vuforia to be connected to the Camera Stream window of the DS
         // We need to get the clipping effect to help align the rings in our frame so we can't use this directly
@@ -105,7 +107,7 @@ public class IncepVision {
 
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
 
-        parameters.cameraName = myLOpMode.hardwareMap.get(WebcamName.class, "Webcam 1");
+        parameters.cameraName = myLOpMode.hardwareMap.get(WebcamName.class, webcamName);
 
         parameters.vuforiaLicenseKey = VUFORIA_KEY;
 
@@ -126,6 +128,7 @@ public class IncepVision {
 
         // This creates a 'params' object servicing the DS camera stream with 0.6 confidence
         TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+        tfodParameters.minResultConfidence = (float)(0.4);
 
         // Create the object
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);

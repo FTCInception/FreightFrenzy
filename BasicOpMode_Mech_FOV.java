@@ -40,6 +40,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDCoefficients;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 //import org.openftc.revextensions2.ExpansionHubEx;
 //import org.openftc.revextensions2.ExpansionHubMotor;
@@ -71,6 +72,7 @@ import com.qualcomm.robotcore.hardware.PIDCoefficients;
  */
 
 @TeleOp(name="BasicMech", group="Linear Opmode")
+@Disabled
 public class BasicOpMode_Mech_FOV extends LinearOpMode {
 
     // Declare OpMode members.

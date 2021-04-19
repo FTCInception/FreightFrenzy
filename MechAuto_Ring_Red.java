@@ -50,6 +50,7 @@ import com.qualcomm.robotcore.util.Range;
  */
 
 @Autonomous(name="Mech: Auto Ring Red", group="MechBot")
+@Disabled
 public class MechAuto_Ring_Red extends LinearOpMode {
 
     private MechBot robot = new MechBot();   // Use a Pushbot's hardware
@@ -86,7 +87,7 @@ public class MechAuto_Ring_Red extends LinearOpMode {
         robot.initAutonomous(this);
 
         // Stare at the rings really hard until its time to go or stop
-        vision.initAutonomous(this);
+        vision.initAutonomous(this,"LeftWebcam");
         vision.clip = false;
         int deltaX=0, deltaY=0;
         do {

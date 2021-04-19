@@ -86,7 +86,7 @@ public class MechAuto_Cal extends LinearOpMode {
         // Init the robot setting for Autonomous play
         robot.initAutonomous(this);
 
-        vision.initAutonomous(this);
+        vision.initAutonomous(this,"LeftWebcam");
         vision.clip = false;
         int deltaX=0, deltaY=0;
         do {

@@ -66,14 +66,18 @@ public class RR_Ring_Red_Right extends LinearOpMode {
     private double RING4_TURN1, RING4_TURN2, RING4_TURN3, RING4_TURN4;
     private double RINGP0_TURN1, RINGP0_TURN2, RINGP0_TURN3;
     private double RINGP1_TURN1, RINGP1_TURN2, RINGP1_TURN3, RINGP1_TURN4;
-    private double POWER_SHOT_ANGLE = 24.25;
+
+    //private double POWER_SHOT_ANGLE = 25.25;
+    private double POWER_SHOT_ANGLE = 26.50;
+    private double POWER_SHOT2_TURN = 5.75;
+    private double POWER_SHOT_ANGLE_RING4 = 28.25;
 
     private RRMechBot robot = new RRMechBot();
 
     private static final double wobble_power = 0.6;
     private String className = this.getClass().getSimpleName().toLowerCase();
 
-    private static final double intake_eject_wobble = 0.6;
+    private static final double intake_eject_wobble = 0.55;
     private static final double intake_pickup_ring = 1.0;
 
     // These are for the REV HUB...
@@ -84,10 +88,12 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
     // Stealth Wheel blue RPMs 3/26/21
     // These are for the SW PID...
-    private static final double high_tower_RPM = 3675;
-    private static final double long_shot_RPM_boost = -25;
+    private static final double high_tower_RPM = 3575;
+    private static final double long_shot_RPM_boost = -75;
     //private static final double long_shot_RPM_boost = 0;
-    private static final double power_shot_RPM = 3300;
+    //private static final double power_shot_RPM = 3250;
+    private static final double power_shot_RPM = 3225;
+    //private static final double power_shot_RPM = 3150;
     private static final double power_RPM_offset = 25;
 
     // BaneBot Blue RPMs:
@@ -118,7 +124,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // Init the robot and subsystems
         robot.init(hardwareMap);
         robot.initAutonomous(this);
-        //robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
+        robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
         // Robot center is 9" from each edge:
         // Back against the -x wall, wheels aligned on first tile in -y
@@ -127,14 +133,14 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         Pose2d startPose = new Pose2d(startingX, startingY, Math.toRadians(0));
         robot.drive.setPoseEstimate(startPose);
 
-        BuildPowerRing0();
         BuildRing0();
-        BuildPowerRing1();
         BuildRing1();
+        BuildPowerRing0();
+        BuildPowerRing1();
         BuildRing4(true);
 
         // Stare at the rings really hard until its time to go or stop
-        vision.initAutonomous(this);
+        vision.initAutonomous(this, "LeftWebcam");
         vision.clip = false;
         int deltaX=0, deltaY=0;
         do {
@@ -204,6 +210,18 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         }
     }
 
+    private void showTrajPoses( String trajName, int TIdx, Trajectory[] traj ) {
+
+        Pose2d tmpPose = traj[0].start();
+        double time = 0;
+        robot.logger.logD("showTrajPoses:",String.format("%s, Idx:%d, X: %.2f, Y:%.2f, H:%.2f, t:%.2f", trajName, -1, tmpPose.getX(), tmpPose.getY(), Math.toDegrees(tmpPose.getHeading()),time));
+
+        for (int i=0; i<TIdx; i++ ) {
+            tmpPose = traj[i].end();
+            time += traj[i].duration();
+            robot.logger.logD("showTrajPoses:",String.format("%s, Idx:%d, X: %.2f, Y:%.2f, H:%.2f, t:%.2f", trajName, i, tmpPose.getX(), tmpPose.getY(), Math.toDegrees(tmpPose.getHeading()),time));
+        }
+    }
 
     private void CheckWait(boolean checkDrive, boolean runShooterPID, double minMS, double maxMS) {
 
@@ -265,7 +283,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // shoot #1
 
         // Pose: -8, -57, 31.0
-        RINGP0_TURN1 = 6.0;
+        RINGP0_TURN1 = POWER_SHOT2_TURN;
         //robot.drive.turnAsync(Math.toRadians(RINGP0_TURN1));
         // shoot #2
 
@@ -322,6 +340,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         trajs[RINGP0][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP0][TIdx-2].end())
                 .lineToLinearHeading(new Pose2d(12,-24, Math.toRadians(0.0)))
                 .build();
+
+        showTrajPoses( "RINGP0", TIdx, trajs[RINGP0] ) ;
     }
 
     private void RingP0(Trajectory[] traj) {
@@ -419,6 +439,14 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         CheckWait(true, SWPID, flicker_shot_delay, 0);
         if(!opModeIsActive()){ return; }
 
+        robot.flicker.setPosition(0.0);
+        CheckWait(true, SWPID, flicker_return_delay, 0);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        CheckWait(true, SWPID, flicker_shot_delay, 0);
+        if(!opModeIsActive()){ return; }
+
         // Turn to drop wobble
         robot.drive.turnAsync(Math.toRadians(RINGP0_TURN2));
         CheckWait(true, SWPID, 0, 0);
@@ -475,7 +503,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // shoot #1
 
         // Pose: -8, -57, 31.0
-        RINGP1_TURN1 = 6.0;
+        RINGP1_TURN1 = POWER_SHOT2_TURN;
         //robot.drive.turnAsync(Math.toRadians(RINGP0_TURN1));
         // shoot #2
 
@@ -545,6 +573,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         trajs[RINGP1][TIdx++] = robot.drive.trajectoryBuilder(trajs[RINGP1][TIdx-2].end())
                 .lineToLinearHeading(new Pose2d(12,-24, Math.toRadians(0.0)))
                 .build();
+
+        showTrajPoses( "RINGP1", TIdx, trajs[RINGP1] ) ;
     }
 
     private void RingP1(Trajectory[] traj) {
@@ -666,6 +696,14 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         CheckWait(true, SWPID, flicker_shot_delay, 0);
         if(!opModeIsActive()){ return; }
 
+        robot.flicker.setPosition(0.0);
+        CheckWait(true, SWPID, flicker_return_delay, 0);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        CheckWait(true, SWPID, flicker_shot_delay, 0);
+        if(!opModeIsActive()){ return; }
+
         // Wait before turning motor down
         CheckWait(true, SWPID, 250, 0);
         robot.setShooter(0, 0, SWPID);
@@ -718,9 +756,9 @@ public class RR_Ring_Red_Right extends LinearOpMode {
             // Drive to the wobble drop zone, don't put it on the wall
             trajs[RING4][TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
                     .addDisplacementMarker(3, () -> {
-                        robot.setShooter(power_shot_RPM, power_shot_power, SWPID);
+                        robot.setShooter(power_shot_RPM-100, power_shot_power, SWPID);
                     })
-                    .splineToSplineHeading(new Pose2d(-16, -57, Math.toRadians(POWER_SHOT_ANGLE + 4)), Math.toRadians(0))
+                    .splineToSplineHeading(new Pose2d(-16, -57, Math.toRadians(POWER_SHOT_ANGLE_RING4)), Math.toRadians(0))
                     .addDisplacementMarker(43, () -> {
                         robot.flicker.setPosition(1.0);
                     })
@@ -765,7 +803,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // Line up on ring
         // Pose: -40, -38, 0.0
         trajs[RING4][TIdx++] = robot.drive.trajectoryBuilder(trajs[RING4][TIdx-2].end())
-                .lineTo(new Vector2d(-40,-38))
+                .lineTo(new Vector2d(-40,-39))
                 .build();
 
         // Pickup 1-3 rings
@@ -819,8 +857,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
 
         // Face back to 0
         //robot.drive.turnAsync(-robot.drive.getRawExternalHeading());
-
         // Raise arm etc.
+        showTrajPoses( "RING4", TIdx, trajs[RING4] ) ;
     }
 
     private void Ring4(Trajectory[] traj) {
@@ -963,15 +1001,24 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         CheckWait(true, SWPID,flicker_return_delay,0);
         if(!opModeIsActive()){ return; }
 
+        robot.flicker.setPosition(1.0);
+        CheckWait(true, SWPID,flicker_shot_delay,0);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
+        CheckWait(true, SWPID,flicker_return_delay,0);
+        if(!opModeIsActive()){ return; }
+
         // The last ring has been a little low
         // Let's give the motors a little time to recover
-        CheckWait(true, SWPID,250,0);
+        //CheckWait(true, SWPID,250,0);
         robot.flicker.setPosition(1.0);
         CheckWait(true, SWPID,flicker_shot_delay,0);
         if(!opModeIsActive()){ return; }
 
         // Stop the shooter
-        CheckWait(true, SWPID,250,0);
+        //CheckWait(true, SWPID,250,0);
+        CheckWait(true, SWPID,100,0);
         robot.setShooter(0, 0, SWPID);
         if(!opModeIsActive()){ return; }
 
@@ -1064,7 +1111,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // Pose:  Trig...
         RING0_TURN2 = -(RING0_TURN1-90);
         //robot.drive.turnAsync(Math.toRadians(RING0_TURN3));
-
+        showTrajPoses( "RING0", TIdx, trajs[RING0] ) ;
     }
 
     private void Ring0(Trajectory[] traj) {
@@ -1255,6 +1302,8 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // Turn to face 90
         RING1_TURN3 = -((RING1_TURN1+RING1_TURN2)-90);
         //robot.drive.turnAsync(Math.toRadians(RINGP1_TURN3));
+        
+        showTrajPoses( "RING1", TIdx, trajs[RING1] ) ;
     }
 
     private void Ring1(Trajectory[] traj) {

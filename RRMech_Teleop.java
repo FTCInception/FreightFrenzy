@@ -116,6 +116,8 @@ public class RRMech_Teleop extends LinearOpMode {
 
     private static boolean SWPID = true;
 
+    double theta, r_speed, new_x, new_y, degrees;
+
     double shootingAngle;
     Pose2d shootingPose;
     enum Mode {
@@ -185,7 +187,8 @@ public class RRMech_Teleop extends LinearOpMode {
         // Blue Stealth Wheel RPM
         //final double SHOOTER_NORMAL_RPM=3525, SHOOTER_POWER_SHOT_RPM=3250;
         // 3/26/21
-        final double SHOOTER_NORMAL_RPM=3675, SHOOTER_POWER_SHOT_RPM=3300;
+        final double SHOOTER_NORMAL_RPM=3675, SHOOTER_POWER_SHOT_RPM=3250;
+        //final double SHOOTER_NORMAL_RPM=3500, SHOOTER_POWER_SHOT_RPM=3250;
 
         // Blue BaneBot RPM
         // BaneBot
@@ -230,7 +233,7 @@ public class RRMech_Teleop extends LinearOpMode {
             robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
         }
 
-        robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
+        //robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -352,7 +355,7 @@ public class RRMech_Teleop extends LinearOpMode {
             maxLag = Math.max(maxLag, ((rt-prt)*1000.0));
             iter += 1;
 
-            if ((rt > 90) && (shooterSet[1] != SHOOTER_POWER_SHOT)) {
+            if ((rt > 97) && (shooterSet[1] != SHOOTER_POWER_SHOT)) {
                 shooterSetRPM[1] = SHOOTER_POWER_SHOT_RPM;
                 shooterSet[1] = SHOOTER_POWER_SHOT;
 
@@ -894,6 +897,23 @@ public class RRMech_Teleop extends LinearOpMode {
                 rotate[1] += 0.25;
             }
 
+            boolean doFOV = false;
+            if (doFOV) {
+                // Get the current robot heading
+                degrees = Math.toDegrees(drive.getRawExternalHeading());
+                // Convert the X/Y Cartesion for strafe and forward into Polar
+                CarToPol(strafe[1], forward[1]);
+                // Rotate the Polar coordinates by the robot's heading
+                theta -= degrees;
+                // Convert the new Polar back into Cartesian
+                PolToCar(r_speed);
+                // Replace the strafe and forward power with translated values
+                strafe[1] = new_x;
+                forward[1] = new_y;
+                // Now the robot moves in orientation of the field
+            }
+
+
             // This adds the powers from both controllers together scaled for each controller and FOV
             l_f_motor_power = ((forward[0] + strafe[0] + rotate[0]) * speedModifier[0]) +
                     ((forward[1] + strafe[1] + rotate[1]) * speedModifier[1]);
@@ -1001,4 +1021,19 @@ public class RRMech_Teleop extends LinearOpMode {
         // Stop all power
         drive.setMotorPowers(0,0,0,0);
     }
+
+    void CarToPol(double x, double y) {
+        r_speed = Math.sqrt(x * x + y * y);
+        theta = Math.atan2(y, x);
+
+        //theta to degrees
+        theta = theta * 180 / 3.14159265358979323;
+    }
+
+    void PolToCar(double r) {
+        theta = theta / 180 * 3.14159265358979323;
+        new_x = r * Math.cos(theta);
+        new_y = r * Math.sin(theta);
+    }
+
 }

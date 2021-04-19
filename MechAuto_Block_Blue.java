@@ -83,7 +83,7 @@ public class MechAuto_Block_Blue extends LinearOpMode {
         // Init the robot and subsystems
         robot.init(hardwareMap);
         robot.initAutonomous(this);
-        vision.initAutonomous(this);
+        vision.initAutonomous(this,"LeftWebcam");
 
         // Wait until we're told to go and look for the block
         while (!isStarted()) {
