@@ -101,6 +101,10 @@ public class SampleMecanumDrive extends MecanumDrive {
     private Pose2d lastPoseOnTurn;
 
     public SampleMecanumDrive(HardwareMap hardwareMap) {
+        this(hardwareMap, 0.5);
+    }
+
+    public SampleMecanumDrive(HardwareMap hardwareMap, double timeout) {
         super(kV, kA, kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
 
         dashboard = FtcDashboard.getInstance();
@@ -119,7 +123,7 @@ public class SampleMecanumDrive extends MecanumDrive {
         ));
         accelConstraint = new ProfileAccelerationConstraint(MAX_ACCEL);
         follower = new HolonomicPIDVAFollower(TRANSLATIONAL_PID, TRANSLATIONAL_PID, HEADING_PID,
-                new Pose2d(0.5, 0.5, Math.toRadians(2.0)), 0.5);
+                new Pose2d(0.5, 0.5, Math.toRadians(2.0)), timeout);
 
         poseHistory = new LinkedList<>();
 
