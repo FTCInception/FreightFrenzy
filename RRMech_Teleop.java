@@ -177,6 +177,7 @@ public class RRMech_Teleop extends LinearOpMode {
         final double CLAW_OPEN = 0.0, CLAW_CLOSED=1.0, CLAW_HALF=0.5;
         final double FLICKER_SHOOT = 0.5, FLICKER_WAIT=0.05;
         final double FLICKER_SHOOT_DELAY = 0.125, FLICKER_REARM_DELAY = 0.175;
+        //final double FLICKER_SHOOT_DELAY = 0.30, FLICKER_REARM_DELAY = 0.35;
         //final double SHOOTER_NORMAL=0.475, SHOOTER_POWER_SHOT=0.4375;
         // Green wheel
         //final double SHOOTER_NORMAL=0.500, SHOOTER_POWER_SHOT=0.467;
@@ -792,26 +793,26 @@ public class RRMech_Teleop extends LinearOpMode {
                 prevStrafe[0] = strafe[0];
                 prevForward[0] = forward[0];
                 prevRotate[0] = rotate[0];
-            }
 
-            // Remove 15% deadzone
-            if (strafe[0] >= 0.025) {
-                strafe[0] = (strafe[0] * 0.85) + 0.15;
-            }
-            if (forward[0] >= 0.025) {
-                forward[0] = (forward[0] * 0.85) + 0.15;
-            }
-            if (rotate[0] >= 0.025) {
-                rotate[0] = (rotate[0] * 0.85) + 0.15;
-            }
-            if (strafe[0] <= -0.025) {
-                strafe[0] = (strafe[0] * 0.85) - 0.15;
-            }
-            if (forward[0] <= -0.025) {
-                forward[0] = (forward[0] * 0.85) - 0.15;
-            }
-            if (rotate[0] <= -0.025) {
-                rotate[0] = (rotate[0] * 0.85) - 0.15;
+                // Remove 15% deadzone
+                if (strafe[0] >= 0.025) {
+                    strafe[0] = (strafe[0] * 0.85) + 0.15;
+                }
+                if (forward[0] >= 0.025) {
+                    forward[0] = (forward[0] * 0.85) + 0.15;
+                }
+                if (rotate[0] >= 0.025) {
+                    rotate[0] = (rotate[0] * 0.85) + 0.15;
+                }
+                if (strafe[0] <= -0.025) {
+                    strafe[0] = (strafe[0] * 0.85) - 0.15;
+                }
+                if (forward[0] <= -0.025) {
+                    forward[0] = (forward[0] * 0.85) - 0.15;
+                }
+                if (rotate[0] <= -0.025) {
+                    rotate[0] = (rotate[0] * 0.85) - 0.15;
+                }
             }
 
             // Rotate a little left
@@ -866,26 +867,26 @@ public class RRMech_Teleop extends LinearOpMode {
                 prevStrafe[1] = strafe[1];
                 prevForward[1] = forward[1];
                 prevRotate[1] = rotate[1];
-            }
 
-            // Remove 15% deadzone
-            if (strafe[1] >= 0.025) {
-                strafe[1] = (strafe[1] * 0.85) + 0.15;
-            }
-            if (forward[1] >= 0.025) {
-                forward[1] = (forward[1] * 0.85) + 0.15;
-            }
-            if (rotate[1] >= 0.025) {
-                rotate[1] = (rotate[1] * 0.85) + 0.15;
-            }
-            if (strafe[1] <= -0.025) {
-                strafe[1] = (strafe[1] * 0.85) - 0.15;
-            }
-            if (forward[1] <= -0.025) {
-                forward[1] = (forward[1] * 0.85) - 0.15;
-            }
-            if (rotate[1] <= -0.025) {
-                rotate[1] = (rotate[1] * 0.85) - 0.15;
+                // Remove 15% deadzone
+                if (strafe[1] >= 0.025) {
+                    strafe[1] = (strafe[1] * 0.85) + 0.15;
+                }
+                if (forward[1] >= 0.025) {
+                    forward[1] = (forward[1] * 0.85) + 0.15;
+                }
+                if (rotate[1] >= 0.025) {
+                    rotate[1] = (rotate[1] * 0.85) + 0.15;
+                }
+                if (strafe[1] <= -0.025) {
+                    strafe[1] = (strafe[1] * 0.85) - 0.15;
+                }
+                if (forward[1] <= -0.025) {
+                    forward[1] = (forward[1] * 0.85) - 0.15;
+                }
+                if (rotate[1] <= -0.025) {
+                    rotate[1] = (rotate[1] * 0.85) - 0.15;
+                }
             }
 
             // Rotate a little left
@@ -924,18 +925,20 @@ public class RRMech_Teleop extends LinearOpMode {
             r_b_motor_power = ((forward[0] + strafe[0] - rotate[0]) * speedModifier[0]) +
                     ((forward[1] + strafe[1] - rotate[1]) * speedModifier[1]);
 
-            // Find the largest power request ignoring sign
-            maxPwr = Math.max(Math.max(Math.max(Math.abs(l_f_motor_power), Math.abs(l_b_motor_power)),
-                    Math.abs(r_f_motor_power)),Math.abs(r_b_motor_power));
+            if(smoothDrive) {
+                // Find the largest power request ignoring sign
+                maxPwr = Math.max(Math.max(Math.max(Math.abs(l_f_motor_power), Math.abs(l_b_motor_power)),
+                        Math.abs(r_f_motor_power)), Math.abs(r_b_motor_power));
 
-            // If this is greater than 1.0, need to scale everything back equally
-            // Max is now guaranteed positive which is good to reduce magnitude without changing sign
-            // Now the power is scaled and limited to range of {-1.0, 1.0)
-            if (maxPwr > 1.0) {
-                l_f_motor_power /= maxPwr;
-                l_b_motor_power /= maxPwr;
-                r_f_motor_power /= maxPwr;
-                r_b_motor_power /= maxPwr;
+                // If this is greater than 1.0, need to scale everything back equally
+                // Max is now guaranteed positive which is good to reduce magnitude without changing sign
+                // Now the power is scaled and limited to range of {-1.0, 1.0)
+                if (maxPwr > 1.0) {
+                    l_f_motor_power /= maxPwr;
+                    l_b_motor_power /= maxPwr;
+                    r_f_motor_power /= maxPwr;
+                    r_b_motor_power /= maxPwr;
+                }
             }
 
             // Update PID
@@ -998,10 +1001,17 @@ public class RRMech_Teleop extends LinearOpMode {
 
             if ( nextPID < rt ) {
 
+                double tps1 = shoot1_motor.getVelocity();
+                double myRPM1 = (((tps1 / 28.0) * 1.5) * 60.0);
+
                 shoot2Pos = shoot2_motor.getCurrentPosition();
                 tps = (shoot2Pos - prevShoot2Pos) / (rt - (nextPID-PIDTime));
 
                 prevShoot2Pos = shoot2Pos;
+
+                if (!SWPID) {
+                    robot.logger.logD("ShooterCSV-REV", String.format(",%f,%f,%.0f,%.0f,%.3f", rt, rt-(nextPID-PIDTime), myRPM1, 0.0, shooterSet[shooterIdx]));
+                }
 
                 // 'Schedule' the next PID check
                 nextPID = rt + PIDTime;

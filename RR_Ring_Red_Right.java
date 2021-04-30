@@ -92,9 +92,11 @@ public class RR_Ring_Red_Right extends LinearOpMode {
     private static final double long_shot_RPM_boost = -75;
     //private static final double long_shot_RPM_boost = 0;
     //private static final double power_shot_RPM = 3250;
-    private static final double power_shot_RPM = 3225;
+    // 'minus 50 on 4/23/21'
+    private static final double power_shot_RPM = 3175;
+    private static final double ring4_power_shot_offset_RPM = -50;
     //private static final double power_shot_RPM = 3150;
-    private static final double power_RPM_offset = 25;
+    private static final double power_RPM_offset = 0;
 
     // BaneBot Blue RPMs:
     //private static final double high_tower_RPM = 6200;
@@ -756,7 +758,7 @@ public class RR_Ring_Red_Right extends LinearOpMode {
             // Drive to the wobble drop zone, don't put it on the wall
             trajs[RING4][TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
                     .addDisplacementMarker(3, () -> {
-                        robot.setShooter(power_shot_RPM-100, power_shot_power, SWPID);
+                        robot.setShooter(power_shot_RPM+ring4_power_shot_offset_RPM, power_shot_power, SWPID);
                     })
                     .splineToSplineHeading(new Pose2d(-16, -57, Math.toRadians(POWER_SHOT_ANGLE_RING4)), Math.toRadians(0))
                     .addDisplacementMarker(43, () -> {

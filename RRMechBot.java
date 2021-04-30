@@ -85,7 +85,7 @@ public class RRMechBot {
                                  (int)((235-startingAngle)*WOBBLE_TICKS_PER_DEGREE),
                                  (int)((180-startingAngle)*WOBBLE_TICKS_PER_DEGREE),
                                  (int)((225-startingAngle)*WOBBLE_TICKS_PER_DEGREE),
-                                 (int)((45-startingAngle)*WOBBLE_TICKS_PER_DEGREE) };
+                                 (int)((100-startingAngle)*WOBBLE_TICKS_PER_DEGREE) };
 
     public BotLog logger = new BotLog();
 
@@ -167,10 +167,15 @@ public class RRMechBot {
 
     /* Initialize standard Hardware interfaces */
     public void acquireHW(HardwareMap ahwMap) {
+        acquireHW(ahwMap, 0.5);
+    }
+
+        /* Initialize standard Hardware interfaces */
+    public void acquireHW(HardwareMap ahwMap, double driveTimeout) {
         // Save reference to Hardware map
         hardwareMap = ahwMap;
 
-        drive = new SampleMecanumDrive(hardwareMap);
+        drive = new SampleMecanumDrive(hardwareMap, 0.5);
         intake_motor = hardwareMap.dcMotor.get("intake");
         wobble_motor = hardwareMap.get(DcMotorEx.class,"wobble");
         shoot1_motor = hardwareMap.get(DcMotorEx.class,"shoot1");
@@ -195,10 +200,14 @@ public class RRMechBot {
         pid.setPID(P,I,D,vF);
     }
 
-        /* Initialize standard Hardware interfaces */
     public void init(HardwareMap ahwMap) {
+        init( ahwMap, 0.5);
+    }
 
-        acquireHW(ahwMap);
+    /* Initialize standard Hardware interfaces */
+    public void init(HardwareMap ahwMap, double driveTimeout) {
+
+        acquireHW(ahwMap, driveTimeout);
 
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
@@ -216,8 +225,13 @@ public class RRMechBot {
         wobble_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         wobble_motor.setTargetPosition(0);
         wobble_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        wobble_motor.setPositionPIDFCoefficients(5.0);
-        wobble_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
+        // This is for the in-person autos.  Need to see if the non-in-person can handle these settings...
+        // Note that the RUN_TO_POSITION uses both the 'P' of the setPosition API
+        // and the IDF of the setVelocity API
+        wobble_motor.setPositionPIDFCoefficients(3.0);
+        wobble_motor.setVelocityPIDFCoefficients(2.0,0.5,3.0,11.1);
+        //wobble_motor.setPositionPIDFCoefficients(5.0);
+        //wobble_motor.setVelocityPIDFCoefficients(2.0,0.5,0.0,11.1);
 
         shoot1_motor.setPower(0.0);
         shoot2_motor.setPower(0.0);
@@ -453,7 +467,7 @@ public class RRMechBot {
                     shoot2_motor.setPower(Range.clip(output1, 0.0, MAX_SHOOTER_PWR));
 
                     if (false) {
-                        logger.logD("ShooterCSV", String.format(",%f,%f,%.0f,%.0f,%.3f,%d", now, now - lastPIDTime, myRPM1, myRPM2, output1,PIDAvgCount));
+                        logger.logD("ShooterCSV-SWPID", String.format(",%f,%f,%.0f,%.0f,%.3f,%d", now, now - lastPIDTime, myRPM1, myRPM2, output1,PIDAvgCount));
                     }
                 } else {
                     // just set a fake feed-forward value on the first sample.
