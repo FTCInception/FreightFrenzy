@@ -52,8 +52,8 @@ import com.qualcomm.robotcore.util.Range;
  *
  */
 
-@Autonomous(name="Red_Right_IP", group="MechBot")
-public class Red_Right_IP extends LinearOpMode {
+@Autonomous(name="Red_Middle_IP", group="MechBot")
+public class Red_Middle_IP extends LinearOpMode {
     private final int RING0_IP=0;
     private final int RING1_IP=1;
     private final int RING4_IP=2;
@@ -70,12 +70,14 @@ public class Red_Right_IP extends LinearOpMode {
 
 
     //private double POWER_SHOT_ANGLE = 25.25;
-    private double POWER_SHOT_ANGLE = 26.50;
-    private double POWER_SHOT2_TURN = 5.75;
-    private double POWER_SHOT_ANGLE_RING4 = 28.25;
+    //private double POWER_SHOT_ANGLE = 26.50;
+    //private double POWER_SHOT2_TURN = 5.75;
+    //private double POWER_SHOT_ANGLE_RING4 = 28.25;
 
-    private double POWER_SHOT_ANGLE1 = 31.75;
-    private double POWER_SHOT_ANGLE2 = 26.25;
+    private double POWER_SHOT_ANGLE1 = 10.0;
+    private double POWER_SHOT_ANGLE2 = 0.0;
+    private double POWER_SHOT_ANGLE3 = -10.0;
+
     private double TOWER_SHOT_ANGLE  = 15.0;
 
     private RRMechBot robot = new RRMechBot();
@@ -124,7 +126,7 @@ public class Red_Right_IP extends LinearOpMode {
 
     // This is the starting position of the center of the robot.
     private static final double startingX = -63.0;
-    private static final double startingY = -57.0;
+    private static final double startingY = -17.0;
 
     // This is relative position of center of the robot compared to the claw for second wobble pickup
     // Adjusting this can change the chance of teammate/claw interference
@@ -229,7 +231,7 @@ public class Red_Right_IP extends LinearOpMode {
         telemetry.addData("Starting vision","");
         telemetry.update();
         // Stare at the rings really hard until its time to go or stop
-        vision.initAutonomous(this, "LeftWebcam");
+        vision.initAutonomous(this, "RightWebcam");
         vision.clip = false;
         int deltaX=0, deltaY=0;
         boolean leftBOK = true, rightBOK = true;
@@ -356,25 +358,36 @@ public class Red_Right_IP extends LinearOpMode {
     private void BuildR0_IP(Trajectory[] traj, double Wx, double Wy, boolean wobbleEnabled, boolean powerShots) {
 
         int TIdx = 0;
-        // Starting X,Y = -63,-57
+        // Starting X,Y = -63,-17
 
-        // Pose: -8, -57, 19
+        // Pose: TBD
         // Drive to first shot
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .splineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(powerShots?(POWER_SHOT_ANGLE1):(TOWER_SHOT_ANGLE))), Math.toRadians(0.0))
+                .lineToConstantHeading(new Vector2d(-12,-12))
                 .build();
+
+        // Pose: TBD
+        // Turn based on heading to first power
+        //robot.drive.turnAsync(Math.toRadians(Math.toRadians(POWER_SHOT_ANGLE1) - robot.drive.getRawExternalHeading()));
         // shoot #1
 
         // Pose: TBD
-        // Turn based on heading
+        // Turn based on heading to second power
         //robot.drive.turnAsync(Math.toRadians(Math.toRadians(POWER_SHOT_ANGLE2) - robot.drive.getRawExternalHeading()));
         // shoot #2
 
         // Pose: TBD
-        // Turn based on heading
-        //robot.drive.turnAsync(Math.toRadians(Math.toRadians(TOWER_SHOT_ANGLE) - robot.drive.getRawExternalHeading()));
+        // Turn based on heading to third power
+        //robot.drive.turnAsync(Math.toRadians(Math.toRadians(POWER_SHOT_ANGLE3) - robot.drive.getRawExternalHeading()));
         // shoot #3
 
+        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(powerShots?POWER_SHOT_ANGLE3:TOWER_SHOT_ANGLE)))
+                .lineToLinearHeading(new Pose2d(6,-12, Math.toRadians(0.0)))
+                .build();
+
+        // Done
+
+        /*
         // Pose: 25, -34, 0
         // 0-Ring wobble dropoff
         traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(TOWER_SHOT_ANGLE)))
@@ -454,6 +467,7 @@ public class Red_Right_IP extends LinearOpMode {
                     .lineToConstantHeading(new Vector2d(6, -12))
                     .build();
         }
+        */
 
         showTrajPoses( "RING0_IP", TIdx, traj ) ;
     }
@@ -463,7 +477,7 @@ public class Red_Right_IP extends LinearOpMode {
 
         // Go to shooting location
         if(powerShots) {
-            robot.setShooter(power_shot_RPM + power_RPM_offset, power_shot_power + power_offset, SWPID);
+            robot.setShooter(power_shot_RPM, power_shot_power, SWPID);
         } else {
             robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
         }
@@ -477,6 +491,8 @@ public class Red_Right_IP extends LinearOpMode {
         // Go to wobble drop
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, SWPID, 0, 0);
+
+        /*
 
         // Drop wobble
         robot.intakeEjectWobble(intake_eject_wobble);
@@ -548,13 +564,42 @@ public class Red_Right_IP extends LinearOpMode {
             robot.drive.followTrajectoryAsync(traj[TIdx++]);
             CheckWait(true, SWPID, 0, 0);
         }
-
+    */
     }
 
     private void BuildR1_IP(Trajectory[] traj, double Wx, double Wy, boolean wobbleEnabled, boolean powerShots) {
 
         int TIdx = 0;
-        // Starting X,Y = -63,-57
+        // Starting X,Y = -63,-17
+
+        // Pose: TBD
+        // Drive to first shot
+        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
+                .lineToConstantHeading(new Vector2d(-12,-12))
+                .build();
+
+        // Pose: TBD
+        // Turn based on heading to first power
+        //robot.drive.turnAsync(Math.toRadians(Math.toRadians(POWER_SHOT_ANGLE1) - robot.drive.getRawExternalHeading()));
+        // shoot #1
+
+        // Pose: TBD
+        // Turn based on heading to second power
+        //robot.drive.turnAsync(Math.toRadians(Math.toRadians(POWER_SHOT_ANGLE2) - robot.drive.getRawExternalHeading()));
+        // shoot #2
+
+        // Pose: TBD
+        // Turn based on heading to third power
+        //robot.drive.turnAsync(Math.toRadians(Math.toRadians(POWER_SHOT_ANGLE3) - robot.drive.getRawExternalHeading()));
+        // shoot #3
+
+        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(powerShots?POWER_SHOT_ANGLE3:TOWER_SHOT_ANGLE)))
+                .lineToLinearHeading(new Pose2d(6,-12, Math.toRadians(0.0)))
+                .build();
+
+        // Done
+        /*
+
 
         // Pose: -8, -57, 19
         // Drive to first shot
@@ -660,7 +705,7 @@ public class Red_Right_IP extends LinearOpMode {
                     .lineToLinearHeading(new Pose2d(6, -60, Math.toRadians(0.0)))
                     .build();
         }
-
+        */
 
         showTrajPoses( "RING1_IP", TIdx, traj );
     }
@@ -668,6 +713,24 @@ public class Red_Right_IP extends LinearOpMode {
     private void Ring1_IP(Trajectory[] traj, boolean wobbleEnabled, boolean powerShots) {
         int TIdx = 0;
 
+        // Go to shooting location
+        if(powerShots) {
+            robot.setShooter(power_shot_RPM, power_shot_power, SWPID);
+        } else {
+            robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
+        }
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, SWPID, 0, 0);
+        if(!opModeIsActive()){ return; }
+
+        power_tower_shots(powerShots);
+        if(!opModeIsActive()){ return; }
+
+        // Go to wobble drop
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, SWPID, 0, 0);
+
+        /*
         // Go to shooting location
         if(powerShots) {
             robot.setShooter(power_shot_RPM + power_RPM_offset, power_shot_power + power_offset, SWPID);
@@ -790,12 +853,42 @@ public class Red_Right_IP extends LinearOpMode {
             CheckWait(true, SWPID, 0, 0);
             if (!opModeIsActive()) { return; }
         }
+        */
     }
 
     private void BuildR4_IP(Trajectory[] traj, double Wx, double Wy, boolean wobbleEnabled, boolean powerShots) {
 
         int TIdx = 0;
-        // Starting X,Y = -63,-57
+        // Starting X,Y = -63,-17
+
+        // Pose: TBD
+        // Drive to first shot
+        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
+                .lineToConstantHeading(new Vector2d(-12,-12))
+                .build();
+
+        // Pose: TBD
+        // Turn based on heading to first power
+        //robot.drive.turnAsync(Math.toRadians(Math.toRadians(POWER_SHOT_ANGLE1) - robot.drive.getRawExternalHeading()));
+        // shoot #1
+
+        // Pose: TBD
+        // Turn based on heading to second power
+        //robot.drive.turnAsync(Math.toRadians(Math.toRadians(POWER_SHOT_ANGLE2) - robot.drive.getRawExternalHeading()));
+        // shoot #2
+
+        // Pose: TBD
+        // Turn based on heading to third power
+        //robot.drive.turnAsync(Math.toRadians(Math.toRadians(POWER_SHOT_ANGLE3) - robot.drive.getRawExternalHeading()));
+        // shoot #3
+
+        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(powerShots?POWER_SHOT_ANGLE3:TOWER_SHOT_ANGLE)))
+                .lineToLinearHeading(new Pose2d(6,-12, Math.toRadians(0.0)))
+                .build();
+
+        // Done
+
+        /*
 
         // Pose: -8, -57, 19
         // Drive to first shot
@@ -912,12 +1005,32 @@ public class Red_Right_IP extends LinearOpMode {
                     .lineToLinearHeading(new Pose2d(6, -60, Math.toRadians(0.0)))
                     .build();
         }
+        */
 
         showTrajPoses( "RING4_IP", TIdx, traj ) ;
     }
 
     private void Ring4_IP(Trajectory[] traj, boolean wobbleEnabled, boolean powerShots) {
         int TIdx = 0;
+
+        // Go to shooting location
+        if(powerShots) {
+            robot.setShooter(power_shot_RPM, power_shot_power, SWPID);
+        } else {
+            robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
+        }
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, SWPID, 0, 0);
+        if(!opModeIsActive()){ return; }
+
+        power_tower_shots(powerShots);
+        if(!opModeIsActive()){ return; }
+
+        // Go to wobble drop
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, SWPID, 0, 0);
+
+        /*
 
         // Go to shooting location
         if(powerShots) {
@@ -1082,11 +1195,15 @@ public class Red_Right_IP extends LinearOpMode {
             CheckWait(true, SWPID, 0, 0);
             if(!opModeIsActive()){ return; }
         }
+        */
     }
 
     private void power_tower_shots( boolean powerShots ) {
 
         if(powerShots) {
+            robot.drive.turnAsync(Math.toRadians(POWER_SHOT_ANGLE1) - robot.drive.getRawExternalHeading());
+            CheckWait(true, SWPID, 0, 0);
+
             // First Power Shot
             robot.flicker.setPosition(1.0);
             CheckWait(true, SWPID, flicker_shot_delay, 0);
@@ -1094,7 +1211,6 @@ public class Red_Right_IP extends LinearOpMode {
             if (!opModeIsActive()) { return; }
 
             // Second Power shot
-            robot.setShooter(power_shot_RPM, power_shot_power, SWPID);
             robot.drive.turnAsync(Math.toRadians(POWER_SHOT_ANGLE2) - robot.drive.getRawExternalHeading());
             CheckWait(true, SWPID, flicker_return_delay, 0);
             robot.flicker.setPosition(1.0);
@@ -1102,16 +1218,19 @@ public class Red_Right_IP extends LinearOpMode {
             robot.flicker.setPosition(0.0);
             if (!opModeIsActive()) { return; }
 
-            // Tower shot
-            robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
-            robot.drive.turnAsync(Math.toRadians(TOWER_SHOT_ANGLE) - robot.drive.getRawExternalHeading());
+            // Third Power shot
+            robot.drive.turnAsync(Math.toRadians(POWER_SHOT_ANGLE3) - robot.drive.getRawExternalHeading());
             CheckWait(true, SWPID, flicker_return_delay, 0);
             robot.flicker.setPosition(1.0);
             CheckWait(true, SWPID, flicker_shot_delay, 0);
             robot.flicker.setPosition(0.0);
             robot.setShooter(0, 0, SWPID);
             if (!opModeIsActive()) { return; }
+
         } else {
+            robot.drive.turnAsync(Math.toRadians(TOWER_SHOT_ANGLE) - robot.drive.getRawExternalHeading());
+            CheckWait(true, SWPID, 0, 0);
+
             // First Tower Shot
             robot.flicker.setPosition(1.0);
             CheckWait(true, SWPID, flicker_shot_delay, 0);
