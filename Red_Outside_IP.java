@@ -52,8 +52,8 @@ import com.qualcomm.robotcore.util.Range;
  *
  */
 
-@Autonomous(name="Red_Right_IP", group="MechBot")
-public class Red_Right_IP extends LinearOpMode {
+@Autonomous(name="Red_Outside_IP", group="MechBot")
+public class Red_Outside_IP extends LinearOpMode {
     private final int RING0_IP=0;
     private final int RING1_IP=1;
     private final int RING4_IP=2;
