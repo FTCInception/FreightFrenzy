@@ -52,11 +52,12 @@ import com.qualcomm.robotcore.util.Range;
  *
  */
 
-@Autonomous(name="Red_Outside_IP", group="MechBot")
-public class Red_Outside_IP extends LinearOpMode {
-    private final int RING0_IP=0;
-    private final int RING1_IP=1;
-    private final int RING4_IP=2;
+@Autonomous(name="Blue_Outside_IP", group="MechBot")
+public class Blue_Outside_IP extends LinearOpMode {
+    private final int RING0_IP = 0;
+    private final int RING1_IP = 1;
+    private final int RING4_IP = 2;
+    private final int ANGLE_TEST = 3;
 
     private double RING0_TURN1, RING0_TURN2;
     private double RING1_TURN1, RING1_TURN2, RING1_TURN3;
@@ -74,9 +75,14 @@ public class Red_Outside_IP extends LinearOpMode {
     private double POWER_SHOT2_TURN = 5.75;
     private double POWER_SHOT_ANGLE_RING4 = 28.25;
 
-    private double POWER_SHOT_ANGLE1 = 31.75;
-    private double POWER_SHOT_ANGLE2 = 26.25;
-    private double TOWER_SHOT_ANGLE  = 15.0;
+    // Outside-in all power-shot angles
+    // private double POWER_SHOT_ANGLE1 = -33.00;
+    // private double POWER_SHOT_ANGLE2 = -30.00;
+    // private double POWER_SHOT_ANGLE3 = -24.50;
+    // Inside out, finish with tower.
+    private double POWER_SHOT_ANGLE1 = -28.5;
+    private double POWER_SHOT_ANGLE2 = -23.00;
+    private double TOWER_SHOT_ANGLE = -12.00;
 
     private RRMechBot robot = new RRMechBot();
 
@@ -99,7 +105,7 @@ public class Red_Outside_IP extends LinearOpMode {
     private static final double long_shot_RPM = 3500;
     private static final double side_high_tower_RPM = 3450;
     private static final double power_shot_RPM = 3175;
-    private static final double power_RPM_offset = 25;
+    private static final double power_RPM_offset = 0;
 
     /*
     private static final double high_tower_RPM = 0;
@@ -124,27 +130,27 @@ public class Red_Outside_IP extends LinearOpMode {
 
     // This is the starting position of the center of the robot.
     private static final double startingX = -63.0;
-    private static final double startingY = -57.0;
+    private static final double startingY = 57.0;
 
     // This is relative position of center of the robot compared to the claw for second wobble pickup
     // Adjusting this can change the chance of teammate/claw interference
-    private static final double WxOffset = 8.0;
-    private static final double WyOffset = -20.0;
+    private static final double WxOffset = 9.0;
+    private static final double WyOffset = 17.0;
 
     private static boolean wobbleEnabled = true;
     private static boolean powerShots = true;
-    private static boolean middleLanePark=false;
+    private static boolean middleLanePark = false;
 
     private IncepVision vision = new IncepVision();
     private int ringCount = -1;
-    private Trajectory[][] trajs = {new Trajectory[25], new Trajectory[25], new Trajectory[25]} ;
+    private Trajectory[][] trajs = {new Trajectory[25], new Trajectory[25], new Trajectory[25], new Trajectory[25]};
 
     @Override
     public void runOpMode() {
         //robot.logger.LOGLEVEL = robot.logger.LOGDEBUG ;
 
         // Init the robot and subsystems.  Set Roadrunner timeout to 0.25s to save some time.
-        robot.init(hardwareMap,0.05);
+        robot.init(hardwareMap, 0.05);
         robot.initAutonomous(this);
         robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
@@ -156,42 +162,42 @@ public class Red_Outside_IP extends LinearOpMode {
         robot.drive.setPoseEstimate(startPose);
 
         double Wx = -48.0;
-        double Wy = -24.0;
-        boolean leftOK = true, rightOK = true, upOK = true, downOK = true, bOK=true, xOK=true;
+        double Wy = 24.0;
+        boolean leftOK = true, rightOK = true, upOK = true, downOK = true, bOK = true, xOK = true;
         do {
-            if ( gamepad2.dpad_left ) {
+            if (gamepad2.dpad_left) {
                 if (leftOK) {
-                    Wx -= 1.0;
+                    Wx += 1.0;
                     leftOK = false;
                 }
             } else {
                 leftOK = true;
             }
-            if ( gamepad2.dpad_right ) {
+            if (gamepad2.dpad_right) {
                 if (rightOK) {
-                    Wx += 1.0;
+                    Wx -= 1.0;
                     rightOK = false;
                 }
             } else {
                 rightOK = true;
             }
-            if ( gamepad2.dpad_down ) {
+            if (gamepad2.dpad_down) {
                 if (downOK) {
-                    Wy -= 1.0;
+                    Wy += 1.0;
                     downOK = false;
                 }
             } else {
                 downOK = true;
             }
-            if ( gamepad2.dpad_up ) {
+            if (gamepad2.dpad_up) {
                 if (upOK) {
-                    Wy += 1.0;
+                    Wy -= 1.0;
                     upOK = false;
                 }
             } else {
                 upOK = true;
             }
-            if ( gamepad2.b ) {
+            if (gamepad2.b) {
                 if (bOK) {
                     powerShots = !(powerShots);
                     bOK = false;
@@ -199,7 +205,7 @@ public class Red_Outside_IP extends LinearOpMode {
             } else {
                 bOK = true;
             }
-            if ( gamepad2.x ) {
+            if (gamepad2.x) {
                 if (xOK) {
                     wobbleEnabled = !(wobbleEnabled);
                     xOK = false;
@@ -207,46 +213,63 @@ public class Red_Outside_IP extends LinearOpMode {
             } else {
                 xOK = true;
             }
-            if ( gamepad2.a ) {
+            if (gamepad2.a) {
                 break;
             }
 
-            telemetry.addData("Wx,Wy:", "(%.0f, %.0f); New:(%.0f, %.0f); Delta:(%.0f%s, %.0f%s)", -48.0, -24.0, Wx, Wy, Math.abs(-48-Wx), (Wx<-48)?" left":(Wx>-48)?" right":"", Math.abs(-24-Wy),(Wy<-24)?" down":(Wy>-24)?" up":"");
-            telemetry.addData("Use dpad to adjust wobble position","");
-            telemetry.addData("'X' to toggle wobble pickup:","(%s)", wobbleEnabled?"enable":"disabled");
-            telemetry.addData("'B' to toggle 2x power shots vs 3x tower shots:","(%s)", powerShots?"power":"tower");
-            telemetry.addData("'A' to proceed to vision","");
+            telemetry.addData("Wx,Wy:", "(%.0f, %.0f); New:(%.0f, %.0f); Delta:(%.0f%s, %.0f%s)", -48.0, 24.0, Wx, Wy, Math.abs(-48 - Wx), (Wx > -48) ? " left" : (Wx < -48) ? " right" : "", Math.abs(24 - Wy), (Wy > 24) ? " down" : (Wy < 24) ? " up" : "");
+            telemetry.addData("Use dpad to adjust wobble position", "");
+            telemetry.addData("'X' to toggle wobble pickup:", "(%s)", wobbleEnabled ? "enable" : "disabled");
+            telemetry.addData("'B' to toggle 2x power shots vs 3x tower shots:", "(%s)", powerShots ? "power" : "tower");
+            telemetry.addData("'A' to proceed to vision", "");
             telemetry.update();
 
-        } while (!isStarted() && (!isStopRequested())) ;
+        } while (!isStarted() && (!isStopRequested()));
 
-        telemetry.addData("Computing paths","");
+        telemetry.addData("Computing paths", "");
         telemetry.update();
         BuildR0_IP(trajs[RING0_IP], Wx, Wy, wobbleEnabled, powerShots);
         BuildR1_IP(trajs[RING1_IP], Wx, Wy, wobbleEnabled, powerShots);
         BuildR4_IP(trajs[RING4_IP], Wx, Wy, wobbleEnabled, powerShots);
+        //BuildAngleTest(trajs[ANGLE_TEST], Wx, Wy, wobbleEnabled, powerShots);
 
-        telemetry.addData("Starting vision","");
+        telemetry.addData("Starting vision", "");
         telemetry.update();
         // Stare at the rings really hard until its time to go or stop
-        vision.initAutonomous(this, "LeftWebcam");
+        vision.initAutonomous(this, "RightWebcam");
         vision.clip = false;
-        int deltaX=0, deltaY=0;
+        int deltaX = 0, deltaY = 0;
         boolean leftBOK = true, rightBOK = true;
         do {
             ringCount = vision.countRings();
 
-            if ( gamepad2.dpad_left ) { IncepVision.clipLeft -= 1; }
-            if ( gamepad2.dpad_right ) { IncepVision.clipLeft += 1; }
-            if ( gamepad2.dpad_down ) { IncepVision.clipTop += 1; }
-            if ( gamepad2.dpad_up ) { IncepVision.clipTop -= 1; }
-            if ( gamepad2.x ) { IncepVision.clipRight += 1; }
-            if ( gamepad2.b ) { IncepVision.clipRight -= 1; }
-            if ( gamepad2.a ) { IncepVision.clipBottom -= 1; }
-            if ( gamepad2.y ) { IncepVision.clipBottom += 1; }
-            if ( gamepad2.left_bumper ) {
-                if(leftBOK) {
-                    if ( vision.tfodState) {
+            if (gamepad2.dpad_left) {
+                IncepVision.clipLeft -= 1;
+            }
+            if (gamepad2.dpad_right) {
+                IncepVision.clipLeft += 1;
+            }
+            if (gamepad2.dpad_down) {
+                IncepVision.clipTop += 1;
+            }
+            if (gamepad2.dpad_up) {
+                IncepVision.clipTop -= 1;
+            }
+            if (gamepad2.x) {
+                IncepVision.clipRight += 1;
+            }
+            if (gamepad2.b) {
+                IncepVision.clipRight -= 1;
+            }
+            if (gamepad2.a) {
+                IncepVision.clipBottom -= 1;
+            }
+            if (gamepad2.y) {
+                IncepVision.clipBottom += 1;
+            }
+            if (gamepad2.left_bumper) {
+                if (leftBOK) {
+                    if (vision.tfodState) {
                         vision.tfod.deactivate();
                         vision.tfodState = false;
                         vision.clip = true;
@@ -257,28 +280,29 @@ public class Red_Outside_IP extends LinearOpMode {
                     }
                     leftBOK = false;
                 }
-            }
-            else {
+            } else {
                 leftBOK = true;
             }
 
             // Move the entire box with the joystick.
-            deltaY += (int)(gamepad2.left_stick_y * 2.1);
-            deltaX += (int)(gamepad2.left_stick_x * 2.1);
-            deltaY += (int)(gamepad2.right_stick_y * 2.1);
-            deltaX += (int)(gamepad2.right_stick_x * 2.1);
+            deltaY += (int) (gamepad2.left_stick_y * 2.1);
+            deltaX += (int) (gamepad2.left_stick_x * 2.1);
+            deltaY += (int) (gamepad2.right_stick_y * 2.1);
+            deltaX += (int) (gamepad2.right_stick_x * 2.1);
             IncepVision.clipTop += deltaY;
             IncepVision.clipBottom -= deltaY;
             IncepVision.clipLeft += deltaX;
             IncepVision.clipRight -= deltaX;
 
             // Observe some limits
-            IncepVision.clipLeft   = Range.clip(IncepVision.clipLeft,  5,635);
-            IncepVision.clipRight  = Range.clip(IncepVision.clipRight, 5,635);
-            IncepVision.clipTop    = Range.clip(IncepVision.clipTop,   5,475);
-            IncepVision.clipBottom = Range.clip(IncepVision.clipBottom,5,475);
-        } while (!isStarted() && (!isStopRequested())) ;
+            IncepVision.clipLeft = Range.clip(IncepVision.clipLeft, 5, 635);
+            IncepVision.clipRight = Range.clip(IncepVision.clipRight, 5, 635);
+            IncepVision.clipTop = Range.clip(IncepVision.clipTop, 5, 475);
+            IncepVision.clipBottom = Range.clip(IncepVision.clipBottom, 5, 475);
+        } while (!isStarted() && (!isStopRequested()));
         vision.shutdown();
+
+        //AngleTest(trajs[ANGLE_TEST], wobbleEnabled, powerShots);
 
         // FIXME: Test the stopping in auto here again.
         if (opModeIsActive()) {
@@ -293,16 +317,16 @@ public class Red_Outside_IP extends LinearOpMode {
         }
     }
 
-    private void showTrajPoses( String trajName, int TIdx, Trajectory[] traj ) {
+    private void showTrajPoses(String trajName, int TIdx, Trajectory[] traj) {
 
         Pose2d tmpPose = traj[0].start();
         double time = 0;
-        robot.logger.logD("showTrajPoses:",String.format("%s, Idx:%d, X: %.2f, Y:%.2f, H:%.2f, t:%.2f", trajName, -1, tmpPose.getX(), tmpPose.getY(), Math.toDegrees(tmpPose.getHeading()),time));
+        robot.logger.logD("showTrajPoses:", String.format("%s, Idx:%d, X: %.2f, Y:%.2f, H:%.2f, t:%.2f", trajName, -1, tmpPose.getX(), tmpPose.getY(), Math.toDegrees(tmpPose.getHeading()), time));
 
-        for (int i=0; i<TIdx; i++ ) {
+        for (int i = 0; i < TIdx; i++) {
             tmpPose = traj[i].end();
             time += traj[i].duration();
-            robot.logger.logD("showTrajPoses:",String.format("%s, Idx:%d, X: %.2f, Y:%.2f, H:%.2f, t:%.2f", trajName, i, tmpPose.getX(), tmpPose.getY(), Math.toDegrees(tmpPose.getHeading()),time));
+            robot.logger.logD("showTrajPoses:", String.format("%s, Idx:%d, X: %.2f, Y:%.2f, H:%.2f, t:%.2f", trajName, i, tmpPose.getX(), tmpPose.getY(), Math.toDegrees(tmpPose.getHeading()), time));
         }
     }
 
@@ -315,42 +339,104 @@ public class Red_Outside_IP extends LinearOpMode {
         minMS /= 1000;
         maxMS /= 1000;
 
-        minMS += now ;
+        minMS += now;
         if (maxMS > 0) {
             maxMS += now;
         } else {
             maxMS = Double.POSITIVE_INFINITY;
         }
 
-        while(opModeIsActive() ) {
+        while (opModeIsActive()) {
             // Get the time
             now = localClock.seconds();
 
             // Master stop
-            if(!opModeIsActive()){ return; }
+            if (!opModeIsActive()) {
+                return;
+            }
 
             // Update the drive
-            if( checkDrive ) { robot.drive.update(); }
+            if (checkDrive) {
+                robot.drive.update();
+            }
 
             // Update the shooterPID
-            if ( runShooterPID ) { robot.updateShooterPID(); }
+            if (runShooterPID) {
+                robot.updateShooterPID();
+            }
 
             // Check timer expiration, bail if too long
-            if(maxMS < now) { return; }
+            if (maxMS < now) {
+                return;
+            }
 
             // Make sure to wait for the minimum time
-            if(minMS > now) {
+            if (minMS > now) {
                 continue;
             }
 
             // Drive still running? Wait for it.
-            if ( checkDrive ) {
-                if(robot.drive.isBusy()){ continue; }
+            if (checkDrive) {
+                if (robot.drive.isBusy()) {
+                    continue;
+                }
             }
 
             // No reason to be here (past the minMS timer, drive is idle)
             return;
         }
+    }
+
+    private void BuildAngleTest(Trajectory[] traj, double Wx, double Wy, boolean wobbleEnabled, boolean powerShots) {
+
+        int TIdx = 0;
+        // Starting X,Y = -63,57
+
+        // Drive to first shot
+        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
+                .splineToLinearHeading(new Pose2d(-8,57, Math.toRadians(powerShots?(POWER_SHOT_ANGLE1):(TOWER_SHOT_ANGLE))), Math.toRadians(0.0))
+                .build();
+
+        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(powerShots?(TOWER_SHOT_ANGLE):(TOWER_SHOT_ANGLE))), true)
+                .splineToLinearHeading(new Pose2d(-62,57, Math.toRadians(0.0)), Math.toRadians(180.0))
+                .build();
+    }
+
+    private void AngleTest(Trajectory[] traj, boolean wobbleEnabled, boolean powerShots) {
+        int TIdx = 0;
+
+        // Go to shooting location
+        if(powerShots) {
+            robot.setShooter(power_shot_RPM, power_shot_power, SWPID);
+        } else {
+            robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
+        }
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, SWPID, 0, 0);
+        if(!opModeIsActive()){ return; }
+
+        power_tower_shots(powerShots);
+        if(!opModeIsActive()){ return; }
+
+        // Go back
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, SWPID, 0, 0);
+    }
+
+    private void BuildStraightTest(Trajectory[] traj, double Wx, double Wy, boolean wobbleEnabled, boolean powerShots) {
+
+        int TIdx = 0;
+
+        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
+                .forward(96)
+                .build();
+    }
+
+    private void StraightTest(Trajectory[] traj, boolean wobbleEnabled, boolean powerShots) {
+        int TIdx = 0;
+
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, SWPID, 0, 0);
     }
 
     private void BuildR0_IP(Trajectory[] traj, double Wx, double Wy, boolean wobbleEnabled, boolean powerShots) {
@@ -361,7 +447,7 @@ public class Red_Outside_IP extends LinearOpMode {
         // Pose: -8, -57, 19
         // Drive to first shot
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .splineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(powerShots?(POWER_SHOT_ANGLE1):(TOWER_SHOT_ANGLE))), Math.toRadians(0.0))
+                .splineToLinearHeading(new Pose2d(-8,57, Math.toRadians(powerShots?(POWER_SHOT_ANGLE1):(TOWER_SHOT_ANGLE))), Math.toRadians(0.0))
                 .build();
         // shoot #1
 
@@ -378,14 +464,14 @@ public class Red_Outside_IP extends LinearOpMode {
         // Pose: 25, -34, 0
         // 0-Ring wobble dropoff
         traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(TOWER_SHOT_ANGLE)))
-                .lineToLinearHeading(new Pose2d(2,-57, Math.toRadians(0.0)))
+                .lineToLinearHeading(new Pose2d(2,57, Math.toRadians(0.0)))
                 .build();
 
         // Drop wobble
         if(wobbleEnabled) {
             // Line up on wobble
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                    .lineToLinearHeading(new Pose2d(-38, -57, Math.toRadians(280.0)))
+                    .lineToLinearHeading(new Pose2d(-38, 57, Math.toRadians(-315.0)))
                     .addDisplacementMarker(1, () -> {
                         if (wobbleEnabled) {
                             robot.setWobblePosition(robot.WOBBLE_PICKUP, 0.4);
@@ -402,14 +488,14 @@ public class Red_Outside_IP extends LinearOpMode {
             // Backup to Wobble
             // The 0-ring case has a little bit less drift, we make a slight adjustment here.
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                    .lineToConstantHeading(new Vector2d(Wx + WxOffset - 1.0, Wy + WyOffset + 1.0))
+                    .lineToConstantHeading(new Vector2d(Wx + WxOffset - 0.5, Wy + WyOffset - 0.5))
                     .build();
 
             // Grab wobble
 
             // Drive away before lifting
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY() - 4.0))
+                    .lineToConstantHeading(new Vector2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY() + 4.0))
                     .addDisplacementMarker(20, () -> {
                         robot.setWobblePosition(robot.WOBBLE_UP, 0.8);
                     })
@@ -418,12 +504,12 @@ public class Red_Outside_IP extends LinearOpMode {
             // Go to lane
             // Pose: Wx, -57, 0
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(Wx + WxOffset, -57, Math.toRadians(180.0)))
+                    .lineToLinearHeading(new Pose2d(Wx + WxOffset, 57, Math.toRadians(-180.0)))
                     .build();
 
             // Back up
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                    .lineToLinearHeading(new Pose2d(-12, -60, Math.toRadians(155.0)))
+                    .lineToLinearHeading(new Pose2d(-12, 60, Math.toRadians(-190.0)))
                     .build();
 
             // Lower wobble
@@ -432,7 +518,7 @@ public class Red_Outside_IP extends LinearOpMode {
 
         // Drive away and wait
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToLinearHeading(new Pose2d(-48, -60, Math.toRadians(wobbleEnabled?(180.0):(0.0))))
+                .lineToLinearHeading(new Pose2d(-48, 60, Math.toRadians(wobbleEnabled?(-180.0):(0.0))))
                 .addDisplacementMarker(10, () -> {
                     // Return arm
                     robot.setWobblePosition(robot.WOBBLE_START, 0.4);
@@ -443,15 +529,15 @@ public class Red_Outside_IP extends LinearOpMode {
         if(middleLanePark) {
             // Strafe and park
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(6, -38))
+                    .lineToConstantHeading(new Vector2d(6, 38))
                     .build();
         } else {
             // Strafe and park
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-24, -12))
+                    .lineToConstantHeading(new Vector2d(-24, 12))
                     .build();
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(6, -12))
+                    .lineToConstantHeading(new Vector2d(6, 12))
                     .build();
         }
 
@@ -463,7 +549,7 @@ public class Red_Outside_IP extends LinearOpMode {
 
         // Go to shooting location
         if(powerShots) {
-            robot.setShooter(power_shot_RPM + power_RPM_offset, power_shot_power + power_offset, SWPID);
+            robot.setShooter(power_shot_RPM, power_shot_power, SWPID);
         } else {
             robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
         }
@@ -554,12 +640,12 @@ public class Red_Outside_IP extends LinearOpMode {
     private void BuildR1_IP(Trajectory[] traj, double Wx, double Wy, boolean wobbleEnabled, boolean powerShots) {
 
         int TIdx = 0;
-        // Starting X,Y = -63,-57
+        // Starting X,Y = -63,57
 
-        // Pose: -8, -57, 19
+        // Pose: -8, 57, 19
         // Drive to first shot
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .splineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(powerShots?(POWER_SHOT_ANGLE1):(TOWER_SHOT_ANGLE))), Math.toRadians(0.0))
+                .splineToLinearHeading(new Pose2d(-8,57, Math.toRadians(powerShots?(POWER_SHOT_ANGLE1):(TOWER_SHOT_ANGLE))), Math.toRadians(0.0))
                 .build();
         // shoot #1
 
@@ -578,14 +664,14 @@ public class Red_Outside_IP extends LinearOpMode {
         // Pose: 25, -34, 0
         // 1-Ring
         traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(TOWER_SHOT_ANGLE)))
-                .splineToLinearHeading(new Pose2d(42,-54, Math.toRadians(90.0)),Math.toRadians(40.0))
+                .splineToLinearHeading(new Pose2d(36,54, Math.toRadians(-90.0)),Math.toRadians(-40.0))
                 .build();
 
         // Drop wobble
 
         // Line up on wobble
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx-2].end(),true)
-                .lineToLinearHeading(new Pose2d(-38,-57, Math.toRadians(280.0)))
+                .lineToLinearHeading(new Pose2d(-38, 57, Math.toRadians(-315.0)))
                 .addDisplacementMarker(40, () -> {
                     if(wobbleEnabled) {
                         robot.setWobblePosition(robot.WOBBLE_PICKUP, 0.4);
@@ -609,7 +695,7 @@ public class Red_Outside_IP extends LinearOpMode {
 
             // Drive away before lifting
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY()-4.0))
+                    .lineToConstantHeading(new Vector2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY()+4.0))
                     .addDisplacementMarker(20, () -> {
                         robot.setWobblePosition(robot.WOBBLE_UP, 0.8);
                     })
@@ -620,7 +706,7 @@ public class Red_Outside_IP extends LinearOpMode {
         // Line up on ring
         // Pose: -40, -38, 0
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx-2].end())
-                .lineToConstantHeading(new Vector2d(-42.1,-42.1))
+                .lineToConstantHeading(new Vector2d(-42.1,34.1))
                 .build();
 
         // Turn on intake
@@ -631,7 +717,7 @@ public class Red_Outside_IP extends LinearOpMode {
         // Drive over ring
         // Pose: -7, -38, 0
         traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(),Math.toRadians(0.0)))
-                .lineToLinearHeading(new Pose2d(-7,-40, Math.toRadians(2.5)))
+                .lineToLinearHeading(new Pose2d(-7,32, Math.toRadians(3.5)))
                 .build();
 
         // Shoot
@@ -643,21 +729,21 @@ public class Red_Outside_IP extends LinearOpMode {
             // Lower wobble
 
             // Back up
-            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY(), Math.toRadians(180.0)), true)
-                    .lineToConstantHeading(new Vector2d(12, -42))
+            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY(), Math.toRadians(170.0)), true)
+                    .lineToConstantHeading(new Vector2d(12, 36))
                     .build();
 
             // Drop wobble
 
             // Drive away a little
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(8, -42))
+                    .lineToConstantHeading(new Vector2d(8, 36))
                     .build();
 
             // Return wobble arm
         } else {
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(6, -60, Math.toRadians(0.0)))
+                    .lineToLinearHeading(new Pose2d(6, 60, Math.toRadians(0.0)))
                     .build();
         }
 
@@ -670,7 +756,7 @@ public class Red_Outside_IP extends LinearOpMode {
 
         // Go to shooting location
         if(powerShots) {
-            robot.setShooter(power_shot_RPM + power_RPM_offset, power_shot_power + power_offset, SWPID);
+            robot.setShooter(power_shot_RPM, power_shot_power, SWPID);
         } else {
             robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
         }
@@ -759,7 +845,7 @@ public class Red_Outside_IP extends LinearOpMode {
 
         if (wobbleEnabled) {
             // Turn to 180 degrees COUNTER CLOCKWISE to stay in lane
-            robot.drive.turnAsync(Math.PI - robot.drive.getRawExternalHeading());
+            robot.drive.turnAsync(Math.toRadians(170.0) - robot.drive.getRawExternalHeading());
             CheckWait(true, SWPID, 1000, 1000);
             robot.setWobblePosition(robot.WOBBLE_DROP, 0.3);
             CheckWait(true, SWPID, 1000, 0);
@@ -795,12 +881,12 @@ public class Red_Outside_IP extends LinearOpMode {
     private void BuildR4_IP(Trajectory[] traj, double Wx, double Wy, boolean wobbleEnabled, boolean powerShots) {
 
         int TIdx = 0;
-        // Starting X,Y = -63,-57
+        // Starting X,Y = -63,57
 
-        // Pose: -8, -57, 19
+        // Pose: -8, 57, 19
         // Drive to first shot
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .splineToLinearHeading(new Pose2d(-8,-57, Math.toRadians(powerShots?(POWER_SHOT_ANGLE1):(TOWER_SHOT_ANGLE))), Math.toRadians(0.0))
+                .splineToLinearHeading(new Pose2d(-8,57, Math.toRadians(powerShots?(POWER_SHOT_ANGLE1):(TOWER_SHOT_ANGLE))), Math.toRadians(0.0))
                 .build();
         // shoot #1
 
@@ -816,17 +902,17 @@ public class Red_Outside_IP extends LinearOpMode {
 
         // Drive to wobble drop
 
-        // Pose: 25, -34, 0
-        // 1-Ring
+        // Pose: 25, 34, 0
+        // 4-Ring
         traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(TOWER_SHOT_ANGLE)))
-                .splineToLinearHeading(new Pose2d(48, -57, Math.toRadians(0.0)), Math.toRadians(0.0))
+                .splineToLinearHeading(new Pose2d(48, 57, Math.toRadians(0.0)), Math.toRadians(0.0))
                 .build();
 
         // Drop wobble
 
         // Line up on wobble
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx-2].end(),true)
-                .lineToLinearHeading(new Pose2d(-38,-59, Math.toRadians(280.0)))
+                .lineToLinearHeading(new Pose2d(-38, 57, Math.toRadians(-315.0)))
                 .addDisplacementMarker(40, () -> {
                     if(wobbleEnabled) {
                         robot.setWobblePosition(robot.WOBBLE_PICKUP, 0.4);
@@ -850,7 +936,7 @@ public class Red_Outside_IP extends LinearOpMode {
 
             // Drive away before lifting
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY()-4.0))
+                    .lineToConstantHeading(new Vector2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY()+4.0))
                     .addDisplacementMarker(20, () -> {
                         robot.setWobblePosition(robot.WOBBLE_UP, 0.8);
                     })
@@ -858,9 +944,9 @@ public class Red_Outside_IP extends LinearOpMode {
         }
 
         // Line up on ring
-        // Pose: -40, -39, 0
+        // Pose: -40, 39, 0
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx-2].end())
-                .lineToConstantHeading(new Vector2d(-42.1,-42.1))
+                .lineToConstantHeading(new Vector2d(-42.1,34.1))
                 .build();
 
         // Turn on intake
@@ -869,36 +955,36 @@ public class Red_Outside_IP extends LinearOpMode {
         // robot.drive.turnAsync(-robot.drive.getRawExternalHeading());
 
         // Drive over 1-2 rings
-        // Pose: -24, -39, 0
+        // Pose: -24, 39, 0
         traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(),Math.toRadians(0.0)))
-                .lineToLinearHeading(new Pose2d(-24,-40, Math.toRadians(2.5)))
+                .lineToLinearHeading(new Pose2d(-24,32, Math.toRadians(2.5)))
                 .build();
 
         // Shoot
 
         // Drive over more rings
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx-2].end())
-                .lineToLinearHeading(new Pose2d(-7,-40, Math.toRadians(2.5)))
+                .lineToLinearHeading(new Pose2d(-7,32, Math.toRadians(3.5)))
                 .build();
 
         // Shoot
 
         if (wobbleEnabled) {
             // Turn to 155 degress
-            //robot.drive.turnAsync(Math.PI - robot.drive.getRawExternalHeading());
+            //robot.drive.turnAsync(Mat.toRadians(-180.0) - robot.drive.getRawExternalHeading());
 
             // Lower wobble
 
             // Back up
-            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(),Math.toRadians(155)),true)
-                    .lineToLinearHeading(new Pose2d(36,-62, Math.toRadians(160.0)))
+            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(),Math.toRadians(-180.0)),true)
+                    .lineToConstantHeading(new Vector2d(36,60))
                     .build();
 
             // Drop wobble
 
             // Drive away and park
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx-2].end())
-                    .lineToLinearHeading(new Pose2d(8,-57, Math.toRadians(180.0)))
+                    .lineToLinearHeading(new Pose2d(8,57, Math.toRadians(-180.0)))
                     .addDisplacementMarker(10, () -> {
                         robot.setWobblePosition(robot.WOBBLE_START, 0.6);
                         robot.claw.setPosition(1.0);
@@ -909,7 +995,7 @@ public class Red_Outside_IP extends LinearOpMode {
 
         } else {
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(6, -60, Math.toRadians(0.0)))
+                    .lineToLinearHeading(new Pose2d(6, 60, Math.toRadians(0.0)))
                     .build();
         }
 
@@ -921,7 +1007,7 @@ public class Red_Outside_IP extends LinearOpMode {
 
         // Go to shooting location
         if(powerShots) {
-            robot.setShooter(power_shot_RPM + power_RPM_offset, power_shot_power + power_offset, SWPID);
+            robot.setShooter(power_shot_RPM, power_shot_power, SWPID);
         } else {
             robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
         }
@@ -1001,6 +1087,14 @@ public class Red_Outside_IP extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         robot.flicker.setPosition(0.0);
+        CheckWait(true, SWPID, flicker_return_delay, 0);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(1.0);
+        CheckWait(true, SWPID, flicker_shot_delay, 0);
+        if(!opModeIsActive()){ return; }
+
+        robot.flicker.setPosition(0.0);
 
         // Drive over rings
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
@@ -1050,7 +1144,7 @@ public class Red_Outside_IP extends LinearOpMode {
 
         if (wobbleEnabled) {
             // Turn to 180 degrees COUNTER CLOCKWISE to stay in lane
-            robot.drive.turnAsync(Math.toRadians(155.0) - robot.drive.getRawExternalHeading());
+            robot.drive.turnAsync(Math.toRadians(-180.0) - robot.drive.getRawExternalHeading());
             CheckWait(true, SWPID, 500, 750);
             robot.setWobblePosition(robot.WOBBLE_DROP, 0.3);
             CheckWait(true, SWPID, 250, 0);
@@ -1088,15 +1182,16 @@ public class Red_Outside_IP extends LinearOpMode {
 
         if(powerShots) {
             // First Power Shot
+            robot.logger.logD("powerShots:", String.format("P1: %.2f (%.2f)", Math.toDegrees(robot.drive.getRawExternalHeading()),POWER_SHOT_ANGLE1));
             robot.flicker.setPosition(1.0);
             CheckWait(true, SWPID, flicker_shot_delay, 0);
             robot.flicker.setPosition(0.0);
             if (!opModeIsActive()) { return; }
 
             // Second Power shot
-            robot.setShooter(power_shot_RPM, power_shot_power, SWPID);
             robot.drive.turnAsync(Math.toRadians(POWER_SHOT_ANGLE2) - robot.drive.getRawExternalHeading());
             CheckWait(true, SWPID, flicker_return_delay, 0);
+            robot.logger.logD("powerShots:", String.format("P2: %.2f (%.2f)", Math.toDegrees(robot.drive.getRawExternalHeading()),POWER_SHOT_ANGLE2));
             robot.flicker.setPosition(1.0);
             CheckWait(true, SWPID, flicker_shot_delay, 0);
             robot.flicker.setPosition(0.0);
@@ -1106,6 +1201,7 @@ public class Red_Outside_IP extends LinearOpMode {
             robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
             robot.drive.turnAsync(Math.toRadians(TOWER_SHOT_ANGLE) - robot.drive.getRawExternalHeading());
             CheckWait(true, SWPID, flicker_return_delay, 0);
+            robot.logger.logD("powerShots:", String.format("T: %.2f (%.2f)", Math.toDegrees(robot.drive.getRawExternalHeading()),TOWER_SHOT_ANGLE));
             robot.flicker.setPosition(1.0);
             CheckWait(true, SWPID, flicker_shot_delay, 0);
             robot.flicker.setPosition(0.0);

@@ -115,6 +115,7 @@ public class RRMech_Teleop extends LinearOpMode {
     double r_b_motor_power;
 
     private static boolean SWPID = true;
+    private boolean shooterDownShifted = false;
 
     double theta, r_speed, new_x, new_y, degrees;
 
@@ -335,6 +336,7 @@ public class RRMech_Teleop extends LinearOpMode {
         runtime.reset();
         iter = 0.0;
         prt = rt = maxLag = 0.0;
+        shooterDownShifted = false;
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
@@ -356,11 +358,12 @@ public class RRMech_Teleop extends LinearOpMode {
             maxLag = Math.max(maxLag, ((rt-prt)*1000.0));
             iter += 1;
 
-            if ((rt > 97) && (shooterSet[1] != SHOOTER_POWER_SHOT)) {
+            if ((rt > 97) && (!shooterDownShifted)) {
                 shooterSetRPM[1] = SHOOTER_POWER_SHOT_RPM;
                 shooterSet[1] = SHOOTER_POWER_SHOT;
 
                 robot.setShooter(shooterSetRPM[shooterIdx],shooterSet[shooterIdx],SWPID);
+                shooterDownShifted = true;
             }
 
             if (gp1Present) {
@@ -447,8 +450,15 @@ public class RRMech_Teleop extends LinearOpMode {
                 // Change the chassis speed
                 if (gamepad1.a) {
                     if (!aPrev[0]) {
-                        speedIdx = (speedIdx + 1) % speedSet.length;
-                        speedModifier[0] = speedSet[speedIdx];
+                        if (shooterSetRPM[1] == SHOOTER_POWER_SHOT_RPM) {
+                            shooterSetRPM[1] = SHOOTER_NORMAL_RPM;
+                            shooterSet[1] = SHOOTER_NORMAL;
+                        } else {
+                            shooterSetRPM[1] = SHOOTER_POWER_SHOT_RPM;
+                            shooterSet[1] = SHOOTER_POWER_SHOT;
+                        }
+                        robot.setShooter(shooterSetRPM[shooterIdx],shooterSet[shooterIdx],SWPID);
+
                         aPrev[0] = true;
                     }
                 } else {
@@ -640,8 +650,15 @@ public class RRMech_Teleop extends LinearOpMode {
                 // Change the chassis speed
                 if (gamepad2.a) {
                     if (!aPrev[0]) {
-                        speedIdx = (speedIdx + 1) % speedSet.length;
-                        speedModifier[1] = speedSet[speedIdx];
+                        if (shooterSetRPM[1] == SHOOTER_POWER_SHOT_RPM) {
+                            shooterSetRPM[1] = SHOOTER_NORMAL_RPM;
+                            shooterSet[1] = SHOOTER_NORMAL;
+                        } else {
+                            shooterSetRPM[1] = SHOOTER_POWER_SHOT_RPM;
+                            shooterSet[1] = SHOOTER_POWER_SHOT;
+                        }
+                        robot.setShooter(shooterSetRPM[shooterIdx],shooterSet[shooterIdx],SWPID);
+
                         aPrev[0] = true;
                     }
                 } else {
@@ -1019,12 +1036,18 @@ public class RRMech_Teleop extends LinearOpMode {
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
-            telemetry.addData("Lag:", "avg: %.2f ms, max: %2f ms", ((rt/iter)*1000.0), maxLag);
-            if(SWPID) {
-                telemetry.addData("Shooter:", "%.0f, %.0f", shooterSetRPM[shooterIdx], (tps / (28.0 / 1.5)) * 60.0);
+            telemetry.addData("", "");
+            if(shooterSetRPM[1] == SHOOTER_NORMAL_RPM) {
+                telemetry.addData("Shooter HIGH SPEED", "");
             } else {
-                telemetry.addData("Shooter:", "%.3f, %.0f", shooterSet[shooterIdx], (tps / (28.0 / 1.5)) * 60.0);
+                telemetry.addData("Shooter LOW SPEED", "");
             }
+            //telemetry.addData("Lag:", "avg: %.2f ms, max: %2f ms", ((rt/iter)*1000.0), maxLag);
+            //if(SWPID) {
+            //    telemetry.addData("Shooter:", "%.0f, %.0f", shooterSetRPM[shooterIdx], (tps / (28.0 / 1.5)) * 60.0);
+            //} else {
+            //    telemetry.addData("Shooter:", "%.3f, %.0f", shooterSet[shooterIdx], (tps / (28.0 / 1.5)) * 60.0);
+            //}
             telemetry.update();
         }
 
