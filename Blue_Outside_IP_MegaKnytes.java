@@ -34,6 +34,7 @@ import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.Range;
 
@@ -52,8 +53,9 @@ import com.qualcomm.robotcore.util.Range;
  *
  */
 
-@Autonomous(name="Blue_Outside_IP_No_Stack", group="MechBot")
-public class Blue_Outside_IP_No_Stack extends LinearOpMode {
+@Autonomous(name="Blue_Outside_IP_MegaKnytes", group="MechBot")
+@Disabled
+public class Blue_Outside_IP_MegaKnytes extends LinearOpMode {
     private final int RING0_IP = 0;
     private final int RING1_IP = 1;
     private final int RING4_IP = 2;
