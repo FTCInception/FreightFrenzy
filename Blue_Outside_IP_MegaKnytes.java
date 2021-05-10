@@ -139,8 +139,8 @@ public class Blue_Outside_IP_MegaKnytes extends LinearOpMode {
     private static final double WxOffset = 9.0;
     private static final double WyOffset = 17.0;
 
-    private static boolean wobbleEnabled = true;
-    private static boolean powerShots = true;
+    private static boolean wobbleEnabled = false;
+    private static boolean powerShots = false;
     private static boolean middleLanePark = true;
 
     private IncepVision vision = new IncepVision();

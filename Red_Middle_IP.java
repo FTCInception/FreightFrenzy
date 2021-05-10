@@ -89,7 +89,7 @@ public class Red_Middle_IP extends LinearOpMode {
     private static final double startingY = -17.0;
 
     private static boolean wobbleEnabled = true;
-    private static boolean powerShots = true;
+    private static boolean powerShots = false;
     private static boolean sideDelivery = true;
 
     private IncepVision vision = new IncepVision();
