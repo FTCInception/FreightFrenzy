@@ -761,7 +761,7 @@ public class Blue_Outside_IP_MegaKnytes extends LinearOpMode {
     private void Ring1_IP(Trajectory[] traj, boolean wobbleEnabled, boolean powerShots) {
         int TIdx = 0;
 
-        CheckWait(true, SWPID, 4000, 0);
+        CheckWait(true, SWPID, 8000, 0);
 
         // Go to shooting location
         if(powerShots) {
