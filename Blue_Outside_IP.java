@@ -54,9 +54,9 @@ import com.qualcomm.robotcore.util.Range;
 
 @Autonomous(name="Blue_Outside_IP", group="MechBot")
 public class Blue_Outside_IP extends LinearOpMode {
-    private final int RING0_IP = 0;
-    private final int RING1_IP = 1;
-    private final int RING4_IP = 2;
+    private final int RING0_IP=0;
+    private final int RING1_IP=1;
+    private final int RING4_IP=2;
     private final int ANGLE_TEST = 3;
 
     private double RING0_TURN1, RING0_TURN2;
@@ -75,11 +75,6 @@ public class Blue_Outside_IP extends LinearOpMode {
     private double POWER_SHOT2_TURN = 5.75;
     private double POWER_SHOT_ANGLE_RING4 = 28.25;
 
-    // Outside-in all power-shot angles
-    // private double POWER_SHOT_ANGLE1 = -33.00;
-    // private double POWER_SHOT_ANGLE2 = -30.00;
-    // private double POWER_SHOT_ANGLE3 = -24.50;
-    // Inside out, finish with tower.
     private double POWER_SHOT_ANGLE1 = -28.5;
     private double POWER_SHOT_ANGLE2 = -23.00;
     private double TOWER_SHOT_ANGLE = -12.00;
@@ -151,7 +146,7 @@ public class Blue_Outside_IP extends LinearOpMode {
         //robot.logger.LOGLEVEL = robot.logger.LOGDEBUG ;
 
         // Init the robot and subsystems.  Set Roadrunner timeout to 0.25s to save some time.
-        robot.init(hardwareMap, 0.05);
+        robot.init(hardwareMap,0.05);
         robot.initAutonomous(this);
         robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
@@ -166,7 +161,7 @@ public class Blue_Outside_IP extends LinearOpMode {
         double Wy = 24.0;
         boolean leftOK = true, rightOK = true, upOK = true, downOK = true, bOK = true, xOK = true, yOK = true;
         do {
-            if (gamepad2.dpad_left) {
+            if ( gamepad2.dpad_left ) {
                 if (leftOK) {
                     Wx += 1.0;
                     leftOK = false;
@@ -174,7 +169,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             } else {
                 leftOK = true;
             }
-            if (gamepad2.dpad_right) {
+            if ( gamepad2.dpad_right ) {
                 if (rightOK) {
                     Wx -= 1.0;
                     rightOK = false;
@@ -182,7 +177,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             } else {
                 rightOK = true;
             }
-            if (gamepad2.dpad_down) {
+            if ( gamepad2.dpad_down ) {
                 if (downOK) {
                     Wy += 1.0;
                     downOK = false;
@@ -190,7 +185,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             } else {
                 downOK = true;
             }
-            if (gamepad2.dpad_up) {
+            if ( gamepad2.dpad_up ) {
                 if (upOK) {
                     Wy -= 1.0;
                     upOK = false;
@@ -206,7 +201,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             } else {
                 yOK = true;
             }
-            if (gamepad2.b) {
+            if ( gamepad2.b ) {
                 if (bOK) {
                     powerShots = !(powerShots);
                     bOK = false;
@@ -214,7 +209,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             } else {
                 bOK = true;
             }
-            if (gamepad2.x) {
+            if ( gamepad2.x ) {
                 if (xOK) {
                     if (wobbleEnabled && starterStack) {
                         wobbleEnabled = false;
@@ -229,7 +224,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             } else {
                 xOK = true;
             }
-            if (gamepad2.a) {
+            if ( gamepad2.a ) {
                 break;
             }
 
@@ -240,7 +235,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             telemetry.addData("'A' to proceed to vision", "");
             telemetry.update();
 
-        } while (!isStarted() && (!isStopRequested()));
+        } while (!isStarted() && (!isStopRequested())) ;
 
         telemetry.addData("Computing paths", "");
         telemetry.update();
@@ -249,7 +244,7 @@ public class Blue_Outside_IP extends LinearOpMode {
         BuildR4_IP(trajs[RING4_IP], Wx, Wy, wobbleEnabled, powerShots, starterStack);
         //BuildAngleTest(trajs[ANGLE_TEST], Wx, Wy, wobbleEnabled, powerShots);
 
-        telemetry.addData("Starting vision", "");
+        telemetry.addData("Starting vision","");
         telemetry.update();
         // Stare at the rings really hard until its time to go or stop
         vision.initAutonomous(this, "RightWebcam");
@@ -259,31 +254,15 @@ public class Blue_Outside_IP extends LinearOpMode {
         do {
             ringCount = vision.countRings();
 
-            if (gamepad2.dpad_left) {
-                IncepVision.clipLeft -= 1;
-            }
-            if (gamepad2.dpad_right) {
-                IncepVision.clipLeft += 1;
-            }
-            if (gamepad2.dpad_down) {
-                IncepVision.clipTop += 1;
-            }
-            if (gamepad2.dpad_up) {
-                IncepVision.clipTop -= 1;
-            }
-            if (gamepad2.x) {
-                IncepVision.clipRight += 1;
-            }
-            if (gamepad2.b) {
-                IncepVision.clipRight -= 1;
-            }
-            if (gamepad2.a) {
-                IncepVision.clipBottom -= 1;
-            }
-            if (gamepad2.y) {
-                IncepVision.clipBottom += 1;
-            }
-            if (gamepad2.left_bumper) {
+            if ( gamepad2.dpad_left ) { IncepVision.clipLeft -= 1; }
+            if ( gamepad2.dpad_right ) { IncepVision.clipLeft += 1; }
+            if ( gamepad2.dpad_down ) { IncepVision.clipTop += 1; }
+            if ( gamepad2.dpad_up ) { IncepVision.clipTop -= 1; }
+            if ( gamepad2.x ) { IncepVision.clipRight += 1; }
+            if ( gamepad2.b ) { IncepVision.clipRight -= 1; }
+            if ( gamepad2.a ) { IncepVision.clipBottom -= 1; }
+            if ( gamepad2.y ) { IncepVision.clipBottom += 1; }
+            if ( gamepad2.left_bumper ) {
                 if (leftBOK) {
                     if (vision.tfodState) {
                         vision.tfod.deactivate();
@@ -301,10 +280,10 @@ public class Blue_Outside_IP extends LinearOpMode {
             }
 
             // Move the entire box with the joystick.
-            deltaY += (int) (gamepad2.left_stick_y * 2.1);
-            deltaX += (int) (gamepad2.left_stick_x * 2.1);
-            deltaY += (int) (gamepad2.right_stick_y * 2.1);
-            deltaX += (int) (gamepad2.right_stick_x * 2.1);
+            deltaY += (int)(gamepad2.left_stick_y * 2.1);
+            deltaX += (int)(gamepad2.left_stick_x * 2.1);
+            deltaY += (int)(gamepad2.right_stick_y * 2.1);
+            deltaX += (int)(gamepad2.right_stick_x * 2.1);
             IncepVision.clipTop += deltaY;
             IncepVision.clipBottom -= deltaY;
             IncepVision.clipLeft += deltaX;
@@ -339,7 +318,7 @@ public class Blue_Outside_IP extends LinearOpMode {
         double time = 0;
         robot.logger.logD("showTrajPoses:", String.format("%s, Idx:%d, X: %.2f, Y:%.2f, H:%.2f, t:%.2f", trajName, -1, tmpPose.getX(), tmpPose.getY(), Math.toDegrees(tmpPose.getHeading()), time));
 
-        for (int i = 0; i < TIdx; i++) {
+        for (int i=0; i<TIdx; i++) {
             tmpPose = traj[i].end();
             time += traj[i].duration();
             robot.logger.logD("showTrajPoses:", String.format("%s, Idx:%d, X: %.2f, Y:%.2f, H:%.2f, t:%.2f", trajName, i, tmpPose.getX(), tmpPose.getY(), Math.toDegrees(tmpPose.getHeading()), time));
@@ -355,47 +334,35 @@ public class Blue_Outside_IP extends LinearOpMode {
         minMS /= 1000;
         maxMS /= 1000;
 
-        minMS += now;
+        minMS += now ;
         if (maxMS > 0) {
             maxMS += now;
         } else {
             maxMS = Double.POSITIVE_INFINITY;
         }
 
-        while (opModeIsActive()) {
+        while (opModeIsActive() ) {
             // Get the time
             now = localClock.seconds();
 
             // Master stop
-            if (!opModeIsActive()) {
-                return;
-            }
+            if (!opModeIsActive()) { return; }
 
             // Update the drive
-            if (checkDrive) {
-                robot.drive.update();
-            }
+            if (checkDrive) { robot.drive.update(); }
 
             // Update the shooterPID
-            if (runShooterPID) {
-                robot.updateShooterPID();
-            }
+            if (runShooterPID) { robot.updateShooterPID(); }
 
             // Check timer expiration, bail if too long
-            if (maxMS < now) {
-                return;
-            }
+            if (maxMS < now) { return; }
 
             // Make sure to wait for the minimum time
-            if (minMS > now) {
-                continue;
-            }
+            if (minMS > now) { continue; }
 
             // Drive still running? Wait for it.
             if (checkDrive) {
-                if (robot.drive.isBusy()) {
-                    continue;
-                }
+                if (robot.drive.isBusy()) { continue; }
             }
 
             // No reason to be here (past the minMS timer, drive is idle)
@@ -1227,7 +1194,7 @@ public class Blue_Outside_IP extends LinearOpMode {
 
         if(powerShots) {
             // First Power Shot
-            robot.logger.logD("powerShots:", String.format("P1: %.2f (%.2f)", Math.toDegrees(robot.drive.getRawExternalHeading()),POWER_SHOT_ANGLE1));
+            //robot.logger.logD("powerShots:", String.format("P1: %.2f (%.2f)", Math.toDegrees(robot.drive.getRawExternalHeading()),POWER_SHOT_ANGLE1));
             robot.flicker.setPosition(1.0);
             CheckWait(true, SWPID, flicker_shot_delay, 0);
             robot.flicker.setPosition(0.0);
@@ -1236,7 +1203,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             // Second Power shot
             robot.drive.turnAsync(Math.toRadians(POWER_SHOT_ANGLE2) - robot.drive.getRawExternalHeading());
             CheckWait(true, SWPID, flicker_return_delay, 0);
-            robot.logger.logD("powerShots:", String.format("P2: %.2f (%.2f)", Math.toDegrees(robot.drive.getRawExternalHeading()),POWER_SHOT_ANGLE2));
+            //robot.logger.logD("powerShots:", String.format("P2: %.2f (%.2f)", Math.toDegrees(robot.drive.getRawExternalHeading()),POWER_SHOT_ANGLE2));
             robot.flicker.setPosition(1.0);
             CheckWait(true, SWPID, flicker_shot_delay, 0);
             robot.flicker.setPosition(0.0);
@@ -1246,7 +1213,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
             robot.drive.turnAsync(Math.toRadians(TOWER_SHOT_ANGLE) - robot.drive.getRawExternalHeading());
             CheckWait(true, SWPID, flicker_return_delay, 0);
-            robot.logger.logD("powerShots:", String.format("T: %.2f (%.2f)", Math.toDegrees(robot.drive.getRawExternalHeading()),TOWER_SHOT_ANGLE));
+            //robot.logger.logD("powerShots:", String.format("T: %.2f (%.2f)", Math.toDegrees(robot.drive.getRawExternalHeading()),TOWER_SHOT_ANGLE));
             robot.flicker.setPosition(1.0);
             CheckWait(true, SWPID, flicker_shot_delay, 0);
             robot.flicker.setPosition(0.0);
