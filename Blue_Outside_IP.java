@@ -444,16 +444,23 @@ public class Blue_Outside_IP extends LinearOpMode {
         //robot.drive.turnAsync(Math.toRadians(Math.toRadians(TOWER_SHOT_ANGLE) - robot.drive.getRawExternalHeading()));
         // shoot #3
 
-        // Pose: 25, -34, 0
-        // 0-Ring wobble dropoff
-        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(TOWER_SHOT_ANGLE)))
-                //.lineToLinearHeading(new Pose2d(2,57, Math.toRadians(0.0)))         // Original value
-                .lineToLinearHeading(new Pose2d(-6,59, Math.toRadians(0.0)))   // Tuned value to work with MegaKnytes, may affect 2-wobble delivery
-                .build();
+        // Pose: TBD
+        if(!wobbleEnabled) {
+            // 0-Ring wobble dropoff
+            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY(), Math.toRadians(TOWER_SHOT_ANGLE)))
+                    .lineToLinearHeading(new Pose2d(-6, 59, Math.toRadians(0.0)))   // Tuned value to work with MegaKnytes
+                    .build();
 
-        // Drop wobble
-        if(wobbleEnabled) {
-            // Line up on wobble
+            // Drop wobble
+        } else {
+            // 0-Ring wobble dropoff
+            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY(), Math.toRadians(TOWER_SHOT_ANGLE)))
+                    .lineToLinearHeading(new Pose2d(2,57, Math.toRadians(0.0)))     // Original value
+                    .build();
+
+            // Drop wobble
+
+            // Line up on 2nd wobble
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
                     .lineToLinearHeading(new Pose2d(-38, 57, Math.toRadians(-315.0)))
                     .addDisplacementMarker(1, () -> {
@@ -612,7 +619,7 @@ public class Blue_Outside_IP extends LinearOpMode {
         CheckWait(true, SWPID, 0, 0);
 
         // Wait for arm (minimum of 2 seconds and also time this to delay final motion to the buzzer)
-        CheckWait(true, SWPID, 5000, 0);
+        CheckWait(true, SWPID, (wobbleEnabled?3000:5000), 0);
         if (!opModeIsActive()) { return; }
 
         // Drive partway to park

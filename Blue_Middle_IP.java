@@ -927,6 +927,11 @@ public class Blue_Middle_IP extends LinearOpMode {
         // Turn off intake
         robot.intakeStop();
 
+        // Wait a little while for the wobble to deliver
+        if(!starterStack) {
+            CheckWait(true, SWPID, 7000, 0);
+        }
+
         // Turn around and small pause
         robot.drive.turnAsync(Math.toRadians(-180.0) - robot.drive.getRawExternalHeading());
         CheckWait(true, SWPID, 0, 0);

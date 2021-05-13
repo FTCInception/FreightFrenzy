@@ -1094,7 +1094,7 @@ public class Red_Outside_IP extends LinearOpMode {
             if(!opModeIsActive()){ return; }
 
             // Extra delay on the last one
-            CheckWait(true, SWPID, 125, 0);
+            //CheckWait(true, SWPID, 125, 0);
 
             // Stop intake
             robot.intakeStop();
