@@ -52,19 +52,19 @@ import com.qualcomm.robotcore.util.Range;
  *
  */
 
-@Autonomous(name="Blue_Middle_IP", group="MechBot")
-public class Blue_Middle_IP extends LinearOpMode {
+@Autonomous(name="Red_Inside_IP", group="MechBot")
+public class Red_Inside_IP extends LinearOpMode {
     private final int RING0_IP=0;
     private final int RING1_IP=1;
     private final int RING4_IP=2;
 
-    private double POWER_SHOT_ANGLE1 = -6.5;
+    private double POWER_SHOT_ANGLE1 = 6.5;
     private double POWER_SHOT_ANGLE2 = 0.0;
-    private double POWER_SHOT_ANGLE3 = 6.5;
+    private double POWER_SHOT_ANGLE3 = -6.5;
 
-    private double TOWER_SHOT_ANGLE  = 15.0;
+    private double TOWER_SHOT_ANGLE  = -15.0;
 
-    private double yLane = 12.0;
+    private double yLane = -12.0;
 
     private RRMechBot robot = new RRMechBot();
 
@@ -91,7 +91,7 @@ public class Blue_Middle_IP extends LinearOpMode {
 
     // This is the starting position of the center of the robot.
     private static final double startingX = -63.0;
-    private static final double startingY = 17.0;
+    private static final double startingY = -17.0;
 
     private static boolean powerShots = false;
     private static boolean wobbleEnabled = true;
@@ -120,7 +120,7 @@ public class Blue_Middle_IP extends LinearOpMode {
         do {
             if ( gamepad2.dpad_left ) {
                 if (leftOK) {
-                    Sx += 1.0;
+                    Sx -= 1.0;
                     leftOK = false;
                 }
             } else {
@@ -128,7 +128,7 @@ public class Blue_Middle_IP extends LinearOpMode {
             }
             if ( gamepad2.dpad_right ) {
                 if (rightOK) {
-                    Sx -= 1.0;
+                    Sx += 1.0;
                     rightOK = false;
                 }
             } else {
@@ -136,7 +136,7 @@ public class Blue_Middle_IP extends LinearOpMode {
             }
             if ( gamepad2.dpad_down ) {
                 if (downOK) {
-                    Sy += 1.0;
+                    Sy -= 1.0;
                     downOK = false;
                 }
             } else {
@@ -144,7 +144,7 @@ public class Blue_Middle_IP extends LinearOpMode {
             }
             if ( gamepad2.dpad_up ) {
                 if (upOK) {
-                    Sy -= 1.0;
+                    Sy += 1.0;
                     upOK = false;
                 }
             } else {
@@ -185,7 +185,7 @@ public class Blue_Middle_IP extends LinearOpMode {
                 break;
             }
 
-            telemetry.addData("Sx,Sy:", "(%.0f, %.0f); New:(%.0f, %.0f); Delta:(%.0f%s, %.0f%s)", startingX, startingY, startingX+Sx, startingY+Sy, Math.abs(Sx),(Sx>0)?" left":(Sx<0)?" right":"", Math.abs(Sy), (Sy>0)?" down":(Sy<0)?" up":"");
+            telemetry.addData("Sx,Sy:", "(%.0f, %.0f); New:(%.0f, %.0f); Delta:(%.0f%s, %.0f%s)", startingX, startingY, startingX+Sx, startingY+Sy, Math.abs(Sx), (Sx<0)?" left":(Sx>0)?" right":"", Math.abs(Sy),(Sy<0)?" down":(Sy>0)?" up":"");
             telemetry.addData("Use dpad to adjust robot start position","");
             telemetry.addData("'X' for wobble/starter stack:","(%s)", wobbleEnabled?(starterStack?"wobble + stack":"wobble only"):(starterStack?"illegal":"neither"));
             telemetry.addData("'B' to toggle 2x power shots vs 3x tower shots:","(%s)", powerShots?"power":"tower");
@@ -197,6 +197,7 @@ public class Blue_Middle_IP extends LinearOpMode {
                 telemetry.addData("'A' to proceed (no vision)", "(%.1f)", Math.toDegrees(robot.drive.getRawExternalHeading()));
             }
             telemetry.update();
+
         } while (!isStarted() && (!isStopRequested())) ;
 
         // Robot center is 9" from each edge:
@@ -221,7 +222,7 @@ public class Blue_Middle_IP extends LinearOpMode {
             telemetry.addData("Starting vision", "");
             telemetry.update();
             // Stare at the rings really hard until its time to go or stop
-            vision.initAutonomous(this, "LeftWebcam");
+            vision.initAutonomous(this, "RightWebcam");
             vision.clip = false;
             int deltaX = 0, deltaY = 0;
             boolean leftBOK = true, rightBOK = true;
@@ -372,16 +373,16 @@ public class Blue_Middle_IP extends LinearOpMode {
     private void BuildNoWobble_IP(Trajectory[] traj) {
 
         int TIdx = 0;
-        // Starting X,Y = -63,17
+        // Starting X,Y = -63,-17
 
         // Extract from wobble
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .lineToLinearHeading(new Pose2d(robot.drive.getPoseEstimate().getX(),robot.drive.getPoseEstimate().getY()-6, Math.toRadians(0.0)))
+                .lineToLinearHeading(new Pose2d(robot.drive.getPoseEstimate().getX(),robot.drive.getPoseEstimate().getY()+6, Math.toRadians(0.0)))
                 .build();
 
         // Drive to first shot
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(-12, yLane+3))
+                .lineToConstantHeading(new Vector2d(-12, yLane))
                 .build();
 
         // Turn to shoot 3 power shots, finish pointing in towards the tower
@@ -399,11 +400,11 @@ public class Blue_Middle_IP extends LinearOpMode {
     private void BuildR0_IP(Trajectory[] traj, boolean sideDelivery) {
 
         int TIdx = 0;
-        // Starting X,Y = -63,17
+        // Starting X,Y = -63,-17
 
         // Drive to first shot
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .lineToConstantHeading(new Vector2d(-12, yLane+3))
+                .lineToConstantHeading(new Vector2d(-12, yLane))
                 .build();
 
         // Turn to shoot 3 power shots, finish pointing in towards the tower
@@ -414,40 +415,40 @@ public class Blue_Middle_IP extends LinearOpMode {
             // Turn to back
             // Drive to wobble drop -- side delivery
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY(), Math.toRadians(180.0)), true)
-                    .splineToSplineHeading(new Pose2d(24, 36, Math.toRadians(-90.0)), Math.toRadians(90.0))
+                    .splineToSplineHeading(new Pose2d(10, -36, Math.toRadians(90.0)), Math.toRadians(-90.0))
                     .build();
 
             // Lower arm, drop wobble, return arm
 
             // Go park
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(12, yLane, Math.toRadians(-180.0)))
+                    .lineToLinearHeading(new Pose2d(12, yLane, Math.toRadians(180.0)))
                     .build();
         } else {
             // Turn on intake
             // Turn to front
             // Drive to Wobble drop
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY(), Math.toRadians(0.0)))
-                    .splineToSplineHeading(new Pose2d(58, 36, Math.toRadians(90.0)), Math.toRadians(90.0))
-                    .splineToSplineHeading(new Pose2d(58, 44, Math.toRadians(90.0)), Math.toRadians(90.0))
-                    .splineToSplineHeading(new Pose2d(34, 58, Math.toRadians(-10.0)), Math.toRadians(-180.0))
+                    .splineToSplineHeading(new Pose2d(58, -36, Math.toRadians(-90.0)), Math.toRadians(-90.0))
+                    .splineToSplineHeading(new Pose2d(58, -44, Math.toRadians(-90.0)), Math.toRadians(-90.0))
+                    .splineToSplineHeading(new Pose2d(34, -58, Math.toRadians(0.0)), Math.toRadians(180.0))
                     .build();
 
             // Lower arm, drop wobble, return arm
 
             // Go park
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .splineToSplineHeading(new Pose2d(40, 58, Math.toRadians(0.0)), Math.toRadians(0.0))
-                    .splineToSplineHeading(new Pose2d(58, 36, Math.toRadians(-90.0)), Math.toRadians(-90.0))
-                    .splineToSplineHeading(new Pose2d(40, yLane-2, Math.toRadians(-180.0)), Math.toRadians(-180.0))
-                    .splineToSplineHeading(new Pose2d(-12, yLane-2, Math.toRadians(TOWER_SHOT_ANGLE+1)), Math.toRadians(-180.0))
+                    .splineToSplineHeading(new Pose2d(40, -58, Math.toRadians(0.0)), Math.toRadians(0.0))
+                    .splineToSplineHeading(new Pose2d(58, -36, Math.toRadians(90.0)), Math.toRadians(90.0))
+                    .splineToSplineHeading(new Pose2d(40, -12, Math.toRadians(180.0)), Math.toRadians(180.0))
+                    .splineToSplineHeading(new Pose2d(-12, -12, Math.toRadians(TOWER_SHOT_ANGLE)), Math.toRadians(180.0))
                     .addDisplacementMarker(40, () -> {
                         robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
                     })
                     .build();
 
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(12, yLane-2, Math.toRadians(0.0)))
+                    .lineToLinearHeading(new Pose2d(12, yLane, Math.toRadians(0.0)))
                     .build();
         }
 
@@ -457,7 +458,7 @@ public class Blue_Middle_IP extends LinearOpMode {
     private void BuildR1_IP(Trajectory[] traj, boolean sideDelivery) {
 
         int TIdx = 0;
-        // Starting X,Y = -63,17
+        // Starting X,Y = -63,-17
 
         // Raise Wobble
 
@@ -465,7 +466,7 @@ public class Blue_Middle_IP extends LinearOpMode {
             // Turn on shooter
             // Drive to first shot
             traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                    .lineToLinearHeading(new Pose2d(-36, 34, Math.toRadians(2.5)))
+                    .lineToLinearHeading(new Pose2d(-36, -40, Math.toRadians(2.5)))
                     .build();
 
             // Shoot two shots
@@ -473,19 +474,19 @@ public class Blue_Middle_IP extends LinearOpMode {
 
             // Pickup 1 rings
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-24, 32))
+                    .lineToConstantHeading(new Vector2d(-24, -40))
                     .build();
 
             // Set shooter speed
             // Drive to lane
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-12, yLane+3))
+                    .lineToConstantHeading(new Vector2d(-12, yLane))
                     .build();
         } else {
             // Set shooter speed
             // Drive to lane
             traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                    .lineToConstantHeading(new Vector2d(-12, yLane+3))
+                    .lineToConstantHeading(new Vector2d(-12, yLane))
                     .build();
         }
 
@@ -495,21 +496,21 @@ public class Blue_Middle_IP extends LinearOpMode {
             // Turn off intake
             // Turn to back
             // Drive to wobble drop
-            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(-180.0)),true)
-                    .lineToLinearHeading(new Pose2d(37,12, Math.toRadians(-90.0)))
+            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(180.0)),true)
+                    .lineToLinearHeading(new Pose2d(34,-12, Math.toRadians(90.0)))
                     .build();
 
             // Lower arm, drop wobble, return arm
 
             // Go park
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(12, yLane, Math.toRadians(-180.0)))
+                    .lineToLinearHeading(new Pose2d(12, yLane, Math.toRadians(180.0)))
                     .build();
         } else {
             // Turn to front
             // Drive to wobble drop
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(0.0)))
-                    .splineToSplineHeading(new Pose2d(58,40, Math.toRadians(0.0)),Math.toRadians(90.0))
+                    .splineToSplineHeading(new Pose2d(58,-27, Math.toRadians(0.0)),Math.toRadians(-90.0))
                     .build();
 
             // Lower arm, drop wobble, return arm
@@ -517,9 +518,9 @@ public class Blue_Middle_IP extends LinearOpMode {
             // Turn to side
 
             // Go to shot
-            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(-90.0)))
-                    .splineToSplineHeading(new Pose2d(44,yLane-2,Math.toRadians(180.0)),Math.toRadians(180.0))
-                    .splineToSplineHeading(new Pose2d(-12,yLane-2,Math.toRadians(TOWER_SHOT_ANGLE+1)),Math.toRadians(180.0))
+            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(90.0)))
+                    .splineToSplineHeading(new Pose2d(44,-12,Math.toRadians(-180.0)),Math.toRadians(-180.0))
+                    .splineToSplineHeading(new Pose2d(-12,-12,Math.toRadians(TOWER_SHOT_ANGLE)),Math.toRadians(-180.0))
                     .addDisplacementMarker(40, () -> {
                         robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
                     })
@@ -529,7 +530,7 @@ public class Blue_Middle_IP extends LinearOpMode {
 
             // Go park
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(12,yLane-2,Math.toRadians(0.0)))
+                    .lineToLinearHeading(new Pose2d(12,yLane,Math.toRadians(0.0)))
                     .build();
         }
 
@@ -539,7 +540,7 @@ public class Blue_Middle_IP extends LinearOpMode {
     private void BuildR4_IP(Trajectory[] traj) {
 
         int TIdx = 0;
-        // Starting X,Y = -63,17
+        // Starting X,Y = -63,-17
 
         // Raise Wobble
 
@@ -547,7 +548,7 @@ public class Blue_Middle_IP extends LinearOpMode {
             // Turn on shooter
             // Drive to first shot
             traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                    .lineToLinearHeading(new Pose2d(-36, 34, Math.toRadians(2.5)))
+                    .lineToLinearHeading(new Pose2d(-36, -40, Math.toRadians(2.5)))
                     .build();
 
             // Shoot three shots
@@ -555,7 +556,7 @@ public class Blue_Middle_IP extends LinearOpMode {
 
             // Pickup 2 rings
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-24, 32))
+                    .lineToConstantHeading(new Vector2d(-24, -40))
                     .build();
 
             // Shoot
@@ -565,19 +566,19 @@ public class Blue_Middle_IP extends LinearOpMode {
 
             // Drive over ring(s)
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-7, 32))
+                    .lineToConstantHeading(new Vector2d(-7, -40))
                     .build();
 
             // Set shooter speed
             // Drive to lane
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-12, yLane+3))
+                    .lineToConstantHeading(new Vector2d(-12, yLane))
                     .build();
         } else {
             // Set shooter speed
             // Drive to lane
             traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                    .lineToConstantHeading(new Vector2d(-12, yLane+3))
+                    .lineToConstantHeading(new Vector2d(-12, yLane))
                     .build();
         }
 
@@ -585,14 +586,14 @@ public class Blue_Middle_IP extends LinearOpMode {
         // Turn off intake
 
         // Drive to Wobble drop -- side delivery
-        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(-180.0)),true)
-                .splineToSplineHeading(new Pose2d(58,37, Math.toRadians(-100.0)),Math.toRadians(90.0))
+        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(180.0)),true)
+                .splineToSplineHeading(new Pose2d(58,-36, Math.toRadians(90.0)),Math.toRadians(-90.0))
                 .build();
 
         // Lower arm, drop wobble, return arm
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .splineToSplineHeading(new Pose2d(12, yLane, Math.toRadians(-180.0)), Math.toRadians(-180.0))
+                .splineToSplineHeading(new Pose2d(12, yLane, Math.toRadians(180.0)), Math.toRadians(180.0))
                 .build();
 
         showTrajPoses( "RING4_IP", TIdx, traj ) ;
@@ -660,7 +661,7 @@ public class Blue_Middle_IP extends LinearOpMode {
         }
 
         // Turn around and small pause
-        robot.drive.turnAsync(Math.toRadians(sideDelivery?-180.0:0.0) - robot.drive.getRawExternalHeading());
+        robot.drive.turnAsync(Math.toRadians(sideDelivery?180.0:0.0) - robot.drive.getRawExternalHeading());
         CheckWait(true, SWPID, 0, 0);
         CheckWait(true, SWPID, 250, 0);
         if(!opModeIsActive()){ return; }
@@ -775,7 +776,7 @@ public class Blue_Middle_IP extends LinearOpMode {
         }
 
         // Turn and small pause
-        robot.drive.turnAsync(Math.toRadians(sideDelivery?-180.0:0.0) - robot.drive.getRawExternalHeading());
+        robot.drive.turnAsync(Math.toRadians(sideDelivery?180.0:0.0) - robot.drive.getRawExternalHeading());
         CheckWait(true, SWPID, 0, 0);
         CheckWait(true, SWPID, 250, 0);
         if(!opModeIsActive()){ return; }
@@ -811,7 +812,7 @@ public class Blue_Middle_IP extends LinearOpMode {
             if(!opModeIsActive()){ return; }
         } else {
             // Turn to side
-            robot.drive.turnAsync(Math.toRadians(-90.0) - robot.drive.getRawExternalHeading());
+            robot.drive.turnAsync(Math.toRadians(90.0) - robot.drive.getRawExternalHeading());
             CheckWait(true, SWPID, 0, 0);
 
             // Go to shot location
@@ -927,13 +928,8 @@ public class Blue_Middle_IP extends LinearOpMode {
         // Turn off intake
         robot.intakeStop();
 
-        // Wait a little while for the wobble to deliver
-        if(!starterStack) {
-            CheckWait(true, SWPID, 7000, 0);
-        }
-
         // Turn around and small pause
-        robot.drive.turnAsync(Math.toRadians(-180.0) - robot.drive.getRawExternalHeading());
+        robot.drive.turnAsync(Math.toRadians(180.0) - robot.drive.getRawExternalHeading());
         CheckWait(true, SWPID, 0, 0);
         CheckWait(true, SWPID, 250, 0);
         if(!opModeIsActive()){ return; }
