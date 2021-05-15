@@ -136,6 +136,7 @@ public class Blue_Outside_IP extends LinearOpMode {
     private static boolean powerShots = false;
     private static boolean middleLanePark = true;
     private static boolean starterStack = true;
+    private static boolean MKDrop = false;
 
     private IncepVision vision = new IncepVision();
     private int ringCount = -1;
@@ -463,13 +464,9 @@ public class Blue_Outside_IP extends LinearOpMode {
             // Line up on 2nd wobble
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
                     .lineToLinearHeading(new Pose2d(-38, 57, Math.toRadians(-315.0)))
-                    .addDisplacementMarker(1, () -> {
+                    .addDisplacementMarker(0.05, 0, () -> {
                         if (wobbleEnabled) {
                             robot.setWobblePosition(robot.WOBBLE_PICKUP, 0.4);
-                        }
-                    })
-                    .addDisplacementMarker(20, () -> {
-                        if (wobbleEnabled) {
                             robot.claw.setPosition(0.5);
                         }
                     })
@@ -487,7 +484,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             // Drive away before lifting
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
                     .lineToConstantHeading(new Vector2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY() + 4.0))
-                    .addDisplacementMarker(20, () -> {
+                    .addDisplacementMarker(0.50, 0, () -> {
                         robot.setWobblePosition(robot.WOBBLE_UP, 0.8);
                     })
                     .build();
@@ -510,7 +507,7 @@ public class Blue_Outside_IP extends LinearOpMode {
         // Drive away and wait
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
                 .lineToLinearHeading(new Pose2d(-48, 60, Math.toRadians(wobbleEnabled?(-180.0):(0.0))))
-                .addDisplacementMarker(10, () -> {
+                .addDisplacementMarker(0.25, 0, () -> {
                     // Return arm
                     robot.setWobblePosition(robot.WOBBLE_START, 0.4);
                     robot.claw.setPosition(1.0);
@@ -544,7 +541,22 @@ public class Blue_Outside_IP extends LinearOpMode {
 
         // We have extra time if not picking up wobble, lets wait here a while
         if(!wobbleEnabled) {
-            CheckWait(true, SWPID, 8000, 0);
+            robot.claw.setPosition(0.95);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.9);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.95);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.90);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.95);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.9);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.95);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(1.0);
+            CheckWait(true, SWPID, 1000, 0);
         }
 
         // Go to shooting location
@@ -656,7 +668,6 @@ public class Blue_Outside_IP extends LinearOpMode {
 
         // Drive to wobble drop
 
-        // Pose: 25, -34, 0
         // 1-Ring
         traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(TOWER_SHOT_ANGLE)))
                 .splineToLinearHeading(new Pose2d(36,54, Math.toRadians(-90.0)),Math.toRadians(-40.0))
@@ -675,12 +686,12 @@ public class Blue_Outside_IP extends LinearOpMode {
             // Line up for wobble or starterStack
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
                     .lineToLinearHeading(new Pose2d(-38, 57, Math.toRadians(-315.0)))
-                    .addDisplacementMarker(40, () -> {
+                    .addDisplacementMarker(0.50, 0, () -> {
                         if (wobbleEnabled) {
                             robot.setWobblePosition(robot.WOBBLE_PICKUP, 0.4);
                         }
                     })
-                    .addDisplacementMarker(60, () -> {
+                    .addDisplacementMarker(0.60, 0, () -> {
                         if (wobbleEnabled) {
                             robot.claw.setPosition(0.5);
                         }
@@ -699,7 +710,7 @@ public class Blue_Outside_IP extends LinearOpMode {
                 // Drive away before lifting
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
                         .lineToConstantHeading(new Vector2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY() + 4.0))
-                        .addDisplacementMarker(20, () -> {
+                        .addDisplacementMarker(0.50, 0, () -> {
                             robot.setWobblePosition(robot.WOBBLE_UP, 0.8);
                         })
                         .build();
@@ -724,8 +735,8 @@ public class Blue_Outside_IP extends LinearOpMode {
             // Shoot
 
             if (wobbleEnabled) {
-                // Turn to 180 degress
-                //robot.drive.turnAsync(Math.PI - robot.drive.getRawExternalHeading());
+                // Turn to 170 degress
+                //robot.drive.turnAsync(Math.toRadians(170.0) - robot.drive.getRawExternalHeading());
 
                 // Lower wobble
 
@@ -758,7 +769,22 @@ public class Blue_Outside_IP extends LinearOpMode {
 
         // If we are not doing wobble or starter stack, just wait a little while here.
         if(!wobbleEnabled && !starterStack) {
-            CheckWait(true, SWPID, 8000, 0);
+            robot.claw.setPosition(0.95);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.9);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.95);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.90);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.95);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.9);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.95);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(1.0);
+            CheckWait(true, SWPID, 1000, 0);
         }
 
         // Go to shooting location
@@ -891,51 +917,54 @@ public class Blue_Outside_IP extends LinearOpMode {
         int TIdx = 0;
         // Starting X,Y = -63,57
 
-        // Pose: -8, 57, 19
-        // Drive to first shot
-        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .splineToLinearHeading(new Pose2d(-8,57, Math.toRadians(powerShots?(POWER_SHOT_ANGLE1):(TOWER_SHOT_ANGLE))), Math.toRadians(0.0))
-                .build();
-        // shoot #1
-
-        // Pose: TBD
-        // Turn based on heading
-        //robot.drive.turnAsync(Math.toRadians(Math.toRadians(POWER_SHOT_ANGLE2) - robot.drive.getRawExternalHeading()));
-        // shoot #2
-
-        // Pose: TBD
-        // Turn based on heading
-        //robot.drive.turnAsync(Math.toRadians(Math.toRadians(TOWER_SHOT_ANGLE) - robot.drive.getRawExternalHeading()));
-        // shoot #3
-
         // Drive to wobble drop
-
-        // Pose: 25, 34, 0
-        // 4-Ring
-        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(TOWER_SHOT_ANGLE)))
-                .splineToLinearHeading(new Pose2d(48, 57, Math.toRadians(0.0)), Math.toRadians(0.0))
-                .build();
+        if(!MKDrop || wobbleEnabled) {
+            // This is the new location
+            // We may override to the old location below if we're playing with MK but ONLY if we're not doing both wobbles.
+            // We are in a hurry if we are getting both wobbles and we want to put the wobble in the corner
+            traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
+                    .splineToSplineHeading(new Pose2d(0, 57, Math.toRadians(0.0)), Math.toRadians(0.0))
+                    .splineToSplineHeading(new Pose2d(52, 55, Math.toRadians(45.0)), Math.toRadians(0.0))
+                    .addDisplacementMarker(0.95, 0, () -> {
+                        robot.intakeEjectWobble(intake_eject_wobble);
+                    })
+                    .build();
+        } else {
+            // This is the original location practiced with MK
+            // We hope they can work with the new back corner drop, but set MKDrop to true and then signle-wobble selection
+            // to get the old location back.
+            traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
+                    .splineToLinearHeading(new Pose2d(48, 57, Math.toRadians(0.0)), Math.toRadians(0.0))
+                    .build();
+        }
 
         // Drop wobble
 
+        // Drive to shot
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
+                .lineToLinearHeading(new Pose2d(-8,57, Math.toRadians(powerShots?(POWER_SHOT_ANGLE1):(TOWER_SHOT_ANGLE))))
+                .addDisplacementMarker(0.15, 0, () -> {
+                    robot.intakeStop();
+                })
+                .build();
+
+        // Shoot
+
         if ( !wobbleEnabled && !starterStack ) {
 
-            // Park if nothing else to do
-            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
+            // Go Park if needed
+            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(TOWER_SHOT_ANGLE)))
                     .lineToLinearHeading(new Pose2d(6, 60, Math.toRadians(0.0)))
                     .build();
+
         } else {
 
             // Line up for wobble or starterStack
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
                     .lineToLinearHeading(new Pose2d(-38, 57, Math.toRadians(-315.0)))
-                    .addDisplacementMarker(40, () -> {
+                    .addDisplacementMarker(0.05, 0, () -> {
                         if (wobbleEnabled) {
                             robot.setWobblePosition(robot.WOBBLE_PICKUP, 0.4);
-                        }
-                    })
-                    .addDisplacementMarker(60, () -> {
-                        if (wobbleEnabled) {
                             robot.claw.setPosition(0.5);
                         }
                     })
@@ -945,7 +974,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             // Backup to Wobble
             if (wobbleEnabled) {
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                        .lineToConstantHeading(new Vector2d(Wx + WxOffset, Wy + WyOffset))
+                        .lineToConstantHeading(new Vector2d(Wx + WxOffset - 2.0, Wy + WyOffset - 2.0))
                         .build();
 
                 // Grab wobble
@@ -953,7 +982,7 @@ public class Blue_Outside_IP extends LinearOpMode {
                 // Drive away before lifting
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
                         .lineToConstantHeading(new Vector2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY() + 4.0))
-                        .addDisplacementMarker(20, () -> {
+                        .addDisplacementMarker(0.50, 0, () -> {
                             robot.setWobblePosition(robot.WOBBLE_UP, 0.8);
                         })
                         .build();
@@ -989,14 +1018,13 @@ public class Blue_Outside_IP extends LinearOpMode {
             // Shoot
 
             if (wobbleEnabled) {
-                // Turn to 155 degress
-                //robot.drive.turnAsync(Mat.toRadians(-180.0) - robot.drive.getRawExternalHeading());
 
-                // Lower wobble
-
-                // Back up
-                traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY(), Math.toRadians(-180.0)), true)
-                        .lineToConstantHeading(new Vector2d(36, 60))
+                // Drive to wobble and lower
+                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                        .lineToLinearHeading(new Pose2d(39, 56, Math.toRadians(160.0)))
+                        .addDisplacementMarker(0.50, 0, () -> {
+                            robot.setWobblePosition(robot.WOBBLE_DROP, 0.5);
+                        })
                         .build();
 
                 // Drop wobble
@@ -1004,7 +1032,7 @@ public class Blue_Outside_IP extends LinearOpMode {
                 // Drive away and park
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
                         .lineToLinearHeading(new Pose2d(8, 57, Math.toRadians(-180.0)))
-                        .addDisplacementMarker(10, () -> {
+                        .addDisplacementMarker(.20, 0, () -> {
                             robot.setWobblePosition(robot.WOBBLE_START, 0.6);
                             robot.claw.setPosition(1.0);
                         })
@@ -1025,7 +1053,19 @@ public class Blue_Outside_IP extends LinearOpMode {
     private void Ring4_IP(Trajectory[] traj, boolean wobbleEnabled, boolean powerShots, boolean starterStack) {
         int TIdx = 0;
 
-        // Go to shooting location
+        // Go to wobble drop
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, SWPID, 0, 0);
+
+        if(MKDrop && !wobbleEnabled) {
+            // Drop wobble manually and wait a little if we are playing with the old MK position and
+            // are only doing a single wobble.
+            robot.intakeEjectWobble(intake_eject_wobble);
+            CheckWait(true, SWPID, 750, 0);
+            if(!opModeIsActive()){ return; }
+        }
+
+        // Drive to shot location
         if(powerShots) {
             robot.setShooter(power_shot_RPM, power_shot_power, SWPID);
         } else {
@@ -1036,18 +1076,6 @@ public class Blue_Outside_IP extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         power_tower_shots(powerShots);
-        if(!opModeIsActive()){ return; }
-
-        // Go to wobble drop
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, SWPID, 0, 0);
-
-        // Drop wobble
-        robot.intakeEjectWobble(intake_eject_wobble);
-        CheckWait(true, SWPID, 750, 0);
-        if(!opModeIsActive()){ return; }
-
-        robot.intakeStop();
         if(!opModeIsActive()){ return; }
 
         // Park or line up on wobble
@@ -1069,7 +1097,8 @@ public class Blue_Outside_IP extends LinearOpMode {
                 robot.drive.followTrajectoryAsync(traj[TIdx++]);
                 CheckWait(true, SWPID, 0, 0);
 
-                CheckWait(true, SWPID, 500, 0);
+                // Seems extra
+                //CheckWait(true, SWPID, 500, 0);
             }
 
             // Turn on intake
@@ -1165,15 +1194,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             if(!opModeIsActive()){ return; }
 
             if (wobbleEnabled) {
-                // Turn to 180 degrees COUNTER CLOCKWISE to stay in lane
-                robot.drive.turnAsync(Math.toRadians(-180.0) - robot.drive.getRawExternalHeading());
-                CheckWait(true, SWPID, 500, 750);
-                robot.setWobblePosition(robot.WOBBLE_DROP, 0.3);
-                CheckWait(true, SWPID, 250, 0);
-
-                if(!opModeIsActive()){ return; }
-
-                // Back wobble in
+                // Drive/Turn wobble in and lower arm
                 robot.drive.followTrajectoryAsync(traj[TIdx++]);
                 CheckWait(true, SWPID, 0, 0);
 
@@ -1185,9 +1206,11 @@ public class Blue_Outside_IP extends LinearOpMode {
                 // Move away from wobble
                 robot.drive.followTrajectoryAsync(traj[TIdx++]);
                 CheckWait(true, SWPID, 0, 0);
+
                 // Return arm
                 CheckWait(true, SWPID, 1000, 0);
                 if(!opModeIsActive()){ return; }
+
             } else {
                 // Go Park on wall
                 robot.drive.followTrajectoryAsync(traj[TIdx++]);
