@@ -102,11 +102,11 @@ public class RRMech_Teleop extends LinearOpMode {
     private RRMechBot robot = new RRMechBot();
 
     // Mech drive related variables
-    double[] speedModifier = new double[] {0.90, 0.90};
+    double[] speedModifier = new double[] {0.99, 0.99};
     double[] forward = new double[2], strafe = new double[2], rotate = new double[2];
     double[] prevForward = new double[2], prevStrafe = new double[2], prevRotate = new double[2];
     double[] prevTime = new double[2];
-    double maxForwardChange=2.0, maxRotateChange=3.0, maxStrafeChange=2.0;
+    double maxForwardChange=4.0, maxRotateChange=5.0, maxStrafeChange=3.0;
     boolean smoothDrive = true;
 
     double l_f_motor_power;
