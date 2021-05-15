@@ -189,7 +189,11 @@ public class RRMech_Teleop extends LinearOpMode {
         // Blue Stealth Wheel RPM
         //final double SHOOTER_NORMAL_RPM=3525, SHOOTER_POWER_SHOT_RPM=3250;
         // 3/26/21
-        final double SHOOTER_NORMAL_RPM=3675, SHOOTER_POWER_SHOT_RPM=3250;
+        //final double SHOOTER_NORMAL_RPM=3675, SHOOTER_POWER_SHOT_RPM=3250;
+        // 4/15/21 -- This is to stay within the 16 foot limit.
+        // Autonomous is lower so it's just teleop we need a limiter.
+        // Hard rings definitely shoot shorter.
+        final double SHOOTER_NORMAL_RPM=3625, SHOOTER_POWER_SHOT_RPM=3250;
         //final double SHOOTER_NORMAL_RPM=3500, SHOOTER_POWER_SHOT_RPM=3250;
 
         // Blue BaneBot RPM
