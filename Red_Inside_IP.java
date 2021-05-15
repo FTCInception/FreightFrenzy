@@ -442,7 +442,7 @@ public class Red_Inside_IP extends LinearOpMode {
                     .splineToSplineHeading(new Pose2d(58, -36, Math.toRadians(90.0)), Math.toRadians(90.0))
                     .splineToSplineHeading(new Pose2d(40, -12, Math.toRadians(180.0)), Math.toRadians(180.0))
                     .splineToSplineHeading(new Pose2d(-12, -12, Math.toRadians(TOWER_SHOT_ANGLE)), Math.toRadians(180.0))
-                    .addDisplacementMarker(40, () -> {
+                    .addDisplacementMarker(.75, 0, () -> {
                         robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
                     })
                     .build();
@@ -521,7 +521,7 @@ public class Red_Inside_IP extends LinearOpMode {
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(90.0)))
                     .splineToSplineHeading(new Pose2d(44,-12,Math.toRadians(-180.0)),Math.toRadians(-180.0))
                     .splineToSplineHeading(new Pose2d(-12,-12,Math.toRadians(TOWER_SHOT_ANGLE)),Math.toRadians(-180.0))
-                    .addDisplacementMarker(40, () -> {
+                    .addDisplacementMarker(.50,0, () -> {
                         robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
                     })
                     .build();
@@ -927,6 +927,11 @@ public class Red_Inside_IP extends LinearOpMode {
 
         // Turn off intake
         robot.intakeStop();
+
+        // Wait a little while for the wobble to deliver
+        if(!starterStack) {
+            CheckWait(true, SWPID, 7000, 0);
+        }
 
         // Turn around and small pause
         robot.drive.turnAsync(Math.toRadians(180.0) - robot.drive.getRawExternalHeading());

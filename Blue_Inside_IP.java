@@ -441,7 +441,7 @@ public class Blue_Inside_IP extends LinearOpMode {
                     .splineToSplineHeading(new Pose2d(58, 36, Math.toRadians(-90.0)), Math.toRadians(-90.0))
                     .splineToSplineHeading(new Pose2d(40, yLane-2, Math.toRadians(-180.0)), Math.toRadians(-180.0))
                     .splineToSplineHeading(new Pose2d(-12, yLane-2, Math.toRadians(TOWER_SHOT_ANGLE+1)), Math.toRadians(-180.0))
-                    .addDisplacementMarker(40, () -> {
+                    .addDisplacementMarker(0.75, 0, () -> {
                         robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
                     })
                     .build();
@@ -520,7 +520,7 @@ public class Blue_Inside_IP extends LinearOpMode {
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(-90.0)))
                     .splineToSplineHeading(new Pose2d(44,yLane-2,Math.toRadians(180.0)),Math.toRadians(180.0))
                     .splineToSplineHeading(new Pose2d(-12,yLane-2,Math.toRadians(TOWER_SHOT_ANGLE+1)),Math.toRadians(180.0))
-                    .addDisplacementMarker(40, () -> {
+                    .addDisplacementMarker(0.50, 0, () -> {
                         robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
                     })
                     .build();
