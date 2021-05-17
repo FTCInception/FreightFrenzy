@@ -100,6 +100,8 @@ public class SampleMecanumDrive extends MecanumDrive {
 
     private Pose2d lastPoseOnTurn;
 
+    private static final boolean enableDashboard = false;
+
     public SampleMecanumDrive(HardwareMap hardwareMap) {
         this(hardwareMap, 0.5);
     }
@@ -107,8 +109,10 @@ public class SampleMecanumDrive extends MecanumDrive {
     public SampleMecanumDrive(HardwareMap hardwareMap, double timeout) {
         super(kV, kA, kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
 
-        dashboard = FtcDashboard.getInstance();
-        dashboard.setTelemetryTransmissionInterval(25);
+        if(enableDashboard) {
+            dashboard = FtcDashboard.getInstance();
+            dashboard.setTelemetryTransmissionInterval(25);
+        }
 
         clock = NanoClock.system();
 
@@ -258,18 +262,23 @@ public class SampleMecanumDrive extends MecanumDrive {
             poseHistory.removeFirst();
         }
 
-        TelemetryPacket packet = new TelemetryPacket();
-        Canvas fieldOverlay = packet.fieldOverlay();
+        TelemetryPacket packet;
+        Canvas fieldOverlay;
 
-        packet.put("mode", mode);
+        if(enableDashboard) {
+            packet = new TelemetryPacket();
+            fieldOverlay = packet.fieldOverlay();
 
-        packet.put("x", currentPose.getX());
-        packet.put("y", currentPose.getY());
-        packet.put("heading (deg)", Math.toDegrees(currentPose.getHeading()));
+            packet.put("mode", mode);
 
-        packet.put("xError", lastError.getX());
-        packet.put("yError", lastError.getY());
-        packet.put("headingError (deg)", Math.toDegrees(lastError.getHeading()));
+            packet.put("x", currentPose.getX());
+            packet.put("y", currentPose.getY());
+            packet.put("heading (deg)", Math.toDegrees(currentPose.getHeading()));
+
+            packet.put("xError", lastError.getX());
+            packet.put("yError", lastError.getY());
+            packet.put("headingError (deg)", Math.toDegrees(lastError.getHeading()));
+        }
 
         switch (mode) {
             case IDLE:
@@ -292,10 +301,12 @@ public class SampleMecanumDrive extends MecanumDrive {
                         0, 0, targetAlpha
                 )));
 
-                Pose2d newPose = lastPoseOnTurn.copy(lastPoseOnTurn.getX(), lastPoseOnTurn.getY(), targetState.getX());
+                if(enableDashboard) {
+                    Pose2d newPose = lastPoseOnTurn.copy(lastPoseOnTurn.getX(), lastPoseOnTurn.getY(), targetState.getX());
 
-                fieldOverlay.setStroke("#4CAF50");
-                DashboardUtil.drawRobot(fieldOverlay, newPose);
+                    fieldOverlay.setStroke("#4CAF50");
+                    DashboardUtil.drawRobot(fieldOverlay, newPose);
+                }
 
                 if (t >= turnProfile.duration()) {
                     mode = Mode.IDLE;
@@ -307,16 +318,18 @@ public class SampleMecanumDrive extends MecanumDrive {
             case FOLLOW_TRAJECTORY: {
                 setDriveSignal(follower.update(currentPose, getPoseVelocity()));
 
-                Trajectory trajectory = follower.getTrajectory();
+                if(enableDashboard) {
+                    Trajectory trajectory = follower.getTrajectory();
 
-                fieldOverlay.setStrokeWidth(1);
-                fieldOverlay.setStroke("#4CAF50");
-                DashboardUtil.drawSampledPath(fieldOverlay, trajectory.getPath());
-                double t = follower.elapsedTime();
-                DashboardUtil.drawRobot(fieldOverlay, trajectory.get(t));
+                    fieldOverlay.setStrokeWidth(1);
+                    fieldOverlay.setStroke("#4CAF50");
+                    DashboardUtil.drawSampledPath(fieldOverlay, trajectory.getPath());
+                    double t = follower.elapsedTime();
+                    DashboardUtil.drawRobot(fieldOverlay, trajectory.get(t));
 
-                fieldOverlay.setStroke("#3F51B5");
-                DashboardUtil.drawPoseHistory(fieldOverlay, poseHistory);
+                    fieldOverlay.setStroke("#3F51B5");
+                    DashboardUtil.drawPoseHistory(fieldOverlay, poseHistory);
+                }
 
                 if (!follower.isFollowing()) {
                     mode = Mode.IDLE;
@@ -327,10 +340,12 @@ public class SampleMecanumDrive extends MecanumDrive {
             }
         }
 
-        fieldOverlay.setStroke("#3F51B5");
-        DashboardUtil.drawRobot(fieldOverlay, currentPose);
+        if(enableDashboard) {
+            fieldOverlay.setStroke("#3F51B5");
+            DashboardUtil.drawRobot(fieldOverlay, currentPose);
 
-        dashboard.sendTelemetryPacket(packet);
+            dashboard.sendTelemetryPacket(packet);
+        }
     }
 
     public void waitForIdle() {
