@@ -211,6 +211,7 @@ public class RRMech_Teleop extends LinearOpMode {
                 {CLAW_CLOSED,   0, 0.8, (235-startingAngle)*WOBBLE_TICKS_PER_DEGREE},
                 {CLAW_CLOSED,   0, 0.65,( 45-startingAngle)*WOBBLE_TICKS_PER_DEGREE},
                 {CLAW_CLOSED,   0, 0.65,(180-startingAngle)*WOBBLE_TICKS_PER_DEGREE},
+                {CLAW_CLOSED,   0, 0.65,(210-startingAngle)*WOBBLE_TICKS_PER_DEGREE},
                 {CLAW_OPEN,   500, 0.65,                  5*WOBBLE_TICKS_PER_DEGREE},
         };
 

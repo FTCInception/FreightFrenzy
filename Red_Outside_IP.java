@@ -494,6 +494,10 @@ public class Red_Outside_IP extends LinearOpMode {
             CheckWait(true, SWPID, 1000, 0);
             robot.claw.setPosition(0.95);
             CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.9);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.95);
+            CheckWait(true, SWPID, 1000, 0);
             robot.claw.setPosition(1.0);
             CheckWait(true, SWPID, 1000, 0);
         }
@@ -570,7 +574,7 @@ public class Red_Outside_IP extends LinearOpMode {
         CheckWait(true, SWPID, 0, 0);
 
         // Wait for arm (minimum of 2 seconds and also time this to delay final motion to the buzzer)
-        CheckWait(true, SWPID, 5000, 0);
+        CheckWait(true, SWPID, 3000, 0);
         if (!opModeIsActive()) { return; }
 
         // Drive partway to park

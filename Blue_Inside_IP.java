@@ -95,8 +95,10 @@ public class Blue_Inside_IP extends LinearOpMode {
 
     private static boolean powerShots = false;
     private static boolean wobbleEnabled = true;
-    private static boolean sideDelivery = true;
+    private static boolean sideDelivery0 = true;
+    private static boolean sideDelivery1 = true;
     private static boolean starterStack = true;
+    private static boolean lemons = false;
 
     private IncepVision vision = new IncepVision();
     private int ringCount = -1;
@@ -152,7 +154,19 @@ public class Blue_Inside_IP extends LinearOpMode {
             }
             if ( gamepad2.y ) {
                 if (yOK) {
-                    sideDelivery = !(sideDelivery);
+                    if(sideDelivery0 && sideDelivery1) {
+                        sideDelivery0 = false;
+                        sideDelivery1 = false;
+                    } else if(!sideDelivery0 && !sideDelivery1) {
+                        sideDelivery0 = true;
+                        sideDelivery1 = false;
+                    } else if(sideDelivery0 && !sideDelivery1) {
+                        sideDelivery0 = false;
+                        sideDelivery1 = true;
+                    } else {
+                        sideDelivery0 = true;
+                        sideDelivery1 = true;
+                    }
                     yOK = false;
                 }
             } else {
@@ -191,7 +205,7 @@ public class Blue_Inside_IP extends LinearOpMode {
             telemetry.addData("'B' to toggle 2x power shots vs 3x tower shots:","(%s)", powerShots?"power":"tower");
 
             if(wobbleEnabled) {
-                telemetry.addData("'Y' to toggle side or back delivery:", "(%s)", sideDelivery ? "side" : "back");
+                telemetry.addData("'Y' for side/back delivery:", "(0:%s, 1:%s)%s", sideDelivery0 ? "side" : "back", sideDelivery1 ? "side" : "back", (sideDelivery0 && !sideDelivery1) ? " lemons" : "");
                 telemetry.addData("'A' to proceed to vision ", "(%.1f)", Math.toDegrees(robot.drive.getRawExternalHeading()));
             } else {
                 telemetry.addData("'A' to proceed (no vision)", "(%.1f)", Math.toDegrees(robot.drive.getRawExternalHeading()));
@@ -210,8 +224,8 @@ public class Blue_Inside_IP extends LinearOpMode {
         telemetry.update();
 
         if (wobbleEnabled) {
-            BuildR0_IP(trajs[RING0_IP], sideDelivery);
-            BuildR1_IP(trajs[RING1_IP], sideDelivery);
+            BuildR0_IP(trajs[RING0_IP], sideDelivery0);
+            BuildR1_IP(trajs[RING1_IP], sideDelivery1);
             BuildR4_IP(trajs[RING4_IP]);
         } else {
             BuildNoWobble_IP(trajs[RING0_IP]);
@@ -296,9 +310,9 @@ public class Blue_Inside_IP extends LinearOpMode {
         if (opModeIsActive()) {
             if (wobbleEnabled) {
                 if (ringCount == 0) {
-                    Ring0_IP(trajs[RING0_IP], powerShots, sideDelivery);
+                    Ring0_IP(trajs[RING0_IP], powerShots, sideDelivery0);
                 } else if (ringCount == 1) {
-                    Ring1_IP(trajs[RING1_IP], powerShots, sideDelivery);
+                    Ring1_IP(trajs[RING1_IP], powerShots, sideDelivery1);
                 } else {
                     // If it's not 0 or 1, assume 4 (highest possible point total)
                     Ring4Side_IP(trajs[RING4_IP], powerShots);
@@ -634,6 +648,14 @@ public class Blue_Inside_IP extends LinearOpMode {
 
     private void Ring0_IP(Trajectory[] traj, boolean powerShots, boolean sideDelivery) {
         int TIdx = 0;
+
+        if(sideDelivery) {
+            robot.claw.setPosition(0.95);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(0.9);
+            CheckWait(true, SWPID, 1000, 0);
+            robot.claw.setPosition(1.0);
+        }
 
         // Start shooter, raise wobble high
         if(powerShots) {
