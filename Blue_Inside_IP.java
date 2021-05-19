@@ -664,11 +664,7 @@ public class Blue_Inside_IP extends LinearOpMode {
         int TIdx = 0;
 
         if(sideDelivery) {
-            robot.claw.setPosition(0.95);
-            CheckWait(true, SWPID, 1000, 0);
-            robot.claw.setPosition(0.9);
-            CheckWait(true, SWPID, 1000, 0);
-            robot.claw.setPosition(1.0);
+            CheckWait(true, SWPID, 2000, 0);
         }
 
         // Start shooter, raise wobble high
