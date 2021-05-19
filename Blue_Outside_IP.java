@@ -732,7 +732,7 @@ public class Blue_Outside_IP extends LinearOpMode {
 
             // Line up on ring
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-42.1, 34.1))
+                    .lineToConstantHeading(new Vector2d(-42.1, 37.1))
                     .build();
 
             // Turn on intake
@@ -743,7 +743,7 @@ public class Blue_Outside_IP extends LinearOpMode {
             // Drive over ring
             // Pose: -7, -38, 0
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY(), Math.toRadians(0.0)))
-                    .lineToLinearHeading(new Pose2d(-7, 32, Math.toRadians(3.5)))
+                    .lineToLinearHeading(new Pose2d(-7, 35, Math.toRadians(3.5)))
                     .build();
 
             // Shoot
@@ -756,14 +756,14 @@ public class Blue_Outside_IP extends LinearOpMode {
 
                 // Back up
                 traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY(), Math.toRadians(170.0)), true)
-                        .lineToConstantHeading(new Vector2d(12, 36))
+                        .lineToConstantHeading(new Vector2d(12, 39))
                         .build();
 
                 // Drop wobble
 
                 // Drive away a little
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToConstantHeading(new Vector2d(8, 36))
+                        .lineToConstantHeading(new Vector2d(8, 39))
                         .build();
 
                 // Return wobble arm
@@ -1004,7 +1004,7 @@ public class Blue_Outside_IP extends LinearOpMode {
 
             // Line up on ring
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-42.1, 34.1))
+                    .lineToConstantHeading(new Vector2d(-42.1, 36.1))
                     .build();
 
             // Turn on intake
@@ -1014,7 +1014,7 @@ public class Blue_Outside_IP extends LinearOpMode {
 
             // Drive over 1-2 rings
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY(), Math.toRadians(0.0)))
-                    .lineToLinearHeading(new Pose2d(-24, 32, Math.toRadians(2.5)))
+                    .lineToLinearHeading(new Pose2d(-24, 34, Math.toRadians(2.5)))
                     .build();
 
             // Back up to let any weird rings fall over
@@ -1026,7 +1026,7 @@ public class Blue_Outside_IP extends LinearOpMode {
 
             // Drive over more rings
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(-7, 32, Math.toRadians(3.5)))
+                    .lineToLinearHeading(new Pose2d(-7, 34, Math.toRadians(3.5)))
                     .build();
 
             // Shoot
