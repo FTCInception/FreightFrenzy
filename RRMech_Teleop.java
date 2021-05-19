@@ -363,7 +363,7 @@ public class RRMech_Teleop extends LinearOpMode {
             maxLag = Math.max(maxLag, ((rt-prt)*1000.0));
             iter += 1;
 
-            if ((rt > 97) && (!shooterDownShifted)) {
+            if ((rt > 90) && (!shooterDownShifted)) {
                 shooterSetRPM[1] = SHOOTER_POWER_SHOT_RPM;
                 shooterSet[1] = SHOOTER_POWER_SHOT;
 
