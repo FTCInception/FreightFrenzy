@@ -231,7 +231,7 @@ public class Red_Outside_IP_MegaKnytes extends LinearOpMode {
         telemetry.addData("Starting vision","");
         telemetry.update();
         // Stare at the rings really hard until its time to go or stop
-        vision.initAutonomous(this, "LeftWebcam");
+        vision.initAutonomous(this, "LeftWebcam", vision.RED_OUTSIDE);
         vision.clip = false;
         int deltaX=0, deltaY=0;
         boolean leftBOK = true, rightBOK = true;
@@ -263,10 +263,24 @@ public class Red_Outside_IP_MegaKnytes extends LinearOpMode {
             else {
                 leftBOK = true;
             }
+            // Default positions if vision failed
+            if (gamepad2.right_bumper) {
+                if (rightBOK) {
+                    if (vision.tfodState) {
+                        vision.tfod.deactivate();
+                        vision.tfodState = false;
+                        vision.clip = true;
+                    }
+                    vision.setDefStack();
+                    rightBOK = false;
+                }
+            } else {
+                rightBOK = true;
+            }
 
             // Move the entire box with the joystick.
-            deltaY += (int)(gamepad2.left_stick_y * 2.1);
-            deltaX += (int)(gamepad2.left_stick_x * 2.1);
+            deltaY = (int)(gamepad2.left_stick_y * 2.1);
+            deltaX = (int)(gamepad2.left_stick_x * 2.1);
             deltaY += (int)(gamepad2.right_stick_y * 2.1);
             deltaX += (int)(gamepad2.right_stick_x * 2.1);
             IncepVision.clipTop += deltaY;

@@ -75,17 +75,27 @@ public class IncepVision {
     public boolean tfodState=false;
     private int ringCount = -1 ;
     private String webcamName;
-
+    public final int NONE=0, BLUE_INSIDE=1, BLUE_OUTSIDE=2, RED_INSIDE=3, RED_OUTSIDE=4;
+    private final int iTOP=0, iLEFT=1, iRIGHT=2, iBOTTOM=3;
+    public int auto= NONE;
+    final int[][] defStack = {
+            // top, left, right, bottom
+              {189,  252,   285,    217},  // NONE
+              {189,  301,   224,    212},  // BLUE_INSIDE
+              {185,  264,   273,    221},  // BLUE_OUTSIDE
+              {185,  203,   328,    216},  // RED_INSIDE
+              {190,  255,   283,    219}}; // RED_OUTSIDE
     /***
      * Initialize the Target Tracking and navigation interface
      * @param lOpMode    pointer to OpMode
      */
-
-    public void initAutonomous(LinearOpMode lOpMode, String webcamName) {
+    public void initAutonomous(LinearOpMode lOpMode, String webcamName, int myAuto) {
 
         // Save reference to OpMode and Hardware map
         myLOpMode = lOpMode;
         webcamName = webcamName;
+        auto = myAuto;
+        setDefStack(auto);
 
         initVuforia( webcamName );
 
@@ -94,6 +104,21 @@ public class IncepVision {
             tfod.activate();
             tfodState=true;
         }
+    }
+
+    public void initAutonomous(LinearOpMode lOpMode, String webcamName) {
+        initAutonomous(lOpMode, webcamName, NONE);
+    }
+
+    public void setDefStack(int auto) {
+        clipTop = defStack[auto][iTOP];
+        clipLeft = defStack[auto][iLEFT];
+        clipRight = defStack[auto][iRIGHT];
+        clipBottom = defStack[auto][iBOTTOM];
+    }
+
+    public void setDefStack() {
+        setDefStack(auto);
     }
 
     public void initVuforia(String webcamName) {
@@ -306,16 +331,18 @@ public class IncepVision {
 
         if (tfod != null) {
 
-            List<Recognition> Recognitions = tfod.getRecognitions();
-            if (Recognitions != null) {
-                for (Recognition recognition : Recognitions) {
-                    if (recognition.getLabel().equals(LABEL_QUAD)) {
-                        // TensorFow is always capturing just a little more on the top of the
-                        // ring stack than we'd like.  Lets help it a little
-                        clipTop    = (int)(recognition.getTop() + (recognition.getHeight()*0.15));
-                        clipBottom = 480-(int)recognition.getBottom();
-                        clipLeft   = (int)recognition.getLeft();
-                        clipRight  = 640-(int)recognition.getRight();
+            if(tfodState) {
+                List<Recognition> Recognitions = tfod.getRecognitions();
+                if (Recognitions != null) {
+                    for (Recognition recognition : Recognitions) {
+                        if (recognition.getLabel().equals(LABEL_QUAD)) {
+                            // TensorFow is always capturing just a little more on the top of the
+                            // ring stack than we'd like.  Lets help it a little
+                            clipTop = (int) (recognition.getTop() + (recognition.getHeight() * 0.15));
+                            clipBottom = 480 - (int) recognition.getBottom();
+                            clipLeft = (int) recognition.getLeft();
+                            clipRight = 640 - (int) recognition.getRight();
+                        }
                     }
                 }
             }
@@ -341,10 +368,7 @@ public class IncepVision {
                             processImage(frame.getImage(i));
                         } catch(Exception e) {
                             myLOpMode.telemetry.addData("TENSOR FLOW BARFED -- You need to align the camera or 'freeze' and manually align","");
-                            clipLeft=280;
-                            clipTop=260;
-                            clipRight=260;
-                            clipBottom=155;
+                            setDefStack();
                             myLOpMode.telemetry.update();
                         }
                     }
