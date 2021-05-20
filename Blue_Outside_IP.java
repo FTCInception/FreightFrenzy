@@ -1004,7 +1004,7 @@ public class Blue_Outside_IP extends LinearOpMode {
 
             // Line up on ring
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-42.1, 36.1))
+                    .lineToConstantHeading(new Vector2d(-42.1, 34.1))
                     .build();
 
             // Turn on intake
@@ -1014,7 +1014,7 @@ public class Blue_Outside_IP extends LinearOpMode {
 
             // Drive over 1-2 rings
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx - 2].end().getX(), traj[TIdx - 2].end().getY(), Math.toRadians(0.0)))
-                    .lineToLinearHeading(new Pose2d(-24, 34, Math.toRadians(2.5)))
+                    .lineToLinearHeading(new Pose2d(-24, 32, Math.toRadians(2.5)))
                     .build();
 
             // Back up to let any weird rings fall over
