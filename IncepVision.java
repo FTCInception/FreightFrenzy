@@ -76,15 +76,15 @@ public class IncepVision {
     private int ringCount = -1 ;
     private String webcamName;
     public final int NONE=0, BLUE_INSIDE=1, BLUE_OUTSIDE=2, RED_INSIDE=3, RED_OUTSIDE=4;
-    private final int iTOP=0, iLEFT=1, iRIGHT=2, iBOTTOM=3;
+    private final int iTOP=0, iBOTTOM=1, iLEFT=2, iRIGHT=3;
     public int auto= NONE;
     final int[][] defStack = {
-            // top, left, right, bottom
-              {189,  252,   285,    217},  // NONE
-              {189,  301,   224,    212},  // BLUE_INSIDE
-              {185,  264,   273,    221},  // BLUE_OUTSIDE
-              {185,  203,   328,    216},  // RED_INSIDE
-              {190,  255,   283,    219}}; // RED_OUTSIDE
+            // top, bottom, left, right
+              {189,    217,  252,   285},  // NONE
+              {189,    212,  301,   224},  // BLUE_INSIDE
+              {185,    221,  264,   273},  // BLUE_OUTSIDE
+              {185,    216,  203,   328},  // RED_INSIDE
+              {190,    219,  255,   283}}; // RED_OUTSIDE
     /***
      * Initialize the Target Tracking and navigation interface
      * @param lOpMode    pointer to OpMode
@@ -306,19 +306,8 @@ public class IncepVision {
         }
 
         // Now display everything we learned.
-        if (tfodState) {
-            if (clip) {
-                myLOpMode.telemetry.addData("box", "L %3d, T %3s R %3d B %3d <-- Updating/Clipped", clipLeft, clipTop, clipRight, clipBottom);
-            } else {
-                myLOpMode.telemetry.addData("box", "L %3d, T %3s R %3d B %3d <-- Updating/Unclipped", clipLeft, clipTop, clipRight, clipBottom);
-            }
-        } else {
-            if (clip) {
-                myLOpMode.telemetry.addData("box", "L %3d, T %3s R %3d B %3d <-- Frozen/Clipped", clipLeft, clipTop, clipRight, clipBottom);
-            } else {
-                myLOpMode.telemetry.addData("box", "L %3d, T %3s R %3d B %3d <-- Frozen/Unclipped", clipLeft, clipTop, clipRight, clipBottom);
-            }
-        }
+        myLOpMode.telemetry.addData("box", "T %3s, B %3d, L %3d, R %3d, <-- %s/%s", clipTop, clipBottom, clipLeft, clipRight, tfodState?"Updating":"Frozen",clip?"Clipped":"Unclipped");
+
         myLOpMode.telemetry.addData("gb", "%s", Arrays.toString(gndColor[BLUE]));
         myLOpMode.telemetry.addData("sb", "%s", Arrays.toString(sliceColor[BLUE]));
         myLOpMode.telemetry.addData("isRing", "%s", Arrays.toString(isRing));
