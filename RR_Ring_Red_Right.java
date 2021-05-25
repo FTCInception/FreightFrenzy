@@ -145,57 +145,11 @@ public class RR_Ring_Red_Right extends LinearOpMode {
         // Stare at the rings really hard until its time to go or stop
         vision.initAutonomous(this, "LeftWebcam");
         vision.clip = false;
-        int deltaX=0, deltaY=0;
+        boolean leftBOK = true, rightBOK = true;
         do {
             ringCount = vision.countRings();
-            if ( gamepad1.dpad_left ) { IncepVision.clipLeft -= 1; }
-            if ( gamepad1.dpad_right ) { IncepVision.clipLeft += 1; }
-            if ( gamepad1.dpad_down ) { IncepVision.clipTop += 1; }
-            if ( gamepad1.dpad_up ) { IncepVision.clipTop -= 1; }
-            if ( gamepad1.x ) { IncepVision.clipRight += 1; }
-            if ( gamepad1.b ) { IncepVision.clipRight -= 1; }
-            if ( gamepad1.a ) { IncepVision.clipBottom -= 1; }
-            if ( gamepad1.y ) { IncepVision.clipBottom += 1; }
-            if ( gamepad1.left_bumper ) { vision.tfod.deactivate(); vision.tfodState=false;}
-            if ( (gamepad1.right_bumper) && (!vision.tfodState) ) { vision.clip = true; }
-
-            if ( gamepad2.dpad_left ) { IncepVision.clipLeft -= 1; }
-            if ( gamepad2.dpad_right ) { IncepVision.clipLeft += 1; }
-            if ( gamepad2.dpad_down ) { IncepVision.clipTop += 1; }
-            if ( gamepad2.dpad_up ) { IncepVision.clipTop -= 1; }
-            if ( gamepad2.x ) { IncepVision.clipRight += 1; }
-            if ( gamepad2.b ) { IncepVision.clipRight -= 1; }
-            if ( gamepad2.a ) { IncepVision.clipBottom -= 1; }
-            if ( gamepad2.y ) { IncepVision.clipBottom += 1; }
-            if ( gamepad2.left_bumper ) { vision.tfod.deactivate(); vision.tfodState=false;}
-            if ( (gamepad2.right_bumper) && (!vision.tfodState) ) { vision.clip = true; }
-
-            // Move the entire box with the joystick.
-            deltaY = (int)(gamepad1.left_stick_y * 2.1);
-            deltaX = (int)(gamepad1.left_stick_x * 2.1);
-            deltaY += (int)(gamepad1.right_stick_y * 2.1);
-            deltaX += (int)(gamepad1.right_stick_x * 2.1);
-            IncepVision.clipTop += deltaY;
-            IncepVision.clipBottom -= deltaY;
-            IncepVision.clipLeft += deltaX;
-            IncepVision.clipRight -= deltaX;
-
-            // Move the entire box with the joystick.
-            deltaY += (int)(gamepad2.left_stick_y * 2.1);
-            deltaX += (int)(gamepad2.left_stick_x * 2.1);
-            deltaY += (int)(gamepad2.right_stick_y * 2.1);
-            deltaX += (int)(gamepad2.right_stick_x * 2.1);
-            IncepVision.clipTop += deltaY;
-            IncepVision.clipBottom -= deltaY;
-            IncepVision.clipLeft += deltaX;
-            IncepVision.clipRight -= deltaX;
-
-            // Observe some limits
-            IncepVision.clipLeft   = Range.clip(IncepVision.clipLeft,  5,635);
-            IncepVision.clipRight  = Range.clip(IncepVision.clipRight, 5,635);
-            IncepVision.clipTop    = Range.clip(IncepVision.clipTop,   5,475);
-            IncepVision.clipBottom = Range.clip(IncepVision.clipBottom,5,475);
-        } while (!isStarted() && (!isStopRequested())) ;
+            vision.manageVisionBox(gamepad2);
+        } while (!isStarted() && (!isStopRequested()));
         vision.shutdown();
 
         // FIXME: Test the stopping in auto here again.

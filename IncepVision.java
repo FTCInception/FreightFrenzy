@@ -30,7 +30,9 @@ package Inception.UltimateGoal;
 
 import android.app.Activity;
 import android.util.Log;
+import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.Range;
 import com.vuforia.Image;
 import com.vuforia.PIXEL_FORMAT;
 import com.vuforia.Vuforia;
@@ -67,17 +69,20 @@ public class IncepVision {
     private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
     private static final String LABEL_QUAD = "Quad";
     private static final String LABEL_SINGLE = "Single";
-    public static int clipLeft=280;
-    public static int clipTop=260;
-    public static int clipRight=260;
-    public static int clipBottom=155;
-    public boolean clip=false;
-    public boolean tfodState=false;
-    private int ringCount = -1 ;
+    private static boolean leftBOK = true, rightBOK = true;
+    private static boolean dLeftOK = true, dRightOK = true, dUpOK = true, dDownOK = true;
+    private static boolean aOK = true, bOK = true, xOK=true, yOK=true;
+    public static int clipLeft = 280;
+    public static int clipTop = 260;
+    public static int clipRight = 260;
+    public static int clipBottom = 155;
+    public boolean clip = false;
+    public boolean tfodState = false;
+    private int ringCount = -1;
     private String webcamName;
-    public final int NONE=0, BLUE_INSIDE=1, BLUE_OUTSIDE=2, RED_INSIDE=3, RED_OUTSIDE=4;
-    private final int iTOP=0, iBOTTOM=1, iLEFT=2, iRIGHT=3;
-    public int auto= NONE;
+    public final int NONE = 0, BLUE_INSIDE = 1, BLUE_OUTSIDE = 2, RED_INSIDE = 3, RED_OUTSIDE = 4;
+    private final int iTOP = 0, iBOTTOM = 1, iLEFT = 2, iRIGHT = 3;
+    public int auto = NONE;
     final int[][] defStack = {
             // top, bottom, left, right
               {189,    217,  252,   285},  // NONE
@@ -97,12 +102,12 @@ public class IncepVision {
         auto = myAuto;
         setDefStack(auto);
 
-        initVuforia( webcamName );
+        initVuforia(webcamName);
 
         initTfod();
         if (tfod != null) {
             tfod.activate();
-            tfodState=true;
+            tfodState = true;
         }
     }
 
@@ -153,7 +158,7 @@ public class IncepVision {
 
         // This creates a 'params' object servicing the DS camera stream with 0.6 confidence
         TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
-        tfodParameters.minResultConfidence = (float)(0.4);
+        tfodParameters.minResultConfidence = (float) (0.4);
 
         // Create the object
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
@@ -163,12 +168,12 @@ public class IncepVision {
         tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_QUAD);
 
         // bound the window down to help with ring alignment
-        if(clip) {
+        if (clip) {
             tfod.setClippingMargins(clipLeft, clipTop, clipRight, clipBottom);
         }
     }
 
-    public void processImage( Image image ) {
+    public void processImage(Image image) {
 
         int bufWidth = image.getBufferWidth();
         int bufHeight = image.getBufferHeight();
@@ -191,22 +196,22 @@ public class IncepVision {
 
         // Slice the clipped image into 8 slices and check each slice.
         final double NUM_SLICES = 8.0;
-        final int RED=0, GREEN=1, BLUE=2;
+        final int RED = 0, GREEN = 1, BLUE = 2;
         int x, y, sIdx, color;
 
-        int[][] sliceColor = new int[3][(int)NUM_SLICES];
-        int[][] gndColor = new int[3][(int)NUM_SLICES];
-        int pixCount=0;
-        int gndCount=0;
-        int[] isRing = new int[(int)NUM_SLICES];
+        int[][] sliceColor = new int[3][(int) NUM_SLICES];
+        int[][] gndColor = new int[3][(int) NUM_SLICES];
+        int pixCount = 0;
+        int gndCount = 0;
+        int[] isRing = new int[(int) NUM_SLICES];
         //int[] isRing2 = new int[(int)NUM_SLICES];
 
-        int ringTop    = clipTop ;
-        int ringBottom = bufHeight - clipBottom ;
-        double sliceHeight = ((ringBottom - clipTop) / NUM_SLICES) ;
-        int ringRight  = bufWidth - clipRight ;
-        int ringLeft   = clipLeft ;
-        int ringWidth = ringRight - ringLeft ;
+        int ringTop = clipTop;
+        int ringBottom = bufHeight - clipBottom;
+        double sliceHeight = ((ringBottom - clipTop) / NUM_SLICES);
+        int ringRight = bufWidth - clipRight;
+        int ringLeft = clipLeft;
+        int ringWidth = ringRight - ringLeft;
 
         // FIXME -- We need to bounds-check our x and y against the edge of the image
         // Maybe add some telemetry to say something is suspicious if the box
@@ -216,12 +221,12 @@ public class IncepVision {
         //myLOpMode.telemetry.update();
 
         // For each slice
-        for ( sIdx = 0 ; sIdx < NUM_SLICES ; sIdx++ ) {
-            pixCount=0;
-            gndCount=0;
-            for ( y = (int) ( ringBottom - ( sliceHeight * ( sIdx+1 ) ) ); y < ( ringBottom - ( sliceHeight * sIdx ) ) ; y++ ) {
+        for (sIdx = 0; sIdx < NUM_SLICES; sIdx++) {
+            pixCount = 0;
+            gndCount = 0;
+            for (y = (int) (ringBottom - (sliceHeight * (sIdx + 1))); y < (ringBottom - (sliceHeight * sIdx)); y++) {
                 // Wing on the left is 30% of the ring width
-                for ( x = (int) (ringLeft-(ringWidth*0.50)) ; x > (ringLeft-(ringWidth*0.20))  ; x-- ) {
+                for (x = (int) (ringLeft - (ringWidth * 0.50)); x > (ringLeft - (ringWidth * 0.20)); x--) {
                     color = bitmap.getPixel(x, y);
                     gndColor[RED][sIdx] += Color.red(color);
                     gndColor[GREEN][sIdx] += Color.red(color);
@@ -229,7 +234,7 @@ public class IncepVision {
                     gndCount++;
                 }
                 // Use center 60% of the ring
-                for ( x = (int) (ringLeft+(ringWidth*0.20)) ; x < (ringRight-(ringWidth*0.20)) ; x++ ) {
+                for (x = (int) (ringLeft + (ringWidth * 0.20)); x < (ringRight - (ringWidth * 0.20)); x++) {
                     color = bitmap.getPixel(x, y);
                     sliceColor[RED][sIdx] += Color.red(color);
                     sliceColor[GREEN][sIdx] += Color.green(color);
@@ -237,7 +242,7 @@ public class IncepVision {
                     pixCount++;
                 }
                 // Wing on the right is 30% of the ring width
-                for( x = (int) (ringRight+(ringWidth*0.20)) ; x < (ringRight+(ringWidth*0.50)) ; x++ ) {
+                for (x = (int) (ringRight + (ringWidth * 0.20)); x < (ringRight + (ringWidth * 0.50)); x++) {
                     color = bitmap.getPixel(x, y);
                     gndColor[RED][sIdx] += Color.red(color);
                     gndColor[GREEN][sIdx] += Color.red(color);
@@ -247,23 +252,23 @@ public class IncepVision {
             }
 
             // Get the averages
-            if ( gndCount != 0 ) {
+            if (gndCount != 0) {
                 gndColor[RED][sIdx] /= gndCount;
                 gndColor[GREEN][sIdx] /= gndCount;
                 gndColor[BLUE][sIdx] /= gndCount;
             }
 
-            if ( pixCount != 0 ) {
+            if (pixCount != 0) {
                 sliceColor[RED][sIdx] /= pixCount;
                 sliceColor[GREEN][sIdx] /= pixCount;
                 sliceColor[BLUE][sIdx] /= pixCount;
             }
 
-             // Do a straight-up compare of average blue.  No need to normalize
-            if ( sliceColor[BLUE][sIdx] < (gndColor[BLUE][sIdx]/2.0) ) {
-                isRing[sIdx]=1;
+            // Do a straight-up compare of average blue.  No need to normalize
+            if (sliceColor[BLUE][sIdx] < (gndColor[BLUE][sIdx] / 2.0)) {
+                isRing[sIdx] = 1;
             } else {
-                isRing[sIdx]=0;
+                isRing[sIdx] = 0;
             }
 
             /*
@@ -286,9 +291,9 @@ public class IncepVision {
         //ringSlices is how many slices we detect as ring
         //ringCount is the actual amount of rings present
         // Count the ring slices
-        int ringSlices = 0 ;
-        for(int i = 0; i<isRing.length; i++){
-            if(isRing[i]==1){
+        int ringSlices = 0;
+        for (int i = 0; i < isRing.length; i++) {
+            if (isRing[i] == 1) {
                 ringSlices++;
             }
         }
@@ -297,16 +302,16 @@ public class IncepVision {
         // The bottom ring is viewed from above, so it appears to be much larger in the bitmap
         // than it actually is.  In fact, it coves 4 slices.  So we wil only call this '4' rings
         // when we are REALLY sure (>=6 slices.)
-        if (ringSlices >= 6){
+        if (ringSlices >= 6) {
             ringCount = 4;
-        } else if (ringSlices > 0){
+        } else if (ringSlices > 0) {
             ringCount = 1;
         } else {
             ringCount = 0;
         }
 
         // Now display everything we learned.
-        myLOpMode.telemetry.addData("box", "T %3s, B %3d, L %3d, R %3d, <-- %s/%s", clipTop, clipBottom, clipLeft, clipRight, tfodState?"Updating":"Frozen",clip?"Clipped":"Unclipped");
+        myLOpMode.telemetry.addData("box", "T %3s, B %3d, L %3d, R %3d, <-- %s/%s", clipTop, clipBottom, clipLeft, clipRight, tfodState ? "Updating" : "Frozen", clip ? "Clipped" : "Unclipped");
 
         myLOpMode.telemetry.addData("gb", "%s", Arrays.toString(gndColor[BLUE]));
         myLOpMode.telemetry.addData("sb", "%s", Arrays.toString(sliceColor[BLUE]));
@@ -320,7 +325,7 @@ public class IncepVision {
 
         if (tfod != null) {
 
-            if(tfodState) {
+            if (tfodState) {
                 List<Recognition> Recognitions = tfod.getRecognitions();
                 if (Recognitions != null) {
                     for (Recognition recognition : Recognitions) {
@@ -339,7 +344,7 @@ public class IncepVision {
             VuforiaLocalizer.CloseableFrame frame;
             try {
                 frame = vuforia.getFrameQueue().poll(100, TimeUnit.MILLISECONDS);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 frame = null;
             }
 
@@ -349,14 +354,14 @@ public class IncepVision {
                     if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
                         //Log.d("Vuforia", "Success");
                         if (clip == true) {
-                            tfod.setClippingMargins(clipLeft,clipTop,clipRight,clipBottom);
-                        } else{
+                            tfod.setClippingMargins(clipLeft, clipTop, clipRight, clipBottom);
+                        } else {
                             tfod.setClippingMargins(0, 0, 0, 0);
                         }
                         try {
                             processImage(frame.getImage(i));
-                        } catch(Exception e) {
-                            myLOpMode.telemetry.addData("TENSOR FLOW BARFED -- You need to align the camera or 'freeze' and manually align","");
+                        } catch (Exception e) {
+                            myLOpMode.telemetry.addData("TENSOR FLOW BARFED -- You need to align the camera or 'freeze' and manually align", "");
                             setDefStack();
                             myLOpMode.telemetry.update();
                         }
@@ -366,6 +371,127 @@ public class IncepVision {
         }
 
         return ringCount;
+    }
+
+    public void manageVisionBox( Gamepad gamepad ) {
+
+        // Keep the tensorFlow info
+        if (gamepad.left_bumper) {
+            if (leftBOK) {
+                if (tfodState) {
+                    tfod.deactivate();
+                    tfodState = false;
+                    clip = true;
+                } else {
+                    tfod.activate();
+                    tfodState = true;
+                    clip = false;
+                }
+                leftBOK = false;
+            }
+        } else {
+            leftBOK = true;
+        }
+        // Default positions if tensorFlow failed
+        if (gamepad.right_bumper) {
+            if (rightBOK) {
+                if (tfodState) {
+                    tfod.deactivate();
+                    tfodState = false;
+                    clip = true;
+                }
+                setDefStack();
+                rightBOK = false;
+            }
+        } else {
+            rightBOK = true;
+        }
+
+        if (gamepad.dpad_left) {
+            if (dLeftOK) {
+                clipLeft -= 2;
+                clipRight += 2;
+            }
+            dLeftOK = false;
+        } else {
+            dLeftOK = true;
+        }
+
+        if (gamepad.dpad_right) {
+            if (dRightOK) {
+                clipLeft += 2;
+                clipRight -= 2;
+            }
+            dRightOK = false;
+        } else {
+            dRightOK = true;
+        }
+
+        if (gamepad.dpad_up) {
+            if (dUpOK) {
+                clipTop -= 2;
+                clipBottom += 2;
+            }
+            dUpOK = false;
+        } else {
+            dUpOK = true;
+        }
+
+        if (gamepad.dpad_down) {
+            if (dDownOK) {
+                clipTop += 2;
+                clipBottom -= 2;
+            }
+            dDownOK = false;
+        } else {
+            dDownOK = true;
+        }
+
+        if (gamepad.x) {
+            if (xOK) {
+                clipLeft -= 10;
+                clipRight += 10;
+            }
+            xOK = false;
+        } else {
+            xOK = true;
+        }
+
+        if (gamepad.b) {
+            if (bOK) {
+                clipLeft += 10;
+                clipRight -= 10;
+            }
+            bOK = true;
+        } else {
+            bOK = true;
+        }
+
+        if (gamepad.y) {
+            if (yOK) {
+                clipTop -= 10;
+                clipBottom += 10;
+            }
+            yOK = true;
+        } else {
+            yOK = true;
+        }
+
+        if (gamepad.a) {
+            if (aOK) {
+                clipTop += 10;
+                clipBottom -= 10;
+            }
+            aOK = true;
+        } else {
+            aOK = true;
+        }
+
+        // Observe some limits
+        clipLeft = Range.clip(clipLeft, 5, 635);
+        clipRight = Range.clip(clipRight, 5, 635);
+        clipTop = Range.clip(clipTop, 5, 475);
+        clipBottom = Range.clip(clipBottom, 5, 475);
     }
 
     public void shutdown() {

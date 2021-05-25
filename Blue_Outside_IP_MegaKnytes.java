@@ -235,65 +235,10 @@ public class Blue_Outside_IP_MegaKnytes extends LinearOpMode {
         // Stare at the rings really hard until its time to go or stop
         vision.initAutonomous(this, "RightWebcam", vision.BLUE_OUTSIDE);
         vision.clip = false;
-        int deltaX = 0, deltaY = 0;
         boolean leftBOK = true, rightBOK = true;
         do {
             ringCount = vision.countRings();
-
-            if ( gamepad2.dpad_left ) { IncepVision.clipLeft -= 1; }
-            if ( gamepad2.dpad_right ) { IncepVision.clipLeft += 1; }
-            if ( gamepad2.dpad_down ) { IncepVision.clipTop += 1; }
-            if ( gamepad2.dpad_up ) { IncepVision.clipTop -= 1; }
-            if ( gamepad2.x ) { IncepVision.clipRight += 1; }
-            if ( gamepad2.b ) { IncepVision.clipRight -= 1; }
-            if ( gamepad2.a ) { IncepVision.clipBottom -= 1; }
-            if ( gamepad2.y ) { IncepVision.clipBottom += 1; }
-            if ( gamepad2.left_bumper ) {
-                if (leftBOK) {
-                    if (vision.tfodState) {
-                        vision.tfod.deactivate();
-                        vision.tfodState = false;
-                        vision.clip = true;
-                    } else {
-                        vision.tfod.activate();
-                        vision.tfodState = true;
-                        vision.clip = false;
-                    }
-                    leftBOK = false;
-                }
-            } else {
-                leftBOK = true;
-            }
-            // Default positions if vision failed
-            if (gamepad2.right_bumper) {
-                if (rightBOK) {
-                    if (vision.tfodState) {
-                        vision.tfod.deactivate();
-                        vision.tfodState = false;
-                        vision.clip = true;
-                    }
-                    vision.setDefStack();
-                    rightBOK = false;
-                }
-            } else {
-                rightBOK = true;
-            }
-
-            // Move the entire box with the joystick.
-            deltaY = (int)(gamepad2.left_stick_y * 2.1);
-            deltaX = (int)(gamepad2.left_stick_x * 2.1);
-            deltaY += (int)(gamepad2.right_stick_y * 2.1);
-            deltaX += (int)(gamepad2.right_stick_x * 2.1);
-            IncepVision.clipTop += deltaY;
-            IncepVision.clipBottom -= deltaY;
-            IncepVision.clipLeft += deltaX;
-            IncepVision.clipRight -= deltaX;
-
-            // Observe some limits
-            IncepVision.clipLeft = Range.clip(IncepVision.clipLeft, 5, 635);
-            IncepVision.clipRight = Range.clip(IncepVision.clipRight, 5, 635);
-            IncepVision.clipTop = Range.clip(IncepVision.clipTop, 5, 475);
-            IncepVision.clipBottom = Range.clip(IncepVision.clipBottom, 5, 475);
+            vision.manageVisionBox(gamepad2);
         } while (!isStarted() && (!isStopRequested()));
         vision.shutdown();
 
