@@ -86,10 +86,10 @@ public class IncepVision {
     final int[][] defStack = {
             // top, bottom, left, right
               {189,    217,  252,   285},  // NONE
-              {189,    212,  301,   224},  // BLUE_INSIDE
-              {185,    221,  264,   273},  // BLUE_OUTSIDE
-              {185,    216,  203,   328},  // RED_INSIDE
-              {190,    219,  255,   283}}; // RED_OUTSIDE
+              {202,    199,  327,   204},  // BLUE_INSIDE
+              {170,    227,  279,   247},  // BLUE_OUTSIDE
+              {166,    228,  221,   302},  // RED_INSIDE
+              {191,    208,  270,   264}}; // RED_OUTSIDE
     /***
      * Initialize the Target Tracking and navigation interface
      * @param lOpMode    pointer to OpMode
