@@ -422,7 +422,7 @@ public class Red_Inside_IP extends LinearOpMode {
             // Turn on shooter
             // Drive to first shot
             traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                    .lineToLinearHeading(new Pose2d(-36, -40, Math.toRadians(2.5)))
+                    .lineToLinearHeading(new Pose2d(-36, -38, Math.toRadians(2.5)))
                     .build();
 
             // Shoot two shots
@@ -430,7 +430,7 @@ public class Red_Inside_IP extends LinearOpMode {
 
             // Pickup 1 rings
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-24, -40))
+                    .lineToConstantHeading(new Vector2d(-24, -38))
                     .build();
 
             // Set shooter speed
@@ -466,7 +466,9 @@ public class Red_Inside_IP extends LinearOpMode {
             // Turn to front
             // Drive to wobble drop
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(0.0)))
+                    .splineToSplineHeading(new Pose2d(44,-12, Math.toRadians(0.0)),Math.toRadians(0.0))
                     .splineToSplineHeading(new Pose2d(58,-27, Math.toRadians(0.0)),Math.toRadians(-90.0))
+
                     .build();
 
             // Lower arm, drop wobble, return arm
@@ -504,7 +506,7 @@ public class Red_Inside_IP extends LinearOpMode {
             // Turn on shooter
             // Drive to first shot
             traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                    .lineToLinearHeading(new Pose2d(-36, -40, Math.toRadians(2.5)))
+                    .lineToLinearHeading(new Pose2d(-36, -38, Math.toRadians(2.5)))
                     .build();
 
             // Shoot three shots
@@ -512,7 +514,7 @@ public class Red_Inside_IP extends LinearOpMode {
 
             // Pickup 2 rings
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-24, -40))
+                    .lineToConstantHeading(new Vector2d(-24, -38))
                     .build();
 
             // Shoot
@@ -522,7 +524,7 @@ public class Red_Inside_IP extends LinearOpMode {
 
             // Drive over ring(s)
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-7, -40))
+                    .lineToConstantHeading(new Vector2d(-7, -38))
                     .build();
 
             // Set shooter speed

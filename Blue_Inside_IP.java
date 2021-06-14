@@ -436,13 +436,13 @@ public class Blue_Inside_IP extends LinearOpMode {
             // Set shooter speed
             // Drive to lane
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(-12, yLane+3))
+                    .lineToConstantHeading(new Vector2d(-12, yLane+4))
                     .build();
         } else {
             // Set shooter speed
             // Drive to lane
             traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                    .lineToConstantHeading(new Vector2d(-12, yLane+3))
+                    .lineToConstantHeading(new Vector2d(-12, yLane+4))
                     .build();
         }
 
@@ -453,14 +453,14 @@ public class Blue_Inside_IP extends LinearOpMode {
             // Turn to back
             // Drive to wobble drop
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(-180.0)),true)
-                    .lineToLinearHeading(new Pose2d(37,12, Math.toRadians(-90.0)))
+                    .lineToLinearHeading(new Pose2d(39,12, Math.toRadians(-90.0)))
                     .build();
 
             // Lower arm, drop wobble, return arm
 
             // Go park
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(12, yLane, Math.toRadians(-180.0)))
+                    .lineToLinearHeading(new Pose2d(12, yLane+2, Math.toRadians(-180.0)))
                     .build();
         } else {
             // Turn to front
@@ -475,8 +475,8 @@ public class Blue_Inside_IP extends LinearOpMode {
 
             // Go to shot
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(-90.0)))
-                    .splineToSplineHeading(new Pose2d(44,yLane-2,Math.toRadians(180.0)),Math.toRadians(180.0))
-                    .splineToSplineHeading(new Pose2d(-12,yLane-2,Math.toRadians(TOWER_SHOT_ANGLE+1)),Math.toRadians(180.0))
+                    .splineToSplineHeading(new Pose2d(44,yLane+4,Math.toRadians(180.0)),Math.toRadians(180.0))
+                    .splineToSplineHeading(new Pose2d(-12,yLane+4,Math.toRadians(TOWER_SHOT_ANGLE+1)),Math.toRadians(180.0))
                     .addDisplacementMarker(0.50, 0, () -> {
                         robot.setShooter(side_high_tower_RPM, high_tower_power, SWPID);
                     })
@@ -486,7 +486,7 @@ public class Blue_Inside_IP extends LinearOpMode {
 
             // Go park
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(12,yLane-2,Math.toRadians(0.0)))
+                    .lineToLinearHeading(new Pose2d(12,yLane+4,Math.toRadians(0.0)))
                     .build();
         }
 
