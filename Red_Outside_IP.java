@@ -361,7 +361,7 @@ public class Red_Outside_IP extends LinearOpMode {
         if(wobbleEnabled) {
             // Line up on wobble
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                    .lineToLinearHeading(new Pose2d(-38, -57, Math.toRadians(280.0)))
+                    .lineToLinearHeading(new Pose2d(-38, -58, Math.toRadians(280.0)))
                     .addDisplacementMarker(0.05, 0, () -> {
                         if (wobbleEnabled) {
                             robot.setWobblePosition(robot.WOBBLE_PICKUP, 0.4);
@@ -374,7 +374,7 @@ public class Red_Outside_IP extends LinearOpMode {
             // Backup to Wobble
             // The 0-ring case has a little bit less drift, we make a slight adjustment here.
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                    .lineToConstantHeading(new Vector2d(Wx + WxOffset - 1.0, Wy + WyOffset + 1.0))
+                    .lineToConstantHeading(new Vector2d(Wx + WxOffset, Wy + WyOffset + 2.0))
                     .build();
 
             // Grab wobble
@@ -585,7 +585,7 @@ public class Red_Outside_IP extends LinearOpMode {
 
             // Line up for wobble or starterStack
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                    .lineToLinearHeading(new Pose2d(-38, -57, Math.toRadians(280.0)))
+                    .lineToLinearHeading(new Pose2d(-38, -58, Math.toRadians(280.0)))
                     .addDisplacementMarker(0.50, 0, () -> {
                         if (wobbleEnabled) {
                             robot.setWobblePosition(robot.WOBBLE_PICKUP, 0.4);
@@ -859,7 +859,7 @@ public class Red_Outside_IP extends LinearOpMode {
         } else {
             // Line up for wobble or starterStack
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(traj[TIdx-2].end().getX(),traj[TIdx-2].end().getY(), Math.toRadians(TOWER_SHOT_ANGLE)), true)
-                    .lineToLinearHeading(new Pose2d(-38, -57, Math.toRadians(280.0)))
+                    .lineToLinearHeading(new Pose2d(-38, -58, Math.toRadians(280.0)))
                     .addDisplacementMarker(0.05, 0, () -> {
                         if (wobbleEnabled) {
                             robot.setWobblePosition(robot.WOBBLE_PICKUP, 0.4);
