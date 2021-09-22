@@ -30,17 +30,28 @@ After the above is run, your directory is setup and can be imported into Android
 
 
 ########   Refer to this: https://www.learnroadrunner.com/installing.html  #######
+
 ########   Method 2: https://learnroadrunner.com/installing.html#method-2-installing-rr-on-your-project #######
+
 ######## Skip step 7 (Roadrunner teamcode is already committed in our repo #######
 
+
+
 ####### Follow this for enabling FTCDashbaord:                             #######
+
 ####### https://acmerobotics.github.io/ftc-dashboard/gettingstarted        #######
+
 ####### Note that I think there are now hooks in the RobotController code  #######
+
 ####### for FTCDashboard but the instructions at the link don't use them.  #######
+
 ####### I think the old way at the link shodl still work.                  #######
+
 ####### I also found that I needed to add an import for FTCDashboard.      #######
 
+
 ######## The following instructions are obsolete with V6.2 RobotController #######
+
 #NA To be able to build with RoadRunner, you will need to add the following to your gradle files:
 #NA 
 #NA     TeamCode/build.release.gradle:
@@ -62,7 +73,9 @@ After the above is run, your directory is setup and can be imported into Android
 #NA          targetCompatibility JavaVersion.VERSION_1_8
 
 I also update Gradle
+
 And I found that Gradle Sync was always failing
+
 This was resolved by opening Tools->SDK Manager and then installing API Level-29 in SDK Platforms
 
 ## References:
