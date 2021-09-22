@@ -50,28 +50,6 @@ After the above is run, your directory is setup and can be imported into Android
 ####### I also found that I needed to add an import for FTCDashboard.      #######
 
 
-######## The following instructions are obsolete with V6.2 RobotController #######
-
-#NA To be able to build with RoadRunner, you will need to add the following to your gradle files:
-#NA 
-#NA     TeamCode/build.release.gradle:
-#NA 
-#NA         implementation 'org.apache.commons:commons-math3:3.6.1'
-#NA 
-#NA         implementation 'com.acmerobotics.roadrunner:core:0.5.3'
-#NA 
-#NA         implementation 'com.acmerobotics.dashboard:dashboard:0.4.0'
-#NA 
-#NA     FtcRobotController/build.release.gradle:
-#NA 
-#NA         implementation 'com.acmerobotics.dashboard:dashboard:0.4.0'
-#NA 
-#NA     build.common.gradle (Change VERSION_1_7 to VERSION_1_8:
-#NA 
-#NA          sourceCompatibility JavaVersion.VERSION_1_8
-#NA 
-#NA          targetCompatibility JavaVersion.VERSION_1_8
-
 I also update Gradle
 
 And I found that Gradle Sync was always failing
@@ -87,4 +65,45 @@ https://www.firstinspires.org/sites/default/files/uploads/resource_library/ftc/a
 https://www.learnroadrunner.com/installing.html
 
 https://acme-robotics.gitbook.io/road-runner/#installation
+
+
+
+######## The following instructions are obsolete with V6.2 RobotController #######
+#NA To be able to build with RoadRunner, you will need to add the following to your gradle files:
+
+#NA 
+
+#NA     TeamCode/build.release.gradle:
+
+#NA 
+
+#NA         implementation 'org.apache.commons:commons-math3:3.6.1'
+
+#NA 
+
+#NA         implementation 'com.acmerobotics.roadrunner:core:0.5.3'
+
+#NA 
+
+#NA         implementation 'com.acmerobotics.dashboard:dashboard:0.4.0'
+
+#NA 
+
+#NA     FtcRobotController/build.release.gradle:
+
+#NA 
+
+#NA         implementation 'com.acmerobotics.dashboard:dashboard:0.4.0'
+
+#NA 
+
+#NA     build.common.gradle (Change VERSION_1_7 to VERSION_1_8:
+
+#NA 
+
+#NA          sourceCompatibility JavaVersion.VERSION_1_8
+
+#NA 
+
+#NA          targetCompatibility JavaVersion.VERSION_1_8
 
