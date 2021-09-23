@@ -16,7 +16,6 @@ Instructions to create repo with separate TeamCode repo:
 
 
 
- 
 3) $ git clone https://github.com/FIRST-Tech-Challenge/FtcRobotController
 4) $ cd FtcRobotController/TeamCode/src/main/java/
 5) $ mkdir Inception
