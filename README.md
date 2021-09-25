@@ -1,4 +1,4 @@
-# UltimateGoal
+# FreightFrenzy
 The code for the 2020-2021 season
 
 
