@@ -16,7 +16,6 @@ Instructions to create repo with separate TeamCode repo:
 
 
 
- 
 3) $ git clone https://github.com/FIRST-Tech-Challenge/FtcRobotController
 4) $ cd FtcRobotController/TeamCode/src/main/java/
 5) $ mkdir Inception
@@ -29,28 +28,32 @@ Instructions to create repo with separate TeamCode repo:
 After the above is run, your directory is setup and can be imported into Android Studio.  Import the top-level "FtcRobotController" directory. Once in Andriod Studio, you will be able to commit changes to either the FTC FtcRobotController repo or to the Inception UltimateGoal (this) repo.
 
 
-######## The following instructions are obsolete with V6.2 RobotController #######
 ########   Refer to this: https://www.learnroadrunner.com/installing.html  #######
+
+########   Method 2: https://learnroadrunner.com/installing.html#method-2-installing-rr-on-your-project #######
+
 ######## Skip step 7 (Roadrunner teamcode is already committed in our repo #######
-To be able to build with RoadRunner, you will need to add the following to your gradle files:
 
-    TeamCode/build.release.gradle:
 
-        implementation 'org.apache.commons:commons-math3:3.6.1'
 
-        implementation 'com.acmerobotics.roadrunner:core:0.5.3'
+####### Follow this for enabling FTCDashbaord:                             #######
 
-        implementation 'com.acmerobotics.dashboard:dashboard:0.4.0'
+####### https://acmerobotics.github.io/ftc-dashboard/gettingstarted        #######
 
-    FtcRobotController/build.release.gradle:
+####### Note that I think there are now hooks in the RobotController code  #######
 
-        implementation 'com.acmerobotics.dashboard:dashboard:0.4.0'
+####### for FTCDashboard but the instructions at the link don't use them.  #######
 
-    build.common.gradle (Change VERSION_1_7 to VERSION_1_8:
+####### I think the old way at the link shodl still work.                  #######
 
-         sourceCompatibility JavaVersion.VERSION_1_8
+####### I also found that I needed to add an import for FTCDashboard.      #######
 
-         targetCompatibility JavaVersion.VERSION_1_8
+
+I also update Gradle
+
+And I found that Gradle Sync was always failing
+
+This was resolved by opening Tools->SDK Manager and then installing API Level-29 in SDK Platforms
 
 ## References:
 
@@ -61,4 +64,45 @@ https://www.firstinspires.org/sites/default/files/uploads/resource_library/ftc/a
 https://www.learnroadrunner.com/installing.html
 
 https://acme-robotics.gitbook.io/road-runner/#installation
+
+
+
+######## The following instructions are obsolete with V6.2 RobotController #######
+#NA To be able to build with RoadRunner, you will need to add the following to your gradle files:
+
+#NA 
+
+#NA     TeamCode/build.release.gradle:
+
+#NA 
+
+#NA         implementation 'org.apache.commons:commons-math3:3.6.1'
+
+#NA 
+
+#NA         implementation 'com.acmerobotics.roadrunner:core:0.5.3'
+
+#NA 
+
+#NA         implementation 'com.acmerobotics.dashboard:dashboard:0.4.0'
+
+#NA 
+
+#NA     FtcRobotController/build.release.gradle:
+
+#NA 
+
+#NA         implementation 'com.acmerobotics.dashboard:dashboard:0.4.0'
+
+#NA 
+
+#NA     build.common.gradle (Change VERSION_1_7 to VERSION_1_8:
+
+#NA 
+
+#NA          sourceCompatibility JavaVersion.VERSION_1_8
+
+#NA 
+
+#NA          targetCompatibility JavaVersion.VERSION_1_8
 
