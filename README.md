@@ -34,26 +34,14 @@ After the above is run, your directory is setup and can be imported into Android
 
 ######## Skip step 7 (Roadrunner teamcode is already committed in our repo #######
 
+####### FTCDashbaord should 'just work'.                                   #######
 
 
-####### Follow this for enabling FTCDashbaord:                             #######
+####### I did not update my Gradle this time.
 
-####### https://acmerobotics.github.io/ftc-dashboard/gettingstarted        #######
+####### If your gradle fails see note below
 
-####### Note that I think there are now hooks in the RobotController code  #######
-
-####### for FTCDashboard but the instructions at the link don't use them.  #######
-
-####### I think the old way at the link shodl still work.                  #######
-
-####### I also found that I needed to add an import for FTCDashboard.      #######
-
-
-I also update Gradle
-
-And I found that Gradle Sync was always failing
-
-This was resolved by opening Tools->SDK Manager and then installing API Level-29 in SDK Platforms
+####### This was resolved by opening Tools->SDK Manager and then installing API Level-29 in SDK Platforms
 
 ## References:
 
@@ -65,44 +53,5 @@ https://www.learnroadrunner.com/installing.html
 
 https://acme-robotics.gitbook.io/road-runner/#installation
 
-
-
-######## The following instructions are obsolete with V6.2 RobotController #######
-#NA To be able to build with RoadRunner, you will need to add the following to your gradle files:
-
-#NA 
-
-#NA     TeamCode/build.release.gradle:
-
-#NA 
-
-#NA         implementation 'org.apache.commons:commons-math3:3.6.1'
-
-#NA 
-
-#NA         implementation 'com.acmerobotics.roadrunner:core:0.5.3'
-
-#NA 
-
-#NA         implementation 'com.acmerobotics.dashboard:dashboard:0.4.0'
-
-#NA 
-
-#NA     FtcRobotController/build.release.gradle:
-
-#NA 
-
-#NA         implementation 'com.acmerobotics.dashboard:dashboard:0.4.0'
-
-#NA 
-
-#NA     build.common.gradle (Change VERSION_1_7 to VERSION_1_8:
-
-#NA 
-
-#NA          sourceCompatibility JavaVersion.VERSION_1_8
-
-#NA 
-
-#NA          targetCompatibility JavaVersion.VERSION_1_8
+https://acmerobotics.github.io/ftc-dashboard/gettingstarted
 
