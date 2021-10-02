@@ -10,9 +10,9 @@ Instructions to create repo with separate TeamCode repo:
 
         $ cd /c/awork/ftc/
 
-        $ mkdir UltimateGoal
+        $ mkdir FreightFrenzy
 
-        $ cd UltimateGoal
+        $ cd FreightFrenzy
 
 
 
@@ -20,7 +20,7 @@ Instructions to create repo with separate TeamCode repo:
 4) $ cd FtcRobotController/TeamCode/src/main/java/
 5) $ mkdir Inception
 6) $ cd Inception
-7) $ git clone https://github.com/FTCInception/UltimateGoal
+7) $ git clone https://github.com/FTCInception/FreightFrenzy
 8) $ cd ../../../../..
 9) $ git filter-branch --prune-empty --subdirectory-filter TeamCode/src/main/java/Inception master
 
