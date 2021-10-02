@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.drive.opmode;
+package Inception.FreightFrenzy.drive.opmode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
@@ -10,20 +10,19 @@ import com.acmerobotics.roadrunner.profile.MotionProfileGenerator;
 import com.acmerobotics.roadrunner.profile.MotionState;
 import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.RobotLog;
 
-import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
+import Inception.FreightFrenzy.drive.SampleMecanumDrive;
 
 import java.util.Objects;
 
-import static org.firstinspires.ftc.teamcode.drive.DriveConstants.MAX_ACCEL;
-import static org.firstinspires.ftc.teamcode.drive.DriveConstants.MAX_VEL;
-import static org.firstinspires.ftc.teamcode.drive.DriveConstants.RUN_USING_ENCODER;
-import static org.firstinspires.ftc.teamcode.drive.DriveConstants.kA;
-import static org.firstinspires.ftc.teamcode.drive.DriveConstants.kStatic;
-import static org.firstinspires.ftc.teamcode.drive.DriveConstants.kV;
+import static Inception.FreightFrenzy.drive.DriveConstants.MAX_ACCEL;
+import static Inception.FreightFrenzy.drive.DriveConstants.MAX_VEL;
+import static Inception.FreightFrenzy.drive.DriveConstants.RUN_USING_ENCODER;
+import static Inception.FreightFrenzy.drive.DriveConstants.kA;
+import static Inception.FreightFrenzy.drive.DriveConstants.kStatic;
+import static Inception.FreightFrenzy.drive.DriveConstants.kV;
 
 /*
  * This routine is designed to tune the open-loop feedforward coefficients. Although it may seem unnecessary,
@@ -36,14 +35,11 @@ import static org.firstinspires.ftc.teamcode.drive.DriveConstants.kV;
  * the velocity errors over time and adjust the feedforward coefficients. Once you've found a
  * satisfactory set of gains, add them to the appropriate fields in the DriveConstants.java file.
  *
- * Pressing X (on the Xbox and Logitech F310 gamepads, square on the PS4 Dualshock gamepad) will
- * pause the tuning process and enter driver override, allowing the user to reset the position of
- * the bot in the event that it drifts off the path.
- * Pressing A (on the Xbox and Logitech F310 gamepads, X on the PS4 Dualshock gamepad) will cede
- * control back to the tuning process.
+ * Pressing Y/Δ (Xbox/PS4) will pause the tuning process and enter driver override, allowing the
+ * user to reset the position of the bot in the event that it drifts off the path.
+ * Pressing B/O (Xbox/PS4) will cede control back to the tuning process.
  */
 @Config
-@Disabled
 @Autonomous(group = "drive")
 public class ManualFeedforwardTuner extends LinearOpMode {
     public static double DISTANCE = 72; // in
@@ -98,7 +94,7 @@ public class ManualFeedforwardTuner extends LinearOpMode {
 
             switch (mode) {
                 case TUNING_MODE:
-                    if (gamepad1.x) {
+                    if (gamepad1.y) {
                         mode = Mode.DRIVER_MODE;
                     }
 
@@ -127,7 +123,7 @@ public class ManualFeedforwardTuner extends LinearOpMode {
                     telemetry.addData("error", motionState.getV() - currentVelo);
                     break;
                 case DRIVER_MODE:
-                    if (gamepad1.a) {
+                    if (gamepad1.b) {
                         mode = Mode.TUNING_MODE;
                         movingForwards = true;
                         activeProfile = generateProfile(movingForwards);

@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.util;
+package Inception.FreightFrenzy.util;
 
 /**
  * IMU axes signs in the order XYZ (after remapping).

@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package Inception.UltimateGoal;
+package Inception.FreightFrenzy;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -41,7 +41,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
+import Inception.FreightFrenzy.drive.SampleMecanumDrive;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
@@ -976,6 +976,9 @@ public class RRMech_Teleop extends LinearOpMode {
 
             // We follow different logic based on whether we are in manual driver control or switch
             // control to the automatic mode
+            drive.setMotorPowers(l_f_motor_power, l_b_motor_power, r_b_motor_power, r_f_motor_power);
+
+            /*  No auto driving mode here
             switch (currentMode) {
                 case DRIVER_CONTROL:
 
@@ -1020,6 +1023,7 @@ public class RRMech_Teleop extends LinearOpMode {
                     }
                     break;
             }
+            */
 
             if ( nextPID < rt ) {
 

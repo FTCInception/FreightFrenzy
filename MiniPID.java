@@ -1,4 +1,4 @@
-package Inception.UltimateGoal;
+package Inception.FreightFrenzy;
 
 /**
  * Small, easy to use PID implementation with advanced controller capability.<br>
