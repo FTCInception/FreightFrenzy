@@ -41,7 +41,7 @@ After the above is run, your directory is setup and can be imported into Android
 
 ####### If your gradle fails see note below
 
-####### This was resolved by opening Tools->SDK Manager and then installing API Level-29 in SDK Platforms
+####### You may need to download API 29: Tools->SDK Manager install API Level-29 in SDK Platforms
 
 ## References:
 
