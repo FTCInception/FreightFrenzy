@@ -34,6 +34,7 @@ import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.Range;
 
@@ -51,56 +52,26 @@ import com.qualcomm.robotcore.util.Range;
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
  */
-
-@Autonomous(name="Red_Inside_IP", group="MechBot")
+@Autonomous(name="Red_Ref_Auto", group="RRMechBot")
 public class Red_Inside_IP extends LinearOpMode {
-    private final int RING0_IP=0;
-    private final int RING1_IP=1;
-    private final int RING4_IP=2;
-
-    private double POWER_SHOT_ANGLE1 = 6.5;
-    private double POWER_SHOT_ANGLE2 = 0.0;
-    private double POWER_SHOT_ANGLE3 = -6.5;
-
-    private double TOWER_SHOT_ANGLE  = -15.0;
-
-    private double yLane = -12.0;
+    private final int BAR1=1;
+    private final int BAR2=2;
+    private final int BAR3=3;
 
     private RRMechBot robot = new RRMechBot();
 
     private static final double intake_pickup_ring = 1.0;
 
-    // These are for the REV HUB...
-    private static final double high_tower_power = 0.4775;
-    private static final double power_shot_power = 0.435;
-
-    // Stealth Wheel blue RPMs 3/26/21
-    // These are for the SW PID...
-    private static final double side_high_tower_RPM = 3450;
-    private static final double power_shot_RPM = 3125;
-    private static final double high_tower_RPM = 3575;
-    private static final double long_shot_RPM = 3500;
-
-
-    private static final double flicker_shot_delay = 250;
-    private static final double flicker_return_delay = 350;
-
-    // This is a one-stop switchover from SWPID back to REV HUB PID
-    // The setShooter function consumes this flag and will switch back and forth as needed.
-    private static boolean SWPID = true;
-
     // This is the starting position of the center of the robot.
     private static final double startingX = -63.0;
     private static final double startingY = -17.0;
 
-    private static boolean powerShots = false;
-    private static boolean wobbleEnabled = true;
-    private static boolean sideDelivery0 = true;
-    private static boolean sideDelivery1 = true;
-    private static boolean starterStack = true;
+    private static boolean option1 = true;
+    private static boolean option2 = true;
+    private static boolean option3 = true;
 
     private IncepVision vision = new IncepVision();
-    private int ringCount = -1;
+    private int barLocation = -1;
     private Trajectory[][] trajs = {new Trajectory[25], new Trajectory[25], new Trajectory[25]} ;
 
     @Override
@@ -112,9 +83,8 @@ public class Red_Inside_IP extends LinearOpMode {
         robot.initAutonomous(this);
         robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
-        // This code is for changing the location of the second wobble
-        // It is unused for middle lane right now.  But if we want to
-        // allow some variation in our startign location, we'll re-use this code.
+        // This code allows for processing the starting location of something variable
+        // And controls some enable/disable options
         double Sx = 0.0;
         double Sy = 0.0;
         boolean leftOK = true, rightOK = true, upOK = true, downOK = true, bOK=true, xOK=true, yOK=true;
