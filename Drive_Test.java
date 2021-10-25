@@ -7,7 +7,9 @@ import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
+@Disabled
 @Autonomous(name="Drive_Test", group="MechBot")
 public class Drive_Test extends LinearOpMode {
     private RRMechBot robot = new RRMechBot();
@@ -84,9 +86,6 @@ public class Drive_Test extends LinearOpMode {
 
             // Update the drive
             if( checkDrive ) { robot.drive.update(); }
-
-            // Update the shooterPID
-            if ( runShooterPID ) { robot.updateShooterPID(); }
 
             // Check timer expiration, bail if too long
             if(maxMS < now) { return; }

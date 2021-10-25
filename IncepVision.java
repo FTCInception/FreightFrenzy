@@ -80,16 +80,14 @@ public class IncepVision {
     public boolean tfodState = false;
     private int ringCount = -1;
     private String webcamName;
-    public final int NONE = 0, BLUE_INSIDE = 1, BLUE_OUTSIDE = 2, RED_INSIDE = 3, RED_OUTSIDE = 4;
+    public final int NONE = 0, BLUE_SIDE = 1, RED_SIDE = 2;
     private final int iTOP = 0, iBOTTOM = 1, iLEFT = 2, iRIGHT = 3;
     public int auto = NONE;
     final int[][] defStack = {
             // top, bottom, left, right
               {189,    217,  252,   285},  // NONE
-              {202,    199,  327,   204},  // BLUE_INSIDE
-              {170,    227,  279,   247},  // BLUE_OUTSIDE
-              {166,    228,  221,   302},  // RED_INSIDE
-              {191,    208,  270,   264}}; // RED_OUTSIDE
+              {202,    199,  327,   204},  // BLUE_SIDE
+              {170,    227,  279,   247}}; // RED_SIDE
     /***
      * Initialize the Target Tracking and navigation interface
      * @param lOpMode    pointer to OpMode
@@ -321,7 +319,7 @@ public class IncepVision {
         myLOpMode.telemetry.update();
     }
 
-    public int countRings() {
+    public int barLocation() {
 
         if (tfod != null) {
 
