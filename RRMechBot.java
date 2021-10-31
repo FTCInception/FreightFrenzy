@@ -144,9 +144,9 @@ public class RRMechBot {
         // TODO: Finish getting all the device mapped
         intake_motor = hardwareMap.dcMotor.get("intake_motor");
         slide = hardwareMap.servo.get("slide");
-        //bucket = hardwareMap.servo.get("bucket");
+        bucket = hardwareMap.servo.get("bucket");
         duckL = hardwareMap.servo.get("duck_left");
-        //duckR = hardwareMap.servo.get("duckR");
+        duckR = hardwareMap.servo.get("duck_right");
 
         for (VoltageSensor sensor : hardwareMap.voltageSensor) {
             if (Vsense == null) {

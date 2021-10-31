@@ -94,7 +94,7 @@ public class RRMech_Teleop extends LinearOpMode {
     private static Servo bucket, slide, duckL, duckR;
 
     //Orientation angles,angles2;
-    double MAX_INTAKE_POWER = 0.5;
+    double MAX_INTAKE_POWER = 0.75;
 
     //private BotLog logger = new BotLog();
     private boolean enableCSVLogging = false;
@@ -102,7 +102,7 @@ public class RRMech_Teleop extends LinearOpMode {
     private RRMechBot robot = new RRMechBot();
 
     // Mech drive related variables
-    double[] speedModifier = new double[] {0.99, 0.99};
+    double[] speedModifier = new double[] {0.4, 0.4};
     double[] forward = new double[2], strafe = new double[2], rotate = new double[2];
     double[] prevForward = new double[2], prevStrafe = new double[2], prevRotate = new double[2];
     double[] prevTime = new double[2];
@@ -161,6 +161,15 @@ public class RRMech_Teleop extends LinearOpMode {
     @Override
     public void runOpMode() {
         //RevBulkData bulkData1, bulkData2;
+        short pad1 = 0;
+        short pad2 = 1;
+
+        final double bucketDump = 0.40;
+        final double bucketRest = 0.69;
+
+        final double duckSpeed = 0.5;
+
+
         boolean[] lBumpPrev = new boolean[]{false, false};
         boolean[] rBumpPrev = new boolean[]{false, false};
         boolean[] lTrigPrev = new boolean[]{false, false};
@@ -223,9 +232,11 @@ public class RRMech_Teleop extends LinearOpMode {
         intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         slide = robot.slide;
-        bucket = robot.bucket;
         duckL = robot.duckL;
         duckR = robot.duckR;
+        bucket = robot.bucket;
+
+
 
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Status", "Waiting for start...");
@@ -270,9 +281,13 @@ public class RRMech_Teleop extends LinearOpMode {
                 }
 
                 // TODO: Right trigger is <TBD>; trigger is continuous scale
-                if ((gamepad1.right_trigger > 0.0) || (prevRTrigVal > 0.0)) {
+                if ((gamepad1.right_trigger > 0.10) || (prevRTrigVal > 0.10)) {
+                    final double travelDistance = (bucketRest - bucketDump) * (gamepad1.right_trigger + 0.1);
+
                     prevRTrigVal = gamepad1.right_trigger;
-                    //servo1.setPosition(prevRTrigVal);
+                    bucket.setPosition(bucketRest - travelDistance);
+                } else {
+                    bucket.setPosition(bucketRest);
                 }
 
                 // TODO: Left bumper is <TBD>; bumper is discrete
@@ -288,94 +303,99 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // Start/stop the intake
                 if (gamepad1.right_bumper) {
-                    if (!rBumpPrev[0]) {
+                    if (!rBumpPrev[pad1]) {
                         //Do something
-                        rBumpPrev[0] = true;
+                        rBumpPrev[pad1] = true;
                     }
                 } else {
-                    rBumpPrev[0] = false;
+                    rBumpPrev[pad1] = false;
                 }
 
                 // TODO: 'a' <TBD>; button is discrete
                 if (gamepad1.a) {
-                    if (!aPrev[0]) {
+                    if (!aPrev[pad1]) {
                         // Do something
-                        aPrev[0] = true;
+                        aPrev[pad1] = true;
                     }
                 } else {
-                    aPrev[0] = false;
+                    aPrev[pad1] = false;
                 }
 
-                // TODO: 'b' <TBD>; button is discrete
                 if (gamepad1.b) {
-                    if (!bPrev[0]) {
-                        // Do something
-                        bPrev[0] = true;
-                    }
+                    duckL.setPosition(0.5 + duckSpeed);
+                    duckR.setPosition(0.5 - duckSpeed);
                 } else {
-                    bPrev[0] = false;
+                    duckL.setPosition(0.5);
+                    duckR.setPosition(0.5);
                 }
 
                 // TODO: 'x' <TBD>; button is discrete
                 if (gamepad1.x) {
-                    if (!xPrev[0]) {
+                    if (!xPrev[pad1]) {
                         // Do something
-                        xPrev[0] = true;
+                        xPrev[pad1] = true;
                     }
                 } else {
-                    xPrev[0] = false;
+                    xPrev[pad1] = false;
                 }
 
                 // TODO: 'y' <TBD>; button is discrete
                 if (gamepad1.y) {
-                    if (!yPrev[0]) {
-                        // Do something
-                        yPrev[0] = true;
+                    if (!yPrev[pad1]) {
+                        if(intakeSet[intakeIdx] > 0.0){
+                            intakeSet[intakeIdx] = -intakeSet[intakeIdx];
+                            intake_motor.setPower(intakeSet[intakeIdx]);
+                        }
+                        yPrev[pad1] = true;
                     }
                 } else {
-                    yPrev[0] = false;
+                    if(intakeSet[intakeIdx] < 0.0){
+                        intakeSet[intakeIdx] = -intakeSet[intakeIdx];
+                        intake_motor.setPower(intakeSet[intakeIdx]);
+                    }
+                    yPrev[pad1] = false;
                 }
 
                 // TODO: 'up' <TBD>; button is discrete
                 if (gamepad1.dpad_up) {
-                    if (!dUpPrev[0]) {
+                    if (!dUpPrev[pad1]) {
                         slideIdx = Math.min((slideIdx + 1), slideSet.length-1);
                         slide.setPosition(slideSet[slideIdx]);
-                        dUpPrev[0] = true;
+                        dUpPrev[pad1] = true;
                     }
                 } else {
-                    dUpPrev[0] = false;
+                    dUpPrev[pad1] = false;
                 }
 
                 // TODO: 'down' <TBD>; button is discrete
                 if (gamepad1.dpad_down) {
-                    if (!dDownPrev[0]) {
+                    if (!dDownPrev[pad1]) {
                         slideIdx = Math.max((slideIdx - 1), 0);
                         slide.setPosition(slideSet[slideIdx]);
-                        dDownPrev[0] = true;
+                        dDownPrev[pad1] = true;
                     }
                 } else {
-                    dDownPrev[0] = false;
+                    dDownPrev[pad1] = false;
                 }
 
                 // TODO: 'left' <TBD>; button is discrete
                 if (gamepad1.dpad_left) {
-                    if (!dLeftPrev[0]) {
+                    if (!dLeftPrev[pad1]) {
                         // Do something
-                        dLeftPrev[0] = true;
+                        dLeftPrev[pad1] = true;
                     }
                 } else {
-                    dLeftPrev[0] = false;
+                    dLeftPrev[pad1] = false;
                 }
 
                 // TODO: 'right' <TBD>; button is discrete
                 if (gamepad1.dpad_right) {
-                    if (!dRightPrev[0]) {
+                    if (!dRightPrev[pad1]) {
                         // Do something
-                        dRightPrev[0] = true;
+                        dRightPrev[pad1] = true;
                     }
                 } else {
-                    dRightPrev[0] = false;
+                    dRightPrev[pad1] = false;
                 }
             }
 
@@ -394,94 +414,94 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // TODO: Left bumper is <TBD>; bumper is discrete
                 if (gamepad2.left_bumper) {
-                    if (!lBumpPrev[0]) {
+                    if (!lBumpPrev[pad2]) {
                         intakeIdx = (intakeIdx + 1) % intakeSet.length;
                         intake_motor.setPower(intakeSet[intakeIdx]);
-                        lBumpPrev[0] = true;
+                        lBumpPrev[pad2] = true;
                     }
                 } else {
-                    lBumpPrev[0] = false;
+                    lBumpPrev[pad2] = false;
                 }
 
                 // Start/stop the intake
                 if (gamepad2.right_bumper) {
-                    if (!rBumpPrev[0]) {
+                    if (!rBumpPrev[pad2]) {
                         intakeIdx = (intakeIdx + 1) % intakeSet.length;
                         intake_motor.setPower(intakeSet[intakeIdx]);
-                        rBumpPrev[0] = true;
+                        rBumpPrev[pad2] = true;
                     }
                 } else {
-                    rBumpPrev[0] = false;
+                    rBumpPrev[pad2] = false;
                 }
 
                 // TODO: 'b' <TBD>; button is discrete
                 if (gamepad2.b) {
-                    if (!bPrev[0]) {
+                    if (!bPrev[pad2]) {
                         // Do something
-                        bPrev[0] = true;
+                        bPrev[pad2] = true;
                     }
                 } else {
-                    bPrev[0] = false;
+                    bPrev[pad2] = false;
                 }
 
                 // TODO: 'x' <TBD>; button is discrete
                 if (gamepad2.x) {
-                    if (!xPrev[0]) {
+                    if (!xPrev[pad2]) {
                         // Do something
-                        xPrev[0] = true;
+                        xPrev[pad2] = true;
                     }
                 } else {
-                    xPrev[0] = false;
+                    xPrev[pad2] = false;
                 }
 
                 // TODO: 'y' <TBD>; button is discrete
                 if (gamepad2.y) {
-                    if (!yPrev[0]) {
+                    if (!yPrev[pad2]) {
                         // Do something
-                        yPrev[0] = true;
+                        yPrev[pad2] = true;
                     }
                 } else {
-                    yPrev[0] = false;
+                    yPrev[pad2] = false;
                 }
 
                 // TODO: 'up' <TBD>; button is discrete
                 if (gamepad2.dpad_up) {
-                    if (!dUpPrev[0]) {
+                    if (!dUpPrev[pad2]) {
                         // Do something
-                        dUpPrev[0] = true;
+                        dUpPrev[pad2] = true;
                     }
                 } else {
-                    dUpPrev[0] = false;
+                    dUpPrev[pad2] = false;
                 }
 
                 // TODO: 'down' <TBD>; button is discrete
                 if (gamepad2.dpad_down) {
-                    if (!dDownPrev[0]) {
+                    if (!dDownPrev[pad2]) {
                         // Do something
-                        dDownPrev[0] = true;
+                        dDownPrev[pad2] = true;
                     }
                 } else {
-                    dDownPrev[0] = false;
+                    dDownPrev[pad2] = false;
                 }
 
                 // TODO: 'left' <TBD>; button is discrete
                 if (gamepad2.dpad_left) {
-                    if (!dLeftPrev[0]) {
+                    if (!dLeftPrev[pad2]) {
                         // Do something
-                        dLeftPrev[0] = true;
+                        dLeftPrev[pad2] = true;
                     }
                 } else {
-                    dLeftPrev[0] = false;
+                    dLeftPrev[pad2] = false;
                 }
 
                 // TODO: 'right' <TBD>; button is discrete
                 if (gamepad2.dpad_right) {
-                    if (!dRightPrev[0]) {
+                    if (!dRightPrev[pad2]) {
                         // Do something
-                        dRightPrev[0] = true;
+                        dRightPrev[pad2] = true;
                     }
                 } else {
-                    dRightPrev[0] = false;
+                    dRightPrev[pad2] = false;
                 }
             }
 

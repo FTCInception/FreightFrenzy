@@ -26,9 +26,13 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+
 import Inception.FreightFrenzy.trajectorysequence.TrajectorySequence;
 import Inception.FreightFrenzy.trajectorysequence.TrajectorySequenceBuilder;
 import Inception.FreightFrenzy.trajectorysequence.TrajectorySequenceRunner;
+import Inception.FreightFrenzy.util.AxesSigns;
+import Inception.FreightFrenzy.util.BNO055IMUUtil;
 import Inception.FreightFrenzy.util.LynxModuleUtil;
 
 import java.util.ArrayList;
@@ -100,7 +104,7 @@ public class SampleMecanumDrive extends MecanumDrive {
 
         // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
         // upward (normal to the floor) using a command like the following:
-        // BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
+        BNO055IMUUtil.remapAxes(imu, AxesOrder.YXZ, AxesSigns.NPN);
 
         leftFront = hardwareMap.get(DcMotorEx.class, "left_front");
         leftRear = hardwareMap.get(DcMotorEx.class, "left_back");
@@ -306,12 +310,12 @@ public class SampleMecanumDrive extends MecanumDrive {
         //                 (Servo Port Side)
         //
         // The positive x axis points toward the USB port(s)
-        //
+        //AxesSigns
         // Adjust the axis rotation rate as necessary
         // Rotate about the z axis is the default assuming your REV Hub/Control Hub is laying
         // flat on a surface
 
-        return (double) imu.getAngularVelocity().zRotationRate;
+        return (double) imu.getAngularVelocity().yRotationRate;
     }
 
     public static TrajectoryVelocityConstraint getVelocityConstraint(double maxVel, double maxAngularVel, double trackWidth) {
