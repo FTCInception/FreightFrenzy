@@ -36,6 +36,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ServoControllerEx;
@@ -89,12 +90,10 @@ public class RRMech_Teleop extends LinearOpMode {
     private ElapsedTime runtime = new ElapsedTime();
     //private static ExpansionHubEx expansionHub1;
     //private static ExpansionHubEx expansionHub2;
-    //private static DcMotorEx l_f_motor, l_b_motor, r_f_motor, r_b_motor;
     private static DcMotor intake_motor;
     private static Servo bucket, slide, duckL, duckR;
 
-    //Orientation angles,angles2;
-    double MAX_INTAKE_POWER = 0.75;
+    double MAX_INTAKE_POWER = 0.85;
 
     //private BotLog logger = new BotLog();
     private boolean enableCSVLogging = false;
@@ -102,7 +101,9 @@ public class RRMech_Teleop extends LinearOpMode {
     private RRMechBot robot = new RRMechBot();
 
     // Mech drive related variables
-    double[] speedModifier = new double[] {0.4, 0.4};
+    double[] speedIdx = new double[] {0, 0};
+    double[] speedModifier = new double[] {0.6, 0.85};
+    boolean[] FOV = new boolean[] {false, false};
     double[] forward = new double[2], strafe = new double[2], rotate = new double[2];
     double[] prevForward = new double[2], prevStrafe = new double[2], prevRotate = new double[2];
     double[] prevTime = new double[2];
@@ -114,18 +115,7 @@ public class RRMech_Teleop extends LinearOpMode {
     double r_f_motor_power;
     double r_b_motor_power;
 
-    private static boolean SWPID = true;
-    private boolean shooterDownShifted = false;
-
     double theta, r_speed, new_x, new_y, degrees;
-
-    double shootingAngle;
-    Pose2d shootingPose;
-    enum Mode {
-        DRIVER_CONTROL,
-        AUTOMATIC_CONTROL
-    }
-    Mode currentMode = Mode.DRIVER_CONTROL;
 
     // Declare other variables
     public BNO055IMU initIMU(String imuName) {
@@ -163,17 +153,15 @@ public class RRMech_Teleop extends LinearOpMode {
         //RevBulkData bulkData1, bulkData2;
         short pad1 = 0;
         short pad2 = 1;
-
-        final double bucketDump = 0.40;
-        final double bucketRest = 0.69;
-
-        final double duckSpeed = 0.5;
-
+        short padIdx = pad1;
 
         boolean[] lBumpPrev = new boolean[]{false, false};
         boolean[] rBumpPrev = new boolean[]{false, false};
         boolean[] lTrigPrev = new boolean[]{false, false};
+        boolean[] lTrig = new boolean[]{false, false};
         boolean[] rTrigPrev = new boolean[]{false, false};
+        boolean[] rTrig = new boolean[]{false, false};
+        boolean[] backPrev = new boolean[]{false, false};
         boolean[] aPrev = new boolean[]{false, false};
         boolean[] bPrev = new boolean[]{false, false};
         boolean[] xPrev = new boolean[]{false, false};
@@ -184,11 +172,27 @@ public class RRMech_Teleop extends LinearOpMode {
         boolean[] dRightPrev = new boolean[]{false, false};
         boolean[] guidePrev = new boolean[]{false, false};
 
-        final double BUCKET_COLLECT = 0.0, BUCKET_DUMP=1.0;
-        final double SLIDE_COLLECT = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
+        final double DUCK_STOP = 0.5;
+        final double MAX_DUCK_SPEED = 0.5;
+        final double MAX_DUCK_CHANGE = 1.0;   // Change per second
+        double prevDuckTime = 0;
+        double duckRequest = DUCK_STOP;
+
+        final double bucketDump = 0.46;
+        final double bucketDrive = 0.60;
+        final double bucketIntake = 0.70;
+        double[] bucketRequest = {bucketDrive, bucketDrive};
+        double bucketAllowed;
+
         double[] intakeSet = {0.0, MAX_INTAKE_POWER};
-        double[] slideSet = {SLIDE_COLLECT, SLIDE_DRIVE, SLIDE_LOW, SLIDE_MED, SLIDE_HIGH};
-        int slideIdx=0, bucketIdx=0, intakeIdx=0;
+        int intakeIdx=0;
+
+        final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.65, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
+        double[] slideSet = {SLIDE_INTAKE, SLIDE_DRIVE, SLIDE_LOW, SLIDE_SHARED, SLIDE_MED, SLIDE_HIGH};
+        final int SLIDE_INTAKE_IDX = 0, SLIDE_DRIVE_IDX = 1, SLIDE_HIGH_IDX = slideSet.length-1;
+        int slideIdx=1;
+        double slideRequest=slideSet[slideIdx];
+
         double prevLTrigVal=0.0;
         double prevRTrigVal=0.0;
 
@@ -198,6 +202,9 @@ public class RRMech_Teleop extends LinearOpMode {
         double maxPwr = 0.0;
 
         double tps=0.0;
+
+        double now;
+        double deltaT;
 
         if (enableCSVLogging) {
             // Enable debug logging
@@ -236,8 +243,6 @@ public class RRMech_Teleop extends LinearOpMode {
         duckR = robot.duckR;
         bucket = robot.bucket;
 
-
-
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Status", "Waiting for start...");
         telemetry.update();
@@ -251,7 +256,23 @@ public class RRMech_Teleop extends LinearOpMode {
         runtime.reset();
         iter = 0.0;
         prt = rt = maxLag = 0.0;
-        shooterDownShifted = false;
+        Gamepad gamepad;
+
+        // Controls:
+        // Sticks == Robot drive
+        // Dpad left/right == slow turn
+        // Dpad up/down == Slide up/down (discrete positions)
+        //
+        // Right bumper == Nothing
+        // Left bumper == intake toggle on/off
+        //
+        // Right trigger == dump bucket
+        // Left trigger == Nothing
+        //
+        // 'a' == Fast/slow drive
+        // 'b' == Run duck wheels
+        // 'x' == Toggle FOV drive
+        // 'y' == reverse intake toggle
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
@@ -274,411 +295,507 @@ public class RRMech_Teleop extends LinearOpMode {
             iter += 1;
 
             if (gp1Present) {
-                // TODO: Left trigger is <TBD>; trigger is continuous scale
-                if ((gamepad1.left_trigger > 0.0) || (prevLTrigVal > 0.0)) {
-                    prevLTrigVal = gamepad1.left_trigger;
-                    //servo1.setPosition(prevLTrigVal);
+                gamepad= gamepad1;
+                padIdx = pad1;
+
+                // lTrig is now a boolean
+                if (lTrigPrev[padIdx] && (gamepad.left_trigger < 0.30)) {
+                    lTrig[padIdx] = false;
+                }
+                if (!lTrigPrev[padIdx] && (gamepad.left_trigger > 0.70)) {
+                    lTrig[padIdx] = true;
                 }
 
-                // TODO: Right trigger is <TBD>; trigger is continuous scale
-                if ((gamepad1.right_trigger > 0.10) || (prevRTrigVal > 0.10)) {
-                    final double travelDistance = (bucketRest - bucketDump) * (gamepad1.right_trigger + 0.1);
-
-                    prevRTrigVal = gamepad1.right_trigger;
-                    bucket.setPosition(bucketRest - travelDistance);
-                } else {
-                    bucket.setPosition(bucketRest);
-                }
-
-                // TODO: Left bumper is <TBD>; bumper is discrete
-                if (gamepad1.left_bumper) {
-                    if (!lBumpPrev[0]) {
-                        intakeIdx = (intakeIdx + 1) % intakeSet.length;
-                        intake_motor.setPower(intakeSet[intakeIdx]);
-                        lBumpPrev[0] = true;
+                // 'lTrig': Toggle between drive and intake
+                if (lTrig[padIdx]) {
+                    if (!lTrigPrev[padIdx]) {
+                        if (slideIdx != SLIDE_DRIVE_IDX) {
+                            slideIdx = SLIDE_DRIVE_IDX;
+                        } else {
+                            slideIdx = SLIDE_INTAKE_IDX;
+                        }
+                        slideRequest = slideSet[slideIdx];
+                        lTrigPrev[padIdx] = true;
                     }
                 } else {
-                    lBumpPrev[0] = false;
+                    lTrigPrev[padIdx] = false;
+                }
+
+                // Right trigger is dump block
+                // The check on 'prev' is to make sure we set to '0' when we release
+                if ((gamepad.right_trigger > 0.0) || (prevRTrigVal > 0.0)) {
+                    prevRTrigVal = gamepad.right_trigger;
+
+                    // Give some slop of 10% depression to avoid accidental presses
+                    // 10% press is really '0' so subtract 0.1 but don't let it go negative
+                    // Then scale back to 100%
+                    final double travelDistance = (bucketDrive - bucketDump) * (1.1 * Math.max(0,  (gamepad.right_trigger - 0.1)));
+
+                    bucketRequest[padIdx] = bucketDump - travelDistance;
+                    //bucket.setPosition(bucketIntake - travelDistance);
+                } else {
+                    bucketRequest[padIdx] = bucketDrive;
+                    //bucket.setPosition(bucketIntake);
+                }
+
+                // Reverse the intake
+                if (gamepad.left_bumper) {
+                    if (!lBumpPrev[padIdx]) {
+                        // Reverse polarity on motor
+                        if (intake_motor.getPower() > 0) {
+                            intake_motor.setPower(-intakeSet[intakeIdx]);
+                        } else {
+                            intake_motor.setPower(intakeSet[intakeIdx]);
+                        }
+                        lBumpPrev[padIdx] = true;
+                    }
+                } else {
+                    lBumpPrev[padIdx] = false;
                 }
 
                 // Start/stop the intake
-                if (gamepad1.right_bumper) {
-                    if (!rBumpPrev[pad1]) {
-                        //Do something
-                        rBumpPrev[pad1] = true;
-                    }
-                } else {
-                    rBumpPrev[pad1] = false;
-                }
-
-                // TODO: 'a' <TBD>; button is discrete
-                if (gamepad1.a) {
-                    if (!aPrev[pad1]) {
-                        // Do something
-                        aPrev[pad1] = true;
-                    }
-                } else {
-                    aPrev[pad1] = false;
-                }
-
-                if (gamepad1.b) {
-                    duckL.setPosition(0.5 + duckSpeed);
-                    duckR.setPosition(0.5 - duckSpeed);
-                } else {
-                    duckL.setPosition(0.5);
-                    duckR.setPosition(0.5);
-                }
-
-                // TODO: 'x' <TBD>; button is discrete
-                if (gamepad1.x) {
-                    if (!xPrev[pad1]) {
-                        // Do something
-                        xPrev[pad1] = true;
-                    }
-                } else {
-                    xPrev[pad1] = false;
-                }
-
-                // TODO: 'y' <TBD>; button is discrete
-                if (gamepad1.y) {
-                    if (!yPrev[pad1]) {
-                        if(intakeSet[intakeIdx] > 0.0){
-                            intakeSet[intakeIdx] = -intakeSet[intakeIdx];
-                            intake_motor.setPower(intakeSet[intakeIdx]);
-                        }
-                        yPrev[pad1] = true;
-                    }
-                } else {
-                    if(intakeSet[intakeIdx] < 0.0){
-                        intakeSet[intakeIdx] = -intakeSet[intakeIdx];
+                if (gamepad.right_bumper) {
+                    if (!rBumpPrev[padIdx]) {
+                        intakeIdx = (intakeIdx + 1) % intakeSet.length;
                         intake_motor.setPower(intakeSet[intakeIdx]);
+                        rBumpPrev[padIdx] = true;
                     }
-                    yPrev[pad1] = false;
+                } else {
+                    rBumpPrev[padIdx] = false;
                 }
 
-                // TODO: 'up' <TBD>; button is discrete
-                if (gamepad1.dpad_up) {
-                    if (!dUpPrev[pad1]) {
+                // 'back': Toggle FOV mode
+                if (gamepad.back) {
+                    if (!backPrev[padIdx]) {
+                        FOV[padIdx] = !FOV[padIdx];
+                        backPrev[padIdx] = true;
+                    }
+                } else {
+                    backPrev[padIdx] = false;
+                }
+
+                // 'a': Slide to drive position
+                if (gamepad.a) {
+                    if (!aPrev[padIdx]) {
+                        slideIdx = SLIDE_DRIVE_IDX;
+                        slideRequest = slideSet[slideIdx];
+                        aPrev[padIdx] = true;
+                    }
+                } else {
+                    aPrev[padIdx] = false;
+                }
+
+                // gamped 'b' is combined duck wheel managed below
+
+                // 'x': Speed toggle
+                if (gamepad.x) {
+                    if (!xPrev[padIdx]) {
+                        speedIdx[padIdx] = (speedIdx[padIdx] + 1) % speedModifier.length;
+                        xPrev[padIdx] = true;
+                    }
+                } else {
+                    xPrev[padIdx] = false;
+                }
+
+                // 'y': Slide to high position
+                if (gamepad.y) {
+                    if (!yPrev[padIdx]) {
+                        slideIdx = SLIDE_HIGH_IDX;
+                        slideRequest = slideSet[slideIdx];
+                        yPrev[padIdx] = true;
+                    }
+                } else {
+                    yPrev[padIdx] = false;
+                }
+
+                // 'up' slide higher
+                if (gamepad.dpad_up) {
+                    if (!dUpPrev[padIdx]) {
                         slideIdx = Math.min((slideIdx + 1), slideSet.length-1);
-                        slide.setPosition(slideSet[slideIdx]);
-                        dUpPrev[pad1] = true;
+                        slideRequest = slideSet[slideIdx];
+                        //slide.setPosition(slideSet[slideIdx]);
+                        dUpPrev[padIdx] = true;
                     }
                 } else {
-                    dUpPrev[pad1] = false;
+                    dUpPrev[padIdx] = false;
                 }
 
-                // TODO: 'down' <TBD>; button is discrete
-                if (gamepad1.dpad_down) {
-                    if (!dDownPrev[pad1]) {
+                // 'down' slide lower
+                if (gamepad.dpad_down) {
+                    if (!dDownPrev[padIdx]) {
                         slideIdx = Math.max((slideIdx - 1), 0);
-                        slide.setPosition(slideSet[slideIdx]);
-                        dDownPrev[pad1] = true;
+                        slideRequest = slideSet[slideIdx];
+                        //slide.setPosition(slideSet[slideIdx]);
+                        dDownPrev[padIdx] = true;
                     }
                 } else {
-                    dDownPrev[pad1] = false;
+                    dDownPrev[padIdx] = false;
                 }
 
-                // TODO: 'left' <TBD>; button is discrete
-                if (gamepad1.dpad_left) {
-                    if (!dLeftPrev[pad1]) {
-                        // Do something
-                        dLeftPrev[pad1] = true;
-                    }
-                } else {
-                    dLeftPrev[pad1] = false;
-                }
-
-                // TODO: 'right' <TBD>; button is discrete
-                if (gamepad1.dpad_right) {
-                    if (!dRightPrev[pad1]) {
-                        // Do something
-                        dRightPrev[pad1] = true;
-                    }
-                } else {
-                    dRightPrev[pad1] = false;
-                }
+                // 'dpad left' = slow turn code below
+                // 'dpad right' = slow turn code below
             }
 
             if (gp2Present) {
-                // TODO: Left trigger is <TBD>; trigger is continuous scale
-                if ((gamepad2.left_trigger > 0.0) || (prevLTrigVal > 0.0)) {
-                    prevLTrigVal = gamepad2.left_trigger;
-                    //servo1.setPosition(prevLTrigVal);
+                gamepad= gamepad2;
+                padIdx = pad2;
+
+                // lTrig is now a boolean
+                if (lTrigPrev[padIdx] && (gamepad.left_trigger < 0.30)) {
+                    lTrig[padIdx] = false;
+                }
+                if (!lTrigPrev[padIdx] && (gamepad.left_trigger > 0.70)) {
+                    lTrig[padIdx] = true;
                 }
 
-                // TODO: Right trigger is <TBD>; trigger is continuous scale
-                if ((gamepad2.right_trigger > 0.0) || (prevRTrigVal > 0.0)) {
-                    prevRTrigVal = gamepad2.right_trigger;
-                    //servo1.setPosition(prevRTrigVal);
-                }
-
-                // TODO: Left bumper is <TBD>; bumper is discrete
-                if (gamepad2.left_bumper) {
-                    if (!lBumpPrev[pad2]) {
-                        intakeIdx = (intakeIdx + 1) % intakeSet.length;
-                        intake_motor.setPower(intakeSet[intakeIdx]);
-                        lBumpPrev[pad2] = true;
+                // 'lTrig': Toggle between drive and intake
+                if (lTrig[padIdx]) {
+                    if (!lTrigPrev[padIdx]) {
+                        if (slideIdx != SLIDE_DRIVE_IDX) {
+                            slideIdx = SLIDE_DRIVE_IDX;
+                        } else {
+                            slideIdx = SLIDE_INTAKE_IDX;
+                        }
+                        slideRequest = slideSet[slideIdx];
+                        lTrigPrev[padIdx] = true;
                     }
                 } else {
-                    lBumpPrev[pad2] = false;
+                    lTrigPrev[padIdx] = false;
+                }
+
+                // Right trigger is dump block
+                // The check on 'prev' is to make sure we set to '0' when we release
+                if ((gamepad.right_trigger > 0.0) || (prevRTrigVal > 0.0)) {
+                    prevRTrigVal = gamepad.right_trigger;
+
+                    // Give some slop of 10% depression to avoid accidental presses
+                    // 10% press is really '0' so subtract 0.1 but don't let it go negative
+                    // Then scale back to 100%
+                    final double travelDistance = (bucketDrive - bucketDump) * (1.1 * Math.max(0,  (gamepad.right_trigger - 0.1)));
+
+                    bucketRequest[padIdx] = bucketDump - travelDistance;
+                    //bucket.setPosition(bucketIntake - travelDistance);
+                } else {
+                    bucketRequest[padIdx] = bucketDrive;
+                    //bucket.setPosition(bucketIntake);
+                }
+
+                // Reverse the intake
+                if (gamepad.left_bumper) {
+                    if (!lBumpPrev[padIdx]) {
+                        // Reverse polarity on motor
+                        if (intake_motor.getPower() > 0) {
+                            intake_motor.setPower(-intakeSet[intakeIdx]);
+                        } else {
+                            intake_motor.setPower(intakeSet[intakeIdx]);
+                        }
+                        lBumpPrev[padIdx] = true;
+                    }
+                } else {
+                    lBumpPrev[padIdx] = false;
                 }
 
                 // Start/stop the intake
-                if (gamepad2.right_bumper) {
-                    if (!rBumpPrev[pad2]) {
+                if (gamepad.right_bumper) {
+                    if (!rBumpPrev[padIdx]) {
                         intakeIdx = (intakeIdx + 1) % intakeSet.length;
                         intake_motor.setPower(intakeSet[intakeIdx]);
-                        rBumpPrev[pad2] = true;
+                        rBumpPrev[padIdx] = true;
                     }
                 } else {
-                    rBumpPrev[pad2] = false;
+                    rBumpPrev[padIdx] = false;
                 }
 
-                // TODO: 'b' <TBD>; button is discrete
-                if (gamepad2.b) {
-                    if (!bPrev[pad2]) {
-                        // Do something
-                        bPrev[pad2] = true;
+                // 'back': Toggle FOV mode
+                if (gamepad.back) {
+                    if (!backPrev[padIdx]) {
+                        FOV[padIdx] = !FOV[padIdx];
+                        backPrev[padIdx] = true;
                     }
                 } else {
-                    bPrev[pad2] = false;
+                    backPrev[padIdx] = false;
                 }
 
-                // TODO: 'x' <TBD>; button is discrete
-                if (gamepad2.x) {
-                    if (!xPrev[pad2]) {
-                        // Do something
-                        xPrev[pad2] = true;
+                // 'a': Slide to drive position
+                if (gamepad.a) {
+                    if (!aPrev[padIdx]) {
+                        slideIdx = SLIDE_DRIVE_IDX;
+                        slideRequest = slideSet[slideIdx];
+                        aPrev[padIdx] = true;
                     }
                 } else {
-                    xPrev[pad2] = false;
+                    aPrev[padIdx] = false;
                 }
 
-                // TODO: 'y' <TBD>; button is discrete
-                if (gamepad2.y) {
-                    if (!yPrev[pad2]) {
-                        // Do something
-                        yPrev[pad2] = true;
+                // gamped 'b' is combined duck wheel managed below
+
+                // 'x': Speed toggle
+                if (gamepad.x) {
+                    if (!xPrev[padIdx]) {
+                        speedIdx[padIdx] = (speedIdx[padIdx] + 1) % speedModifier.length;
+                        xPrev[padIdx] = true;
                     }
                 } else {
-                    yPrev[pad2] = false;
+                    xPrev[padIdx] = false;
                 }
 
-                // TODO: 'up' <TBD>; button is discrete
-                if (gamepad2.dpad_up) {
-                    if (!dUpPrev[pad2]) {
-                        // Do something
-                        dUpPrev[pad2] = true;
+                // 'y': Slide to high position
+                if (gamepad.y) {
+                    if (!yPrev[padIdx]) {
+                        slideIdx = SLIDE_HIGH_IDX;
+                        slideRequest = slideSet[slideIdx];
+                        yPrev[padIdx] = true;
                     }
                 } else {
-                    dUpPrev[pad2] = false;
+                    yPrev[padIdx] = false;
                 }
 
-                // TODO: 'down' <TBD>; button is discrete
-                if (gamepad2.dpad_down) {
-                    if (!dDownPrev[pad2]) {
-                        // Do something
-                        dDownPrev[pad2] = true;
+                // 'up' slide higher
+                if (gamepad.dpad_up) {
+                    if (!dUpPrev[padIdx]) {
+                        slideIdx = Math.min((slideIdx + 1), slideSet.length-1);
+                        slideRequest = slideSet[slideIdx];
+                        //slide.setPosition(slideSet[slideIdx]);
+                        dUpPrev[padIdx] = true;
                     }
                 } else {
-                    dDownPrev[pad2] = false;
+                    dUpPrev[padIdx] = false;
                 }
 
-                // TODO: 'left' <TBD>; button is discrete
-                if (gamepad2.dpad_left) {
-                    if (!dLeftPrev[pad2]) {
-                        // Do something
-                        dLeftPrev[pad2] = true;
+                // 'down' slide lower
+                if (gamepad.dpad_down) {
+                    if (!dDownPrev[padIdx]) {
+                        slideIdx = Math.max((slideIdx - 1), 0);
+                        slideRequest = slideSet[slideIdx];
+                        //slide.setPosition(slideSet[slideIdx]);
+                        dDownPrev[padIdx] = true;
                     }
                 } else {
-                    dLeftPrev[pad2] = false;
+                    dDownPrev[padIdx] = false;
                 }
 
-                // TODO: 'right' <TBD>; button is discrete
-                if (gamepad2.dpad_right) {
-                    if (!dRightPrev[pad2]) {
-                        // Do something
-                        dRightPrev[pad2] = true;
-                    }
-                } else {
-                    dRightPrev[pad2] = false;
-                }
+                // 'dpad left' = slow turn code below
+                // 'dpad right' = slow turn code below
             }
 
+            // Manage the allowed and requested bucket positions.
+            if (slideRequest < SLIDE_DRIVE) {
+                // We're above the drive position, pretty much anything goes here
+                bucketAllowed = Math.min(bucketRequest[pad1], bucketRequest[pad2]);
+            } else if (slideRequest == SLIDE_DRIVE) {
+                bucketAllowed = bucketDrive;
+            } else {
+                bucketAllowed = bucketIntake;
+            }
+
+            slide.setPosition(slideRequest);
+            bucket.setPosition(bucketAllowed);
+
+            // Manage combined duck wheel on 'b' buttons
+            now = runtime.seconds();
+            deltaT = now - prevDuckTime;
+            if (gamepad1.b || gamepad2.b) {
+                duckRequest = Math.min(MAX_DUCK_SPEED, duckRequest + (MAX_DUCK_CHANGE * deltaT));
+            } else {
+                duckRequest = 0;
+            }
+            prevDuckTime = now;
+            duckL.setPosition(DUCK_STOP + duckRequest);
+            duckR.setPosition(DUCK_STOP - duckRequest);
+
+            // Now handle driving commands below for both gamepads.
+            gamepad = gamepad1;
+            padIdx = pad1;
             // Read the controller 1 (driver) stick positions
-            strafe[0] = gamepad1.left_stick_x*1.25;
-            forward[0] = -gamepad1.left_stick_y;
-            rotate[0] = gamepad1.right_stick_x*1.5;
+            strafe[padIdx] = gamepad.left_stick_x*1.25;
+            forward[padIdx] = -gamepad.left_stick_y;
+            rotate[padIdx] = gamepad.right_stick_x*1.5;
 
             if(smoothDrive) {
-                if ((prevStrafe[0] != 0) && (strafe[0] != 0) && (Math.signum(prevStrafe[0]) != Math.signum(strafe[0]))) {
-                    strafe[0] = 0;
+                if ((prevStrafe[padIdx] != 0) && (strafe[padIdx] != 0) && (Math.signum(prevStrafe[padIdx]) != Math.signum(strafe[padIdx]))) {
+                    strafe[padIdx] = 0;
                 }
-                if ((prevForward[0] != 0) && (forward[0] != 0) && (Math.signum(prevForward[0]) != Math.signum(forward[0]))) {
-                    forward[0] = 0;
+                if ((prevForward[padIdx] != 0) && (forward[padIdx] != 0) && (Math.signum(prevForward[padIdx]) != Math.signum(forward[padIdx]))) {
+                    forward[padIdx] = 0;
                 }
-                if ((prevRotate[0] != 0) && (rotate[0] != 0) && (Math.signum(prevRotate[0]) != Math.signum(rotate[0]))) {
-                    rotate[0] = 0;
+                if ((prevRotate[padIdx] != 0) && (rotate[padIdx] != 0) && (Math.signum(prevRotate[padIdx]) != Math.signum(rotate[padIdx]))) {
+                    rotate[padIdx] = 0;
                 }
 
-                double now = runtime.seconds();
-                double deltaT = now - prevTime[0];
-                if (Math.abs(strafe[0]) > 0.20) {
-                    if (prevStrafe[0] < strafe[0]) {
-                        strafe[0] = Math.min(strafe[0], prevStrafe[0] + (maxStrafeChange * deltaT));
+                now = runtime.seconds();
+                deltaT = now - prevTime[padIdx];
+                if (Math.abs(strafe[padIdx]) > 0.20) {
+                    if (prevStrafe[padIdx] < strafe[padIdx]) {
+                        strafe[padIdx] = Math.min(strafe[padIdx], prevStrafe[padIdx] + (maxStrafeChange * deltaT));
                     } else {
-                        strafe[0] = Math.max(strafe[0], prevStrafe[0] - (maxStrafeChange * deltaT));
+                        strafe[padIdx] = Math.max(strafe[padIdx], prevStrafe[padIdx] - (maxStrafeChange * deltaT));
                     }
                 }
-                if (Math.abs(forward[0]) > 0.20) {
-                    if (prevForward[0] < forward[0]) {
-                        forward[0] = Math.min(forward[0], prevForward[0] + (maxForwardChange * deltaT));
+                if (Math.abs(forward[padIdx]) > 0.20) {
+                    if (prevForward[padIdx] < forward[padIdx]) {
+                        forward[padIdx] = Math.min(forward[padIdx], prevForward[padIdx] + (maxForwardChange * deltaT));
                     } else {
-                        forward[0] = Math.max(forward[0], prevForward[0] - (maxForwardChange * deltaT));
+                        forward[padIdx] = Math.max(forward[padIdx], prevForward[padIdx] - (maxForwardChange * deltaT));
                     }
                 }
-                if (Math.abs(rotate[0]) > 0.20) {
-                    if (prevRotate[0] < rotate[0]) {
-                        rotate[0] = Math.min(rotate[0], prevRotate[0] + (maxRotateChange * deltaT));
+                if (Math.abs(rotate[padIdx]) > 0.20) {
+                    if (prevRotate[padIdx] < rotate[padIdx]) {
+                        rotate[padIdx] = Math.min(rotate[padIdx], prevRotate[padIdx] + (maxRotateChange * deltaT));
                     } else {
-                        rotate[0] = Math.max(rotate[0], prevRotate[0] - (maxRotateChange * deltaT));
+                        rotate[padIdx] = Math.max(rotate[padIdx], prevRotate[padIdx] - (maxRotateChange * deltaT));
                     }
                 }
-                prevTime[0] = now;
-                prevStrafe[0] = strafe[0];
-                prevForward[0] = forward[0];
-                prevRotate[0] = rotate[0];
+                prevTime[padIdx] = now;
+                prevStrafe[padIdx] = strafe[padIdx];
+                prevForward[padIdx] = forward[padIdx];
+                prevRotate[padIdx] = rotate[padIdx];
 
                 // Remove 15% deadzone
-                if (strafe[0] >= 0.025) {
-                    strafe[0] = (strafe[0] * 0.85) + 0.15;
+                if (strafe[padIdx] >= 0.025) {
+                    strafe[padIdx] = (strafe[padIdx] * 0.85) + 0.15;
                 }
-                if (forward[0] >= 0.025) {
-                    forward[0] = (forward[0] * 0.85) + 0.15;
+                if (forward[padIdx] >= 0.025) {
+                    forward[padIdx] = (forward[padIdx] * 0.85) + 0.15;
                 }
-                if (rotate[0] >= 0.025) {
-                    rotate[0] = (rotate[0] * 0.85) + 0.15;
+                if (rotate[padIdx] >= 0.025) {
+                    rotate[padIdx] = (rotate[padIdx] * 0.85) + 0.15;
                 }
-                if (strafe[0] <= -0.025) {
-                    strafe[0] = (strafe[0] * 0.85) - 0.15;
+                if (strafe[padIdx] <= -0.025) {
+                    strafe[padIdx] = (strafe[padIdx] * 0.85) - 0.15;
                 }
-                if (forward[0] <= -0.025) {
-                    forward[0] = (forward[0] * 0.85) - 0.15;
+                if (forward[padIdx] <= -0.025) {
+                    forward[padIdx] = (forward[padIdx] * 0.85) - 0.15;
                 }
-                if (rotate[0] <= -0.025) {
-                    rotate[0] = (rotate[0] * 0.85) - 0.15;
+                if (rotate[padIdx] <= -0.025) {
+                    rotate[padIdx] = (rotate[padIdx] * 0.85) - 0.15;
                 }
             }
 
             // Rotate a little left
-            if (gamepad1.dpad_left) {
-                rotate[0] -= 0.25;
+            if (gamepad.dpad_left) {
+                rotate[padIdx] -= 0.25;
             }
             // Rotate a little right
-            if (gamepad1.dpad_right) {
-                rotate[0] += 0.25;
+            if (gamepad.dpad_right) {
+                rotate[padIdx] += 0.25;
             }
 
-            strafe[1] = gamepad2.left_stick_x;
-            forward[1] = -gamepad2.left_stick_y;
-            rotate[1] = gamepad2.right_stick_x;
+            gamepad= gamepad2;
+            padIdx = pad2;
+            strafe[padIdx] = gamepad.left_stick_x;
+            forward[padIdx] = -gamepad.left_stick_y;
+            rotate[padIdx] = gamepad.right_stick_x;
 
             if( smoothDrive ) {
 
-                if((prevStrafe[1] != 0) && (strafe[1] != 0) && (Math.signum(prevStrafe[1]) != Math.signum(strafe[1]))) {
-                    strafe[1] = 0;
+                if((prevStrafe[padIdx] != 0) && (strafe[padIdx] != 0) && (Math.signum(prevStrafe[padIdx]) != Math.signum(strafe[padIdx]))) {
+                    strafe[padIdx] = 0;
                 }
-                if((prevForward[1] != 0) && (forward[1] != 0) && (Math.signum(prevForward[1]) != Math.signum(forward[1]))) {
-                    forward[1] = 0;
+                if((prevForward[padIdx] != 0) && (forward[padIdx] != 0) && (Math.signum(prevForward[padIdx]) != Math.signum(forward[padIdx]))) {
+                    forward[padIdx] = 0;
                 }
-                if((prevRotate[1] != 0) && (rotate[1] != 0) && (Math.signum(prevRotate[1]) != Math.signum(rotate[1]))) {
-                    rotate[1] = 0;
+                if((prevRotate[padIdx] != 0) && (rotate[padIdx] != 0) && (Math.signum(prevRotate[padIdx]) != Math.signum(rotate[padIdx]))) {
+                    rotate[padIdx] = 0;
                 }
 
-                double now = runtime.seconds();
-                double deltaT = now - prevTime[1];
-                if (Math.abs(strafe[1]) > 0.20) {
-                    if (prevStrafe[1] < strafe[1]) {
-                        strafe[1] = Math.min(strafe[1], prevStrafe[1] + (maxStrafeChange * deltaT));
+                now = runtime.seconds();
+                deltaT = now - prevTime[padIdx];
+                if (Math.abs(strafe[padIdx]) > 0.20) {
+                    if (prevStrafe[padIdx] < strafe[padIdx]) {
+                        strafe[padIdx] = Math.min(strafe[padIdx], prevStrafe[padIdx] + (maxStrafeChange * deltaT));
                     } else {
-                        strafe[1] = Math.max(strafe[1], prevStrafe[1] - (maxStrafeChange * deltaT));
+                        strafe[padIdx] = Math.max(strafe[padIdx], prevStrafe[padIdx] - (maxStrafeChange * deltaT));
                     }
                 }
-                if (Math.abs(forward[1]) > 0.20) {
-                    if (prevForward[1] < forward[1]) {
-                        forward[1] = Math.min(forward[1], prevForward[1] + (maxForwardChange * deltaT));
+                if (Math.abs(forward[padIdx]) > 0.20) {
+                    if (prevForward[padIdx] < forward[padIdx]) {
+                        forward[padIdx] = Math.min(forward[padIdx], prevForward[padIdx] + (maxForwardChange * deltaT));
                     } else {
-                        forward[1] = Math.max(forward[1], prevForward[1] - (maxForwardChange * deltaT));
+                        forward[padIdx] = Math.max(forward[padIdx], prevForward[padIdx] - (maxForwardChange * deltaT));
                     }
                 }
-                if (Math.abs(rotate[1]) > 0.20) {
-                    if (prevRotate[1] < rotate[1]) {
-                        rotate[1] = Math.min(rotate[1], prevRotate[1] + (maxRotateChange * deltaT));
+                if (Math.abs(rotate[padIdx]) > 0.20) {
+                    if (prevRotate[padIdx] < rotate[padIdx]) {
+                        rotate[padIdx] = Math.min(rotate[padIdx], prevRotate[padIdx] + (maxRotateChange * deltaT));
                     } else {
-                        rotate[1] = Math.max(rotate[1], prevRotate[1] - (maxRotateChange * deltaT));
+                        rotate[padIdx] = Math.max(rotate[padIdx], prevRotate[padIdx] - (maxRotateChange * deltaT));
                     }
                 }
-                prevTime[1] = now;
-                prevStrafe[1] = strafe[1];
-                prevForward[1] = forward[1];
-                prevRotate[1] = rotate[1];
+                prevTime[padIdx] = now;
+                prevStrafe[padIdx] = strafe[padIdx];
+                prevForward[padIdx] = forward[padIdx];
+                prevRotate[padIdx] = rotate[padIdx];
 
                 // Remove 15% deadzone
-                if (strafe[1] >= 0.025) {
-                    strafe[1] = (strafe[1] * 0.85) + 0.15;
+                if (strafe[padIdx] >= 0.025) {
+                    strafe[padIdx] = (strafe[padIdx] * 0.85) + 0.15;
                 }
-                if (forward[1] >= 0.025) {
-                    forward[1] = (forward[1] * 0.85) + 0.15;
+                if (forward[padIdx] >= 0.025) {
+                    forward[padIdx] = (forward[padIdx] * 0.85) + 0.15;
                 }
-                if (rotate[1] >= 0.025) {
-                    rotate[1] = (rotate[1] * 0.85) + 0.15;
+                if (rotate[padIdx] >= 0.025) {
+                    rotate[padIdx] = (rotate[padIdx] * 0.85) + 0.15;
                 }
-                if (strafe[1] <= -0.025) {
-                    strafe[1] = (strafe[1] * 0.85) - 0.15;
+                if (strafe[padIdx] <= -0.025) {
+                    strafe[padIdx] = (strafe[padIdx] * 0.85) - 0.15;
                 }
-                if (forward[1] <= -0.025) {
-                    forward[1] = (forward[1] * 0.85) - 0.15;
+                if (forward[padIdx] <= -0.025) {
+                    forward[padIdx] = (forward[padIdx] * 0.85) - 0.15;
                 }
-                if (rotate[1] <= -0.025) {
-                    rotate[1] = (rotate[1] * 0.85) - 0.15;
+                if (rotate[padIdx] <= -0.025) {
+                    rotate[padIdx] = (rotate[padIdx] * 0.85) - 0.15;
                 }
             }
 
             // Rotate a little left
-            if (gamepad2.dpad_left) {
-                rotate[1] -= 0.25;
+            if (gamepad.dpad_left) {
+                rotate[padIdx] -= 0.25;
             }
             // Rotate a little right
-            if (gamepad2.dpad_right) {
-                rotate[1] += 0.25;
+            if (gamepad.dpad_right) {
+                rotate[padIdx] += 0.25;
             }
 
-            boolean doFOV = false;
-            if (doFOV) {
+            // This code is terrible.
+            // Beware the function calls that pass information in and out via global vars
+            if (FOV[pad1] || FOV[pad2]) {
                 // Get the current robot heading
                 degrees = Math.toDegrees(drive.getRawExternalHeading());
-                // Convert the X/Y Cartesion for strafe and forward into Polar
-                CarToPol(strafe[1], forward[1]);
-                // Rotate the Polar coordinates by the robot's heading
-                theta -= degrees;
-                // Convert the new Polar back into Cartesian
-                PolToCar(r_speed);
-                // Replace the strafe and forward power with translated values
-                strafe[1] = new_x;
-                forward[1] = new_y;
-                // Now the robot moves in orientation of the field
+
+                if (FOV[pad1]) {
+                    // Convert the X/Y Cartesion for strafe and forward into Polar
+                    CarToPol(strafe[pad1], forward[pad1]);
+                    // Rotate the Polar coordinates by the robot's heading
+                    theta -= degrees;
+                    // Convert the new Polar back into Cartesian
+                    PolToCar(r_speed);
+                    // Replace the strafe and forward power with translated values
+                    strafe[pad1] = new_x;
+                    forward[pad1] = new_y;
+                    // Now the robot moves in orientation of the field
+                }
+
+                if (FOV[pad2]) {
+                    CarToPol(strafe[pad2], forward[pad2]);
+                    // Rotate the Polar coordinates by the robot's heading
+                    theta -= degrees;
+                    // Convert the new Polar back into Cartesian
+                    PolToCar(r_speed);
+                    // Replace the strafe and forward power with translated values
+                    strafe[pad2] = new_x;
+                    forward[pad2] = new_y;
+                }
             }
 
-
             // This adds the powers from both controllers together scaled for each controller and FOV
-            l_f_motor_power = ((forward[0] + strafe[0] + rotate[0]) * speedModifier[0]) +
-                    ((forward[1] + strafe[1] + rotate[1]) * speedModifier[1]);
-            l_b_motor_power = ((forward[0] - strafe[0] + rotate[0]) * speedModifier[0]) +
-                    ((forward[1] - strafe[1] + rotate[1]) * speedModifier[1]);
-            r_f_motor_power = ((forward[0] - strafe[0] - rotate[0]) * speedModifier[0]) +
-                    ((forward[1] - strafe[1] - rotate[1]) * speedModifier[1]);
-            r_b_motor_power = ((forward[0] + strafe[0] - rotate[0]) * speedModifier[0]) +
-                    ((forward[1] + strafe[1] - rotate[1]) * speedModifier[1]);
+            l_f_motor_power = ((forward[pad1] + strafe[pad1] + rotate[pad1]) * speedModifier[pad1]) +
+                    ((forward[pad2] + strafe[pad2] + rotate[pad2]) * speedModifier[pad2]);
+            l_b_motor_power = ((forward[pad1] - strafe[pad1] + rotate[pad1]) * speedModifier[pad1]) +
+                    ((forward[pad2] - strafe[pad2] + rotate[pad2]) * speedModifier[pad2]);
+            r_f_motor_power = ((forward[pad1] - strafe[pad1] - rotate[pad1]) * speedModifier[pad1]) +
+                    ((forward[pad2] - strafe[pad2] - rotate[pad2]) * speedModifier[pad2]);
+            r_b_motor_power = ((forward[pad1] + strafe[pad1] - rotate[pad1]) * speedModifier[pad1]) +
+                    ((forward[pad2] + strafe[pad2] - rotate[pad2]) * speedModifier[pad2]);
 
             if(smoothDrive) {
                 // Find the largest power request ignoring sign
@@ -693,6 +810,25 @@ public class RRMech_Teleop extends LinearOpMode {
                     l_b_motor_power /= maxPwr;
                     r_f_motor_power /= maxPwr;
                     r_b_motor_power /= maxPwr;
+                }
+            }
+
+            boolean doRumble = false;
+            if (doRumble) {
+                // Warn the driver they are moving with bucket down
+                if (((Math.abs(l_f_motor_power) > 0.1) ||
+                        (Math.abs(l_b_motor_power) > 0.1) ||
+                        (Math.abs(r_f_motor_power) > 0.1) ||
+                        (Math.abs(r_b_motor_power) > 0.1)) && (slideIdx == SLIDE_INTAKE_IDX)) {
+                    gamepad1.rumble(Gamepad.RUMBLE_DURATION_CONTINUOUS);
+                    gamepad2.rumble(Gamepad.RUMBLE_DURATION_CONTINUOUS);
+                } else {
+                    if (gamepad1.isRumbling()) {
+                        gamepad1.stopRumble();
+                    }
+                    if (gamepad2.isRumbling()) {
+                        gamepad2.stopRumble();
+                    }
                 }
             }
 
