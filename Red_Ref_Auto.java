@@ -71,7 +71,7 @@ public class Red_Ref_Auto extends LinearOpMode {
     private static boolean option3 = true;
 
     private IncepVision vision = new IncepVision();
-    private int barLocation = -1;
+    private int grnLocation = vision.gUNSEEN;
     private Trajectory[][] trajs = {new Trajectory[25], new Trajectory[25], new Trajectory[25]} ;
 
     @Override
@@ -181,19 +181,20 @@ public class Red_Ref_Auto extends LinearOpMode {
         vision.clip = false;
         boolean leftBOK = true, rightBOK = true;
         do {
-            barLocation = vision.barLocation();
+            grnLocation = vision.getGrnLocation();
             vision.manageVisionBox(gamepad1, gamepad2);
         } while (!isStarted() && (!isStopRequested()));
         vision.shutdown();
 
+        // TODO: Make sure the LEFT/RIGHT/UNSEEN mapping here is correct for every auto.
         // FIXME: Test the stopping in auto here again.
         if (opModeIsActive()) {
-            if (barLocation == 1) {
+            if (grnLocation == vision.gRIGHT) {
                 Bar1(trajs[BAR1]);
-            } else if (barLocation == 2) {
+            } else if (grnLocation == vision.gLEFT) {
                 Bar2(trajs[BAR2]);
             } else {
-                // If it's not 1 or 2, assume 3
+                // If it's not LEFT or RIGHT, assume unseen
                 Bar3(trajs[BAR3]);
             }
         }

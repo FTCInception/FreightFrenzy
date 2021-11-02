@@ -86,6 +86,8 @@ public class IncepVision {
     public boolean clip = false;
     public boolean tfodState = false;
     private int ringCount = -1;
+    public final int gLEFT = 0, gRIGHT = 1, gUNSEEN = -1;
+    private int grnLocation = gUNSEEN;
     private String webcamName;
     public final int NONE = 0, BLUE_SIDE = 1, RED_SIDE = 2;
     private final int iTOP = 0, iBOTTOM = 1, iLEFT = 2, iRIGHT = 3;
@@ -183,16 +185,52 @@ public class IncepVision {
         int bufWidth = image.getBufferWidth();
         int bufHeight = image.getBufferHeight();
 
+        int leftGrnCnt=0, leftNotGrnCnt=0;
+        int rightGrnCnt=0, rightNotGrnCnt=0;
+
         Bitmap bitmap = Bitmap.createBitmap(image.getWidth(), image.getHeight(),
                 Bitmap.Config.RGB_565);
         bitmap.copyPixelsFromBuffer(image.getPixels());
-
 
         // Extract the pixels inside our clipped region
         // Divide the pixels in half top to bottom
         // Count the 'very green' pixles in each half
         // Confirm there are 'enough' green pixels total (or its the unseen bar code)
-        // Choose the half with the most green (shoudl be a LOT more)
+        // Choose the half with the most green (should be a LOT more)
+
+        // Bounds that are more friendly to the concept of X/Y coordinates instead of TensorFlow edge clipping
+        int subMapTop = clipTop;
+        int subMapBottom = bufHeight - clipBottom;
+        int subMapRight = bufWidth - clipRight;
+        int subMapLeft = clipLeft;
+        int subMapWidth = subMapRight - subMapLeft;
+        int subMapHeight = subMapBottom - subMapTop;
+
+        // For-loop top to bottom
+        //   For-loop left half
+        //      leftGrnCnt += isPixelGreen(X,Y)
+        //   For-loop right half
+        //      rightGrnCnt += isPixelGreen(X,Y)
+        //
+        // if ((leftGrnCnt + rightGrnCnt) < grnCntThreshold)
+        //   return(unseen bar code location)
+        // else
+        //   return ( bar code location corresponding to highest green count)
+        //
+        // For flexiblity, it might be better to just return some values representing:
+        // LEFT/RIGHT/UNSEEN.
+        // Then let the auto map those to the actual bar location.  This lets you decide
+        // to position the robot uniquely for each auto without needing to change vision.
+
+        // Now display everything we learned.
+        myLOpMode.telemetry.addData("box", "T %3s, B %3d, L %3d, R %3d, <-- %s/%s", clipTop, clipBottom, clipLeft, clipRight, tfodState ? "Updating" : "Frozen", clip ? "Clipped" : "Unclipped");
+
+        myLOpMode.telemetry.addData("Left  grn:!grn ", "%d:%d", leftGrnCnt, leftNotGrnCnt);
+        myLOpMode.telemetry.addData("Right grn:!grn ", "%d:%d", rightGrnCnt, rightNotGrnCnt);
+        myLOpMode.telemetry.addData("grnLocation", "%d", grnLocation);
+
+        myLOpMode.telemetry.update();
+
     }
 
     public void processImageUltimateGoal(Image image) {
@@ -343,11 +381,13 @@ public class IncepVision {
         myLOpMode.telemetry.update();
     }
 
-    public int barLocation() {
+    public int getGrnLocation() {
 
         if (tfod != null) {
 
             /*
+            // We're not really using tensorFlow for anythign other than the clipping to allow
+            // easier robot line-up.  Don't even bother with recognitions here.
             if (tfodState) {
                 List<Recognition> Recognitions = tfod.getRecognitions();
                 if (Recognitions != null) {
@@ -394,7 +434,7 @@ public class IncepVision {
             }
         }
 
-        return ringCount;
+        return grnLocation;
     }
 
     public void manageVisionBox( Gamepad gamepad1, Gamepad gamepad2 ) {
