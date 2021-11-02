@@ -66,9 +66,16 @@ public class IncepVision {
     public VuforiaLocalizer vuforia;     // The localizer
     public TFObjectDetector tfod;
     private static final String VUFORIA_KEY = "AfWZ0Nj/////AAABma9i7nGZSk81hrDHleShtMuKJES27HbNIQandd3JejLnjvR3256AZU4KbwLKM3zRbhT54zvMHzIwofU7N0TwRifRjMB9sPJ/GZoVpvrcOTNl0F3G6ynufbSkLWWRAGzf3ffMAWeB97a8iF/fPSC5kYY7u56rj2IXVXw7zB2GrTIlFIgkGmy+faJST+4838yCmE4kZFqSc8qnKW1zG0qh9EhMdg8KobZkODSkG2r2uDHXEcvnD8zLKQMIZGm3ueWs1aWvJRZZgx6wDFr1LFnnzZDdJ1en1TjkVWt7Mv+pb8j+9j/9W7Fp4Q5yUrqDl64aeNe7pLplamMYlZXBSOmevv/4r+h6SdQKeimUeP5dCZ6m";
-    private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
-    private static final String LABEL_QUAD = "Quad";
-    private static final String LABEL_SINGLE = "Single";
+    private static final String TFOD_MODEL_ASSET = "FreightFrenzy_BCDM.tflite";
+    private static final String[] LABELS = {
+            "Ball",
+            "Cube",
+            "Duck",
+            "Marker"
+    };
+    //private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
+    //private static final String LABEL_QUAD = "Quad";
+    //private static final String LABEL_SINGLE = "Single";
     private static boolean leftBOK = true, rightBOK = true;
     private static boolean dLeftOK = true, dRightOK = true, dUpOK = true, dDownOK = true;
     private static boolean aOK = true, bOK = true, xOK=true, yOK=true;
@@ -85,9 +92,9 @@ public class IncepVision {
     public int auto = NONE;
     final int[][] defStack = {
             // top, bottom, left, right
-              {189,    217,  252,   285},  // NONE
-              {202,    199,  327,   204},  // BLUE_SIDE
-              {170,    227,  279,   247}}; // RED_SIDE
+              {  0,      0,    0,     0},  // NONE
+              {  0,      0,    0,     0},  // BLUE_SIDE
+              {  0,      0,    0,     0}}; // RED_SIDE
     /***
      * Initialize the Target Tracking and navigation interface
      * @param lOpMode    pointer to OpMode
@@ -156,14 +163,14 @@ public class IncepVision {
 
         // This creates a 'params' object servicing the DS camera stream with 0.6 confidence
         TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
-        tfodParameters.minResultConfidence = (float) (0.4);
+        tfodParameters.minResultConfidence = (float) (0.6);
 
         // Create the object
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
 
         // Load the model
         //tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_QUAD, LABEL_SINGLE);
-        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_QUAD);
+        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABELS);
 
         // bound the window down to help with ring alignment
         if (clip) {
@@ -172,6 +179,23 @@ public class IncepVision {
     }
 
     public void processImage(Image image) {
+
+        int bufWidth = image.getBufferWidth();
+        int bufHeight = image.getBufferHeight();
+
+        Bitmap bitmap = Bitmap.createBitmap(image.getWidth(), image.getHeight(),
+                Bitmap.Config.RGB_565);
+        bitmap.copyPixelsFromBuffer(image.getPixels());
+
+
+        // Extract the pixels inside our clipped region
+        // Divide the pixels in half top to bottom
+        // Count the 'very green' pixles in each half
+        // Confirm there are 'enough' green pixels total (or its the unseen bar code)
+        // Choose the half with the most green (shoudl be a LOT more)
+    }
+
+    public void processImageUltimateGoal(Image image) {
 
         int bufWidth = image.getBufferWidth();
         int bufHeight = image.getBufferHeight();
@@ -323,6 +347,7 @@ public class IncepVision {
 
         if (tfod != null) {
 
+            /*
             if (tfodState) {
                 List<Recognition> Recognitions = tfod.getRecognitions();
                 if (Recognitions != null) {
@@ -338,6 +363,7 @@ public class IncepVision {
                     }
                 }
             }
+            */
 
             VuforiaLocalizer.CloseableFrame frame;
             try {
@@ -359,7 +385,7 @@ public class IncepVision {
                         try {
                             processImage(frame.getImage(i));
                         } catch (Exception e) {
-                            myLOpMode.telemetry.addData("TENSOR FLOW BARFED -- You need to align the camera or 'freeze' and manually align", "");
+                            myLOpMode.telemetry.addData("processImage() threw an error -- It's likely it went past the edge of the bitmap.", "");
                             setDefStack();
                             myLOpMode.telemetry.update();
                         }
@@ -371,10 +397,10 @@ public class IncepVision {
         return ringCount;
     }
 
-    public void manageVisionBox( Gamepad gamepad ) {
+    public void manageVisionBox( Gamepad gamepad1, Gamepad gamepad2 ) {
 
         // Keep the tensorFlow info
-        if (gamepad.left_bumper) {
+        if (gamepad1.left_bumper || gamepad2.left_bumper) {
             if (leftBOK) {
                 if (tfodState) {
                     tfod.deactivate();
@@ -391,7 +417,7 @@ public class IncepVision {
             leftBOK = true;
         }
         // Default positions if tensorFlow failed
-        if (gamepad.right_bumper) {
+        if (gamepad1.right_bumper || gamepad2.right_bumper) {
             if (rightBOK) {
                 if (tfodState) {
                     tfod.deactivate();
@@ -405,7 +431,7 @@ public class IncepVision {
             rightBOK = true;
         }
 
-        if (gamepad.dpad_left) {
+        if (gamepad1.dpad_left || gamepad2.dpad_left) {
             if (dLeftOK) {
                 clipLeft -= 2;
                 clipRight += 2;
@@ -415,7 +441,7 @@ public class IncepVision {
             dLeftOK = true;
         }
 
-        if (gamepad.dpad_right) {
+        if (gamepad1.dpad_right || gamepad2.dpad_right) {
             if (dRightOK) {
                 clipLeft += 2;
                 clipRight -= 2;
@@ -425,7 +451,7 @@ public class IncepVision {
             dRightOK = true;
         }
 
-        if (gamepad.dpad_up) {
+        if (gamepad1.dpad_up || gamepad2.dpad_up) {
             if (dUpOK) {
                 clipTop -= 2;
                 clipBottom += 2;
@@ -435,7 +461,7 @@ public class IncepVision {
             dUpOK = true;
         }
 
-        if (gamepad.dpad_down) {
+        if (gamepad1.dpad_down || gamepad2.dpad_down) {
             if (dDownOK) {
                 clipTop += 2;
                 clipBottom -= 2;
@@ -445,7 +471,7 @@ public class IncepVision {
             dDownOK = true;
         }
 
-        if (gamepad.x) {
+        if (gamepad1.x || gamepad2.x) {
             if (xOK) {
                 clipLeft -= 10;
                 clipRight += 10;
@@ -455,7 +481,7 @@ public class IncepVision {
             xOK = true;
         }
 
-        if (gamepad.b) {
+        if (gamepad1.b || gamepad2.b) {
             if (bOK) {
                 clipLeft += 10;
                 clipRight -= 10;
@@ -465,7 +491,7 @@ public class IncepVision {
             bOK = true;
         }
 
-        if (gamepad.y) {
+        if (gamepad1.y || gamepad2.y) {
             if (yOK) {
                 clipTop -= 10;
                 clipBottom += 10;
@@ -475,7 +501,7 @@ public class IncepVision {
             yOK = true;
         }
 
-        if (gamepad.a) {
+        if (gamepad1.a || gamepad2.a) {
             if (aOK) {
                 clipTop += 10;
                 clipBottom -= 10;

@@ -89,7 +89,7 @@ public class Red_Ref_Auto extends LinearOpMode {
         double Sy = 0.0;
         boolean leftOK = true, rightOK = true, upOK = true, downOK = true, bOK=true, xOK=true, yOK=true;
         do {
-            if ( gamepad2.dpad_left ) {
+            if ( gamepad1.dpad_left || gamepad2.dpad_left ) {
                 if (leftOK) {
                     Sx -= 1.0;
                     leftOK = false;
@@ -97,7 +97,7 @@ public class Red_Ref_Auto extends LinearOpMode {
             } else {
                 leftOK = true;
             }
-            if ( gamepad2.dpad_right ) {
+            if ( gamepad1.dpad_right || gamepad2.dpad_right) {
                 if (rightOK) {
                     Sx += 1.0;
                     rightOK = false;
@@ -105,7 +105,7 @@ public class Red_Ref_Auto extends LinearOpMode {
             } else {
                 rightOK = true;
             }
-            if ( gamepad2.dpad_down ) {
+            if ( gamepad1.dpad_down || gamepad2.dpad_down ) {
                 if (downOK) {
                     Sy -= 1.0;
                     downOK = false;
@@ -113,7 +113,7 @@ public class Red_Ref_Auto extends LinearOpMode {
             } else {
                 downOK = true;
             }
-            if ( gamepad2.dpad_up ) {
+            if ( gamepad1.dpad_up || gamepad2.dpad_up ) {
                 if (upOK) {
                     Sy += 1.0;
                     upOK = false;
@@ -121,7 +121,7 @@ public class Red_Ref_Auto extends LinearOpMode {
             } else {
                 upOK = true;
             }
-            if ( gamepad2.y ) {
+            if ( gamepad1.y || gamepad2.y ) {
                 if (yOK) {
                     option1 = !option1;
                     yOK = false;
@@ -130,7 +130,7 @@ public class Red_Ref_Auto extends LinearOpMode {
                 yOK = true;
             }
 
-            if ( gamepad2.x ) {
+            if ( gamepad1.x || gamepad2.x ) {
                 if (xOK) {
                     option2 = !option2;
                     xOK = false;
@@ -138,7 +138,7 @@ public class Red_Ref_Auto extends LinearOpMode {
             } else {
                 xOK = true;
             }
-            if ( gamepad2.b ) {
+            if ( gamepad1.b ||gamepad2.b ) {
                 if (bOK) {
                     option3 = !option3;
                     bOK = false;
@@ -146,7 +146,7 @@ public class Red_Ref_Auto extends LinearOpMode {
             } else {
                 bOK = true;
             }
-            if ( gamepad2.a ) {
+            if ( gamepad1.a ||gamepad2.a ) {
                 break;
             }
 
@@ -182,7 +182,7 @@ public class Red_Ref_Auto extends LinearOpMode {
         boolean leftBOK = true, rightBOK = true;
         do {
             barLocation = vision.barLocation();
-            vision.manageVisionBox(gamepad2);
+            vision.manageVisionBox(gamepad1, gamepad2);
         } while (!isStarted() && (!isStopRequested()));
         vision.shutdown();
 
