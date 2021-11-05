@@ -190,7 +190,7 @@ public class RRMech_Teleop extends LinearOpMode {
         final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.65, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
         double[] slideSet = {SLIDE_INTAKE, SLIDE_DRIVE, SLIDE_LOW, SLIDE_SHARED, SLIDE_MED, SLIDE_HIGH};
         final int SLIDE_INTAKE_IDX = 0, SLIDE_DRIVE_IDX = 1, SLIDE_HIGH_IDX = slideSet.length-1;
-        int slideIdx=1;
+        int slideIdx=SLIDE_DRIVE_IDX;
         double slideRequest=slideSet[slideIdx];
 
         double prevLTrigVal=0.0;
