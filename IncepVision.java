@@ -86,17 +86,29 @@ public class IncepVision {
     public boolean clip = false;
     public boolean tfodState = false;
     private int ringCount = -1;
+    // TODO: Consider if this should be 'gINSIDE' and 'gOUTSIDE'
     public final int gLEFT = 0, gRIGHT = 1, gUNSEEN = -1;
     private int grnLocation = gUNSEEN;
     private String webcamName;
-    public final int NONE = 0, BLUE_SIDE = 1, RED_SIDE = 2;
+    public final int NONE = 0, BLUE_WAREHOUSE = 1, BLUE_DUCK = 2, RED_WAREHOUSE = 3, RED_DUCK = 4;
     private final int iTOP = 0, iBOTTOM = 1, iLEFT = 2, iRIGHT = 3;
     public int auto = NONE;
-    final int[][] defStack = {
+    final int[][] defClip = {
+            // TODO: Choose the default box limits, decide if you want this to include both
+            //  positions or just the 'center' position.  If both positions, then you may split
+            //  the clipped box in half and measure each half. If the clipped region is just
+            //  the center position (field setup with TSE in middle postion) then your algorithm
+            //  would search inside the clip region and either 'outside' or it will know
+            //  for each auto whether to look left or right.
+            //  Remember that the clipping box management code does not allow you to change the
+            //  size of the box, only position.  So clipping around just the center marker might be
+            //  better idea for both robot lineup and ease of adjustment.
             // top, bottom, left, right
               {  0,      0,    0,     0},  // NONE
-              {  0,      0,    0,     0},  // BLUE_SIDE
-              {  0,      0,    0,     0}}; // RED_SIDE
+              {  0,      0,    0,     0},  // BLUE_WAREHOUSE
+              {  0,      0,    0,     0},  // BLUE_DUCK
+              {  0,      0,    0,     0},  // RED_WAREHOUSE
+              {  0,      0,    0,     0}}; // RED_DUCK
     /***
      * Initialize the Target Tracking and navigation interface
      * @param lOpMode    pointer to OpMode
@@ -107,7 +119,7 @@ public class IncepVision {
         myLOpMode = lOpMode;
         webcamName = webcamName;
         auto = myAuto;
-        setDefStack(auto);
+        setDefClip(auto);
 
         initVuforia(webcamName);
 
@@ -122,15 +134,15 @@ public class IncepVision {
         initAutonomous(lOpMode, webcamName, NONE);
     }
 
-    public void setDefStack(int auto) {
-        clipTop = defStack[auto][iTOP];
-        clipLeft = defStack[auto][iLEFT];
-        clipRight = defStack[auto][iRIGHT];
-        clipBottom = defStack[auto][iBOTTOM];
+    public void setDefClip(int auto) {
+        clipTop = defClip[auto][iTOP];
+        clipLeft = defClip[auto][iLEFT];
+        clipRight = defClip[auto][iRIGHT];
+        clipBottom = defClip[auto][iBOTTOM];
     }
 
-    public void setDefStack() {
-        setDefStack(auto);
+    public void setDefClip() {
+        setDefClip(auto);
     }
 
     public void initVuforia(String webcamName) {
@@ -185,8 +197,8 @@ public class IncepVision {
         int bufWidth = image.getBufferWidth();
         int bufHeight = image.getBufferHeight();
 
-        int leftGrnCnt=0, leftNotGrnCnt=0;
-        int rightGrnCnt=0, rightNotGrnCnt=0;
+        int inGrnCnt=0, inNotGrnCnt=0;
+        int outGrnCnt=0, outNotGrnCnt=0;
 
         Bitmap bitmap = Bitmap.createBitmap(image.getWidth(), image.getHeight(),
                 Bitmap.Config.RGB_565);
@@ -206,10 +218,13 @@ public class IncepVision {
         int subMapWidth = subMapRight - subMapLeft;
         int subMapHeight = subMapBottom - subMapTop;
 
-        // For-loop top to bottom
-        //   For-loop left half
+        // TODO: Implement pseudo-code below
+        //  'tolerace' is an imaginary buffer around your clipping region to handle
+        //  human error from officials when positioning the marker.
+        // For-loop top to bottom of clipped zone
+        //   For-loop inside the clip region (plus tolerance)
         //      leftGrnCnt += isPixelGreen(X,Y)
-        //   For-loop right half
+        //   For-loop outside the clip region (plus tolerance)
         //      rightGrnCnt += isPixelGreen(X,Y)
         //
         // if ((leftGrnCnt + rightGrnCnt) < grnCntThreshold)
@@ -218,15 +233,15 @@ public class IncepVision {
         //   return ( bar code location corresponding to highest green count)
         //
         // For flexiblity, it might be better to just return some values representing:
-        // LEFT/RIGHT/UNSEEN.
+        // LEFT/RIGHT/UNSEEN (or INSIDE/OUTSIDE/UNSEEN).
         // Then let the auto map those to the actual bar location.  This lets you decide
         // to position the robot uniquely for each auto without needing to change vision.
 
         // Now display everything we learned.
         myLOpMode.telemetry.addData("box", "T %3s, B %3d, L %3d, R %3d, <-- %s/%s", clipTop, clipBottom, clipLeft, clipRight, tfodState ? "Updating" : "Frozen", clip ? "Clipped" : "Unclipped");
 
-        myLOpMode.telemetry.addData("Left  grn:!grn ", "%d:%d", leftGrnCnt, leftNotGrnCnt);
-        myLOpMode.telemetry.addData("Right grn:!grn ", "%d:%d", rightGrnCnt, rightNotGrnCnt);
+        myLOpMode.telemetry.addData("Inside  grn:!grn ", "%d:%d", inGrnCnt, inNotGrnCnt);
+        myLOpMode.telemetry.addData("Outside grn:!grn ", "%d:%d", outGrnCnt, outNotGrnCnt);
         myLOpMode.telemetry.addData("grnLocation", "%d", grnLocation);
 
         myLOpMode.telemetry.update();
@@ -426,7 +441,7 @@ public class IncepVision {
                             processImage(frame.getImage(i));
                         } catch (Exception e) {
                             myLOpMode.telemetry.addData("processImage() threw an error -- It's likely it went past the edge of the bitmap.", "");
-                            setDefStack();
+                            setDefClip();
                             myLOpMode.telemetry.update();
                         }
                     }
@@ -439,6 +454,13 @@ public class IncepVision {
 
     public void manageVisionBox( Gamepad gamepad1, Gamepad gamepad2 ) {
 
+        // TODO: This code only allows you to box a box of fixed size around.
+        //  It does not allow you to change the size of the box.  This is by design
+        //  since the box should also be used to provide 'lineup' for the robot.
+        //  Ideally, the camera should be in a fixed position always and the orientation
+        //  of the robot will be reflected by how well the TSE is centered inside the
+        //  default clipped region.  The manual overrides to move the box are just for
+        //  emergency/fine tuning.
         // Keep the tensorFlow info
         if (gamepad1.left_bumper || gamepad2.left_bumper) {
             if (leftBOK) {
@@ -464,7 +486,7 @@ public class IncepVision {
                     tfodState = false;
                     clip = true;
                 }
-                setDefStack();
+                setDefClip();
                 rightBOK = false;
             }
         } else {
