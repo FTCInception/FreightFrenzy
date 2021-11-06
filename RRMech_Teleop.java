@@ -178,7 +178,7 @@ public class RRMech_Teleop extends LinearOpMode {
         double prevDuckTime = 0;
         double duckRequest = DUCK_STOP;
 
-        final double bucketDump = 0.46;
+        final double bucketDump = 0.32;
         final double bucketDrive = 0.60;
         final double bucketIntake = 0.70;
         double[] bucketRequest = {bucketDrive, bucketDrive};
@@ -197,7 +197,7 @@ public class RRMech_Teleop extends LinearOpMode {
         double prevRTrigVal=0.0;
 
         double maxLag, prt, rt, nextLog = 0.0, iter=0.0;
-        boolean gp1Present = false, gp2Present = false;
+        boolean gp1Present = false, gp2Present = false, slidePressed = false;
 
         double maxPwr = 0.0;
 
@@ -309,10 +309,16 @@ public class RRMech_Teleop extends LinearOpMode {
                 // 'lTrig': Toggle between drive and intake
                 if (lTrig[padIdx]) {
                     if (!lTrigPrev[padIdx]) {
-                        if (slideIdx != SLIDE_DRIVE_IDX) {
+                        if (!slidePressed) {
+                            // On the first press, INTAKE is not safe, force DRIVE.
                             slideIdx = SLIDE_DRIVE_IDX;
+                            slidePressed = true;
                         } else {
-                            slideIdx = SLIDE_INTAKE_IDX;
+                            if (slideIdx != SLIDE_DRIVE_IDX) {
+                                slideIdx = SLIDE_DRIVE_IDX;
+                            } else {
+                                slideIdx = SLIDE_INTAKE_IDX;
+                            }
                         }
                         slideRequest = slideSet[slideIdx];
                         lTrigPrev[padIdx] = true;
@@ -331,11 +337,10 @@ public class RRMech_Teleop extends LinearOpMode {
                     // Then scale back to 100%
                     final double travelDistance = (bucketDrive - bucketDump) * (1.1 * Math.max(0,  (gamepad.right_trigger - 0.1)));
 
-                    bucketRequest[padIdx] = bucketDump - travelDistance;
+                    bucketRequest[padIdx] = bucketDrive - travelDistance;
                     //bucket.setPosition(bucketIntake - travelDistance);
                 } else {
                     bucketRequest[padIdx] = bucketDrive;
-                    //bucket.setPosition(bucketIntake);
                 }
 
                 // Reverse the intake
@@ -376,6 +381,10 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // 'a': Slide to drive position
                 if (gamepad.a) {
+                    if (!slidePressed) {
+                        // On the first press, DRIVE is OK.
+                        slidePressed = true;
+                    }
                     if (!aPrev[padIdx]) {
                         slideIdx = SLIDE_DRIVE_IDX;
                         slideRequest = slideSet[slideIdx];
@@ -399,6 +408,10 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // 'y': Slide to high position
                 if (gamepad.y) {
+                    if (!slidePressed) {
+                        // On the first press, up is safe.  Just do it.
+                        slidePressed = true;
+                    }
                     if (!yPrev[padIdx]) {
                         slideIdx = SLIDE_HIGH_IDX;
                         slideRequest = slideSet[slideIdx];
@@ -410,10 +423,13 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // 'up' slide higher
                 if (gamepad.dpad_up) {
+                    if (!slidePressed) {
+                        // On the first press, 'up' is safe.  Just go up.
+                        slidePressed = true;
+                    }
                     if (!dUpPrev[padIdx]) {
-                        slideIdx = Math.min((slideIdx + 1), slideSet.length-1);
+                        slideIdx = Math.min((slideIdx + 1), slideSet.length - 1);
                         slideRequest = slideSet[slideIdx];
-                        //slide.setPosition(slideSet[slideIdx]);
                         dUpPrev[padIdx] = true;
                     }
                 } else {
@@ -422,11 +438,16 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // 'down' slide lower
                 if (gamepad.dpad_down) {
-                    if (!dDownPrev[padIdx]) {
-                        slideIdx = Math.max((slideIdx - 1), 0);
-                        slideRequest = slideSet[slideIdx];
-                        //slide.setPosition(slideSet[slideIdx]);
-                        dDownPrev[padIdx] = true;
+                    if (!slidePressed) {
+                        // On the first press, down is not safe.  Just go to DRIVE.
+                        slidePressed = true;
+                        slideIdx = SLIDE_DRIVE_IDX;
+                    } else {
+                        if (!dDownPrev[padIdx]) {
+                            slideIdx = Math.max((slideIdx - 1), 0);
+                            slideRequest = slideSet[slideIdx];
+                            dDownPrev[padIdx] = true;
+                        }
                     }
                 } else {
                     dDownPrev[padIdx] = false;
@@ -451,10 +472,16 @@ public class RRMech_Teleop extends LinearOpMode {
                 // 'lTrig': Toggle between drive and intake
                 if (lTrig[padIdx]) {
                     if (!lTrigPrev[padIdx]) {
-                        if (slideIdx != SLIDE_DRIVE_IDX) {
+                        if (!slidePressed) {
+                            // On the first press, INTAKE is not safe, force DRIVE.
                             slideIdx = SLIDE_DRIVE_IDX;
+                            slidePressed = true;
                         } else {
-                            slideIdx = SLIDE_INTAKE_IDX;
+                            if (slideIdx != SLIDE_DRIVE_IDX) {
+                                slideIdx = SLIDE_DRIVE_IDX;
+                            } else {
+                                slideIdx = SLIDE_INTAKE_IDX;
+                            }
                         }
                         slideRequest = slideSet[slideIdx];
                         lTrigPrev[padIdx] = true;
@@ -473,11 +500,10 @@ public class RRMech_Teleop extends LinearOpMode {
                     // Then scale back to 100%
                     final double travelDistance = (bucketDrive - bucketDump) * (1.1 * Math.max(0,  (gamepad.right_trigger - 0.1)));
 
-                    bucketRequest[padIdx] = bucketDump - travelDistance;
+                    bucketRequest[padIdx] = bucketDrive - travelDistance;
                     //bucket.setPosition(bucketIntake - travelDistance);
                 } else {
                     bucketRequest[padIdx] = bucketDrive;
-                    //bucket.setPosition(bucketIntake);
                 }
 
                 // Reverse the intake
@@ -518,6 +544,10 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // 'a': Slide to drive position
                 if (gamepad.a) {
+                    if (!slidePressed) {
+                        // On the first press, DRIVE is OK.
+                        slidePressed = true;
+                    }
                     if (!aPrev[padIdx]) {
                         slideIdx = SLIDE_DRIVE_IDX;
                         slideRequest = slideSet[slideIdx];
@@ -541,6 +571,10 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // 'y': Slide to high position
                 if (gamepad.y) {
+                    if (!slidePressed) {
+                        // On the first press, up is safe.  Just do it.
+                        slidePressed = true;
+                    }
                     if (!yPrev[padIdx]) {
                         slideIdx = SLIDE_HIGH_IDX;
                         slideRequest = slideSet[slideIdx];
@@ -552,10 +586,13 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // 'up' slide higher
                 if (gamepad.dpad_up) {
+                    if (!slidePressed) {
+                        // On the first press, 'up' is safe.  Just go up.
+                        slidePressed = true;
+                    }
                     if (!dUpPrev[padIdx]) {
-                        slideIdx = Math.min((slideIdx + 1), slideSet.length-1);
+                        slideIdx = Math.min((slideIdx + 1), slideSet.length - 1);
                         slideRequest = slideSet[slideIdx];
-                        //slide.setPosition(slideSet[slideIdx]);
                         dUpPrev[padIdx] = true;
                     }
                 } else {
@@ -564,11 +601,16 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // 'down' slide lower
                 if (gamepad.dpad_down) {
-                    if (!dDownPrev[padIdx]) {
-                        slideIdx = Math.max((slideIdx - 1), 0);
-                        slideRequest = slideSet[slideIdx];
-                        //slide.setPosition(slideSet[slideIdx]);
-                        dDownPrev[padIdx] = true;
+                    if (!slidePressed) {
+                        // On the first press, down is not safe.  Just go to DRIVE.
+                        slidePressed = true;
+                        slideIdx = SLIDE_DRIVE_IDX;
+                    } else {
+                        if (!dDownPrev[padIdx]) {
+                            slideIdx = Math.max((slideIdx - 1), 0);
+                            slideRequest = slideSet[slideIdx];
+                            dDownPrev[padIdx] = true;
+                        }
                     }
                 } else {
                     dDownPrev[padIdx] = false;
@@ -578,18 +620,21 @@ public class RRMech_Teleop extends LinearOpMode {
                 // 'dpad right' = slow turn code below
             }
 
-            // Manage the allowed and requested bucket positions.
-            if (slideRequest < SLIDE_DRIVE) {
-                // We're above the drive position, pretty much anything goes here
-                bucketAllowed = Math.min(bucketRequest[pad1], bucketRequest[pad2]);
-            } else if (slideRequest == SLIDE_DRIVE) {
-                bucketAllowed = bucketDrive;
-            } else {
-                bucketAllowed = bucketIntake;
-            }
+            // Only do this after someone has actually pressed a button.
+            if (slidePressed) {
+                // Manage the allowed and requested bucket positions.
+                if (slideRequest < SLIDE_DRIVE) {
+                    // We're above the drive position, pretty much anything goes here
+                    bucketAllowed = Math.min(bucketRequest[pad1], bucketRequest[pad2]);
+                } else if (slideRequest == SLIDE_DRIVE) {
+                    bucketAllowed = bucketDrive;
+                } else {
+                    bucketAllowed = bucketIntake;
+                }
 
-            slide.setPosition(slideRequest);
-            bucket.setPosition(bucketAllowed);
+                slide.setPosition(slideRequest);
+                bucket.setPosition(bucketAllowed);
+            }
 
             // Manage combined duck wheel on 'b' buttons
             now = runtime.seconds();
