@@ -106,8 +106,8 @@ public class IncepVision {
               {  0,      0,    0,     0},  // NONE
               {  0,      0,    0,     0},  // BLUE_WAREHOUSE
               {  0,      0,    0,     0},  // BLUE_DUCK
-              {  0,      0,    0,     0},  // RED_WAREHOUSE
-              {  50,      50,    0,     300}}; // RED_DUCK
+              { 50,    140,    10,  410},  // RED_WAREHOUSE
+              { 50,    140,    10,  410}}; // RED_DUCK
     /***
      * Initialize the Target Tracking and navigation interface
      * @param lOpMode    pointer to OpMode

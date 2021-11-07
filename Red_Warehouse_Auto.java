@@ -50,8 +50,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
  */
-@Autonomous(name="Red_DuckSide_Auto", group="RRMechBot")
-public class Red_DuckSide_Auto extends LinearOpMode {
+@Autonomous(name="Red_Warehouse_Auto", group="RRMechBot")
+public class Red_Warehouse_Auto extends LinearOpMode {
 
     public int targetLevel = 3;
 
@@ -60,11 +60,11 @@ public class Red_DuckSide_Auto extends LinearOpMode {
     private static final double intake_pickup_ring = 1.0;
 
     // This is the starting position of the center of the robot.
-    private static final double startingX = -44.0;
+    private static final double startingX = 4.0;
     private static final double startingY = -63.0;
 
     private static boolean parkThroughOpening = true;
-    private static boolean option2 = true;
+    private static boolean secondBlock = false;
     private static boolean option3 = true;
 
     private IncepVision vision = new IncepVision();
@@ -129,7 +129,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
 
             if ( gamepad1.x || gamepad2.x ) {
                 if (xOK) {
-                    option2 = !option2;
+                    secondBlock = !secondBlock;
                     xOK = false;
                 }
             } else {
@@ -150,7 +150,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
             telemetry.addData("Sx,Sy:", "(%.0f, %.0f); New:(%.0f, %.0f); Delta:(%.0f%s, %.0f%s)", startingX, startingY, startingX+Sx, startingY+Sy, Math.abs(Sx), (Sx<0)?" left":(Sx>0)?" right":"", Math.abs(Sy),(Sy<0)?" down":(Sy>0)?" up":"");
             telemetry.addData("Use dpad to adjust robot start position","");
             telemetry.addData("'Y' Park through opening?:","(%s)", parkThroughOpening?"true":"false");
-            telemetry.addData("'X' option2:","(%s)", option2?"true":"false");
+            telemetry.addData("'X' Second Block Attempt?:","(%s)", secondBlock?"true":"false");
             telemetry.addData("'B' option3:","(%s)", option3?"true":"false");
             telemetry.addData("'A' Proceed to Vision:","(%s)", "NA");
             telemetry.update();
@@ -258,55 +258,86 @@ public class Red_DuckSide_Auto extends LinearOpMode {
     private void buildTrajs(Trajectory[] traj) {
 
         int TIdx = 0;
-        // Starting X,Y = -44,-63
+        // Starting X,Y = 4,-63
 
-        // Drive to hub while avoiding team marker
-        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .lineToConstantHeading(new Vector2d(-63,-40))
+        // Drive to hub (Trucking through team market to not hit other bots)
+        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), true)
+                .lineToConstantHeading(new Vector2d(12,-15))
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToLinearHeading(new Pose2d(-38,-10, Math.toRadians(180)))
+                .lineToLinearHeading(new Pose2d(12, -30, Math.toRadians(0)))
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(-29.5,-26))
+                .lineToConstantHeading(new Vector2d(5,-26))
                 .build();
 
         //Drop Block Sequence
 
-        //Duck Wheel
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .lineToLinearHeading(new Pose2d(-38,-15, Math.toRadians(270)))
-                .build();
-
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .lineToConstantHeading(new Vector2d(-67,-30))
-                .build();
-
+        //Park
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .forward(27)
+                .lineToConstantHeading(new Vector2d(5,-50))
                 .build();
 
-        //Duck Wheel ends motion at new Pose2d(-66,-54,Math.toRadians(270))
-        //Driving to Park
-        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(-66,-54,Math.toRadians(270)))
-                .lineToConstantHeading(new Vector2d(-60,-50))
-                .build();
-
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToLinearHeading(new Pose2d(-30,-50, Math.toRadians(0)))
-                .build();
-
-        if(parkThroughOpening){
+        if(secondBlock){
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(45,-70, Math.toRadians(0)))
+                    .lineToLinearHeading(new Pose2d(0, -66, Math.toRadians(0)))
+                    .build();
+
+            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                    .lineToLinearHeading(new Pose2d(35, -70, Math.toRadians(0)))
+                    .build();
+
+            //turn on intake, drive slow
+
+            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                    .lineToLinearHeading(new Pose2d(43, -70, Math.toRadians(0)))
+                    .build();
+
+            //turn off intake, raise
+
+            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
+                    .lineToLinearHeading(new Pose2d(0, -70, Math.toRadians(0)))
+                    .build();
+
+            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(0,-66))
+                    .lineToLinearHeading(new Pose2d(12, -30, Math.toRadians(0)))
+                    .build();
+
+            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                    .lineToConstantHeading(new Vector2d(5,-26))
+                    .build();
+
+            //Drop Block Sequence
+
+            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                    .lineToLinearHeading(new Pose2d(12, -45, Math.toRadians(0)))
+                    .build();
+
+            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                    .lineToLinearHeading(new Pose2d(55, -45, Math.toRadians(0)))
                     .build();
 
         } else {
-            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(55,-50, Math.toRadians(0)))
-                    .build();
+            if (parkThroughOpening) {
+                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                        .lineToLinearHeading(new Pose2d(0, -66, Math.toRadians(0)))
+                        .build();
+
+                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                        .lineToLinearHeading(new Pose2d(45, -70, Math.toRadians(0)))
+                        .build();
+
+            } else {
+                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                        .lineToLinearHeading(new Pose2d(0, -45, Math.toRadians(0)))
+                        .build();
+
+                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                        .lineToLinearHeading(new Pose2d(55, -45, Math.toRadians(0)))
+                        .build();
+            }
         }
 
         showTrajPoses( "LEVEL3", TIdx, traj ) ;
@@ -348,41 +379,72 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         robot.slide.setPosition(.9); //Bucket to drive position
         CheckWait(true, 500, 0);
 
-        //Drive to Duck Wheel
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
-
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
-
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
-
-        //Run Duck Wheel
-        //Turn on reverse intake in case we hit the duck after we finish
-        robot.intake_motor.setPower(-.8);
-        robot.duckR.setPosition(0.1);
-        CheckWait(true, 4000, 0);
-        robot.duckR.setPosition(.5);
-        CheckWait(true, 200, 0);
-
         //Drive to park
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
 
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
+        if(secondBlock){
+            robot.drive.followTrajectoryAsync(traj[TIdx++]);
+            CheckWait(true, 0, 0);
+            if(!opModeIsActive()){ return; }
 
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
+            robot.drive.followTrajectoryAsync(traj[TIdx++]);
+            CheckWait(true, 0, 0);
+            if(!opModeIsActive()){ return; }
 
-        //Turn off intake, should be parked
-        robot.intake_motor.setPower(0);
+            robot.bucket.setPosition(.7); //Bucket Up
+            robot.slide.setPosition(1); //Bucket to drive position
+            CheckWait(true, 500, 0);
+            robot.intake_motor.setPower(0.85);
+
+            robot.drive.followTrajectoryAsync(traj[TIdx++]);
+            CheckWait(true, 0, 0);
+            if(!opModeIsActive()){ return; }
+
+            robot.intake_motor.setPower(0);
+            CheckWait(true, 100, 0);
+            robot.slide.setPosition(.5); //Bucket to mid position
+            CheckWait(true, 250, 0);
+            robot.bucket.setPosition(.6); //Bucket Up
+
+            robot.drive.followTrajectoryAsync(traj[TIdx++]);
+            CheckWait(true, 0, 0);
+            if(!opModeIsActive()){ return; }
+
+            robot.drive.followTrajectoryAsync(traj[TIdx++]);
+            CheckWait(true, 0, 0);
+            if(!opModeIsActive()){ return; }
+
+            robot.drive.followTrajectoryAsync(traj[TIdx++]);
+            CheckWait(true, 0, 0);
+            if(!opModeIsActive()){ return; }
+
+            robot.bucket.setPosition(.3); //Drop freight
+            CheckWait(true, 1000, 0);
+            robot.bucket.setPosition(.6); //Bucket Up
+            CheckWait(true, 0, 0);
+            robot.slide.setPosition(.9); //Bucket to drive position
+            CheckWait(true, 500, 0);
+
+            robot.drive.followTrajectoryAsync(traj[TIdx++]);
+            CheckWait(true, 0, 0);
+            if(!opModeIsActive()){ return; }
+
+            robot.drive.followTrajectoryAsync(traj[TIdx++]);
+            CheckWait(true, 0, 0);
+            if(!opModeIsActive()){ return; }
+
+        } else {
+            robot.drive.followTrajectoryAsync(traj[TIdx++]);
+            CheckWait(true, 0, 0);
+            if(!opModeIsActive()){ return; }
+
+            robot.drive.followTrajectoryAsync(traj[TIdx++]);
+            CheckWait(true, 0, 0);
+            if(!opModeIsActive()){ return; }
+        }
+
+
     }
 }
