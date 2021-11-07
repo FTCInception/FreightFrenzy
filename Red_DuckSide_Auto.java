@@ -301,7 +301,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(-29.5,-26))
+                .lineToConstantHeading(new Vector2d(-30,-25.5))
                 .build();
 
         //Drop Block Sequence
@@ -330,6 +330,10 @@ public class Red_DuckSide_Auto extends LinearOpMode {
                 .build();
 
         if(parkThroughOpening){
+            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                    .lineToLinearHeading(new Pose2d(0,-70, Math.toRadians(0)))
+                    .build();
+
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
                     .lineToLinearHeading(new Pose2d(45,-70, Math.toRadians(0)))
                     .build();
@@ -412,6 +416,12 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
+
+        if(parkThroughOpening){
+            robot.drive.followTrajectoryAsync(traj[TIdx++]);
+            CheckWait(true, 0, 0);
+            if(!opModeIsActive()){ return; }
+        }
 
         //Turn off intake, should be parked
         robot.intake_motor.setPower(0);

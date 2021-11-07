@@ -306,11 +306,6 @@ public class Red_Warehouse_Auto extends LinearOpMode {
 
         //Drop Block Sequence
 
-        //Park
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(5,-50))
-                .build();
-
         if(secondBlock){
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
                     .lineToLinearHeading(new Pose2d(0, -66, Math.toRadians(0)))
@@ -411,9 +406,6 @@ public class Red_Warehouse_Auto extends LinearOpMode {
         CheckWait(true, 500, 0);
 
         //Drive to park
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
 
         if(secondBlock){
             robot.drive.followTrajectoryAsync(traj[TIdx++]);

@@ -231,7 +231,7 @@ public class IncepVision {
         // Accounts for camera angle not being perfect, etc.
         int tolerance = 50;
         // The minimum number of green pixels in an area for that area to actually have green
-        int thresholdGreen = 20000/(strideX + strideY);
+        int thresholdGreen = 15000/(strideX * strideY);
         int innerGreen = 0;
         int outerGreen = 0;
         int subLeft = Math.max(subMapLeft - tolerance, 0);
@@ -284,6 +284,7 @@ public class IncepVision {
         myLOpMode.telemetry.addData("Inside  grn:!grn ", "%d:%d", innerGreen, (subMapWidth*subMapHeight - innerGreen)/(strideX * strideY));
         myLOpMode.telemetry.addData("Outside grn:!grn ", "%d:%d", outerGreen, ((bufHeight*bufWidth) - (subMapWidth*subMapHeight + outerGreen))/(strideX * strideY));
         myLOpMode.telemetry.addData("grnLocation", "%s", grnLocation == MarkerPos.Inner ? "inner" : grnLocation == MarkerPos.Outer ? "outer" : "unseen");
+        myLOpMode.telemetry.addData("Detected/Threshold", "%d:%d", (innerGreen + outerGreen), thresholdGreen);
 
         myLOpMode.telemetry.update();
     }

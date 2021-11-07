@@ -188,7 +188,7 @@ public class RRMech_Teleop extends LinearOpMode {
         double[] intakeSet = {0.0, MAX_INTAKE_POWER};
         int intakeIdx=0;
 
-        final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.65, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
+        final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.7, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
         double[] slideSet = {SLIDE_INTAKE, SLIDE_DRIVE, SLIDE_LOW, SLIDE_SHARED, SLIDE_MED, SLIDE_HIGH};
         final int SLIDE_INTAKE_IDX = 0, SLIDE_DRIVE_IDX = 1, SLIDE_HIGH_IDX = slideSet.length-1;
         int slideIdx=SLIDE_DRIVE_IDX;
@@ -198,7 +198,7 @@ public class RRMech_Teleop extends LinearOpMode {
         double prevRTrigVal=0.0;
 
         double maxLag, prt, rt, nextLog = 0.0, iter=0.0;
-        boolean gp1Present = false, gp2Present = false, slidePressed = false;
+        boolean gp1Present = true, gp2Present = true, slidePressed = false;
 
         double maxPwr = 0.0;
 
@@ -296,7 +296,7 @@ public class RRMech_Teleop extends LinearOpMode {
             iter += 1;
 
             if (gp1Present) {
-                gamepad= gamepad1;
+                            gamepad= gamepad1;
                 padIdx = pad1;
 
                 // lTrig is now a boolean
@@ -739,8 +739,8 @@ public class RRMech_Teleop extends LinearOpMode {
             gamepad= gamepad2;
             padIdx = pad2;
             // gampead2 is reversed to let the second driver drive in reverse easier.
-            strafe[padIdx] = -gamepad.left_stick_x;
-            forward[padIdx] = gamepad.left_stick_y;
+            strafe[padIdx] = gamepad.left_stick_x;
+            forward[padIdx] = -gamepad.left_stick_y;
             rotate[padIdx] = gamepad.right_stick_x;
 
             if( smoothDrive ) {
@@ -870,7 +870,7 @@ public class RRMech_Teleop extends LinearOpMode {
                 }
             }
 
-            boolean doRumble = false;
+            boolean doRumble = true;
             if (doRumble) {
                 // Warn the driver they are moving with bucket down
                 if (((Math.abs(l_f_motor_power) > 0.1) ||
