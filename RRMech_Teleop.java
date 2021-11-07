@@ -116,6 +116,7 @@ public class RRMech_Teleop extends LinearOpMode {
     double r_b_motor_power;
 
     double theta, r_speed, new_x, new_y, degrees;
+    double[] adjustAngle = {0,0};
 
     // Declare other variables
     public BNO055IMU initIMU(String imuName) {
@@ -374,6 +375,11 @@ public class RRMech_Teleop extends LinearOpMode {
                     if (!backPrev[padIdx]) {
                         FOV[padIdx] = !FOV[padIdx];
                         backPrev[padIdx] = true;
+
+                        if (FOV[padIdx]) {
+                            // Set the 'front' towards the front of the bot
+                            adjustAngle[padIdx] = Math.toDegrees(drive.getRawExternalHeading());
+                        }
                     }
                 } else {
                     backPrev[padIdx] = false;
@@ -537,6 +543,11 @@ public class RRMech_Teleop extends LinearOpMode {
                     if (!backPrev[padIdx]) {
                         FOV[padIdx] = !FOV[padIdx];
                         backPrev[padIdx] = true;
+
+                        if (FOV[padIdx]) {
+                            // Set the 'front' towards the front of the bot
+                            adjustAngle[padIdx] = Math.toDegrees(drive.getRawExternalHeading());
+                        }
                     }
                 } else {
                     backPrev[padIdx] = false;
@@ -727,8 +738,9 @@ public class RRMech_Teleop extends LinearOpMode {
 
             gamepad= gamepad2;
             padIdx = pad2;
-            strafe[padIdx] = gamepad.left_stick_x;
-            forward[padIdx] = -gamepad.left_stick_y;
+            // gampead2 is reversed to let the second driver drive in reverse easier.
+            strafe[padIdx] = -gamepad.left_stick_x;
+            forward[padIdx] = gamepad.left_stick_y;
             rotate[padIdx] = gamepad.right_stick_x;
 
             if( smoothDrive ) {
@@ -811,7 +823,7 @@ public class RRMech_Teleop extends LinearOpMode {
                     // Convert the X/Y Cartesion for strafe and forward into Polar
                     CarToPol(strafe[pad1], forward[pad1]);
                     // Rotate the Polar coordinates by the robot's heading
-                    theta -= degrees;
+                    theta -= AngleUnit.DEGREES.normalize(degrees - adjustAngle[pad1]);
                     // Convert the new Polar back into Cartesian
                     PolToCar(r_speed);
                     // Replace the strafe and forward power with translated values
@@ -823,7 +835,7 @@ public class RRMech_Teleop extends LinearOpMode {
                 if (FOV[pad2]) {
                     CarToPol(strafe[pad2], forward[pad2]);
                     // Rotate the Polar coordinates by the robot's heading
-                    theta -= degrees;
+                    theta -= AngleUnit.DEGREES.normalize(degrees - adjustAngle[pad2]);
                     // Convert the new Polar back into Cartesian
                     PolToCar(r_speed);
                     // Replace the strafe and forward power with translated values

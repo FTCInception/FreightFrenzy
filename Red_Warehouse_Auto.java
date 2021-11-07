@@ -80,6 +80,37 @@ public class Red_Warehouse_Auto extends LinearOpMode {
         robot.initAutonomous(this);
         robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
+        // We must initialize the slide position to make sure it hasn't skipped any gears
+        do {
+            if ( gamepad1.y || gamepad2.y ) {
+                // Run slide to the top
+                robot.slide.setPosition(0.0);
+                sleep(5000);
+
+                //Reset Bucket to drive position
+                robot.bucket.setPosition(.6);
+                sleep(1000);
+
+                // Run slide to the bottom
+                robot.slide.setPosition(1.0);
+                sleep(5000);
+                break;
+            }
+
+            if ( gamepad1.x || gamepad2.x ) {
+                break;
+            }
+
+            telemetry.addData("","");
+            telemetry.addData("Press 'Y' to init the slide limits","");
+            telemetry.addData("","");
+            telemetry.addData("DO NOT SKIP THS STEP!!","");
+            telemetry.addData("Press 'X' to skip.","");
+            telemetry.addData("DO NOT SKIP THS STEP!!","");
+            telemetry.update();
+
+        } while (!isStarted() && (!isStopRequested())) ;
+
         // This code allows for processing the starting location of something variable
         // And controls some enable/disable options
         double Sx = 0.0;
