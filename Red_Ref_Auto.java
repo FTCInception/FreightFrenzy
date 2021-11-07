@@ -52,6 +52,7 @@ import com.qualcomm.robotcore.util.Range;
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
  */
+@Disabled
 @Autonomous(name="Red_Ref_Auto", group="RRMechBot")
 public class Red_Ref_Auto extends LinearOpMode {
     private final int BAR1=0;

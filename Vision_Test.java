@@ -6,6 +6,7 @@ import android.util.Log;
 import java.util.Arrays.*;
 import java.util.*;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.Range;
@@ -46,6 +47,7 @@ class Pixel {
     }
 }
 
+@Disabled
 @Autonomous(name="Vision_Test", group="MechBot")
 public class Vision_Test extends LinearOpMode {
 
