@@ -71,7 +71,7 @@ public class Red_Ref_Auto extends LinearOpMode {
     private static boolean option3 = true;
 
     private IncepVision vision = new IncepVision();
-    private int grnLocation = vision.gUNSEEN;
+    private IncepVision.MarkerPos grnLocation = IncepVision.MarkerPos.Unseen;
     private Trajectory[][] trajs = {new Trajectory[25], new Trajectory[25], new Trajectory[25]} ;
 
     @Override
@@ -177,7 +177,7 @@ public class Red_Ref_Auto extends LinearOpMode {
         telemetry.addData("Starting vision", "");
         telemetry.update();
         // Stare at the rings really hard until its time to go or stop
-        vision.initAutonomous(this, "webcam", vision.RED_SIDE);
+        vision.initAutonomous(this, "webcam", vision.RED_DUCK);
         vision.clip = false;
         boolean leftBOK = true, rightBOK = true;
         do {
@@ -186,15 +186,15 @@ public class Red_Ref_Auto extends LinearOpMode {
         } while (!isStarted() && (!isStopRequested()));
         vision.shutdown();
 
-        // TODO: Make sure the LEFT/RIGHT/UNSEEN mapping here is correct for every auto.
+        // TODO: Make sure the INNER/OUTER/UNSEEN mapping here is correct for every auto.
         // FIXME: Test the stopping in auto here again.
         if (opModeIsActive()) {
-            if (grnLocation == vision.gRIGHT) {
+            if (grnLocation == IncepVision.MarkerPos.Inner) {
                 Bar1(trajs[BAR1]);
-            } else if (grnLocation == vision.gLEFT) {
+            } else if (grnLocation == IncepVision.MarkerPos.Outer) {
                 Bar2(trajs[BAR2]);
             } else {
-                // If it's not LEFT or RIGHT, assume unseen
+                // If it's not INNER or OUTER, assume unseen
                 Bar3(trajs[BAR3]);
             }
         }

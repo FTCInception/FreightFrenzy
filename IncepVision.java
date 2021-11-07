@@ -86,9 +86,8 @@ public class IncepVision {
     public boolean clip = false;
     public boolean tfodState = false;
     private int ringCount = -1;
-    // TODO: Consider if this should be 'gINSIDE' and 'gOUTSIDE'
-    public final int gLEFT = 0, gRIGHT = 1, gUNSEEN = -1;
-    private int grnLocation = gUNSEEN;
+    public enum MarkerPos { Inner, Outer, Unseen };
+    private MarkerPos grnLocation = MarkerPos.Unseen;
     private String webcamName;
     public final int NONE = 0, BLUE_WAREHOUSE = 1, BLUE_DUCK = 2, RED_WAREHOUSE = 3, RED_DUCK = 4;
     private final int iTOP = 0, iBOTTOM = 1, iLEFT = 2, iRIGHT = 3;
@@ -108,7 +107,7 @@ public class IncepVision {
               {  0,      0,    0,     0},  // BLUE_WAREHOUSE
               {  0,      0,    0,     0},  // BLUE_DUCK
               {  0,      0,    0,     0},  // RED_WAREHOUSE
-              {  0,      0,    0,     0}}; // RED_DUCK
+              {  50,      50,    0,     300}}; // RED_DUCK
     /***
      * Initialize the Target Tracking and navigation interface
      * @param lOpMode    pointer to OpMode
@@ -192,8 +191,15 @@ public class IncepVision {
         }
     }
 
-    public void processImage(Image image) {
+    int isGreen(int p){
+        int r = Color.red(p);
+        int g = Color.green(p);
+        int b = Color.blue(p);
 
+        return ((1.5*r < g) && (b < g) && (g > 32)) ? 1 : 0;
+    }
+
+    public void processImage(Image image) {
         int bufWidth = image.getBufferWidth();
         int bufHeight = image.getBufferHeight();
 
@@ -206,7 +212,7 @@ public class IncepVision {
 
         // Extract the pixels inside our clipped region
         // Divide the pixels in half top to bottom
-        // Count the 'very green' pixles in each half
+        // Count the 'very green' pixels in each half
         // Confirm there are 'enough' green pixels total (or its the unseen bar code)
         // Choose the half with the most green (should be a LOT more)
 
@@ -218,6 +224,41 @@ public class IncepVision {
         int subMapWidth = subMapRight - subMapLeft;
         int subMapHeight = subMapBottom - subMapTop;
 
+        // Each of these specifies how many pixels to skip when looping, as we don't need full resolution to check for green
+        int strideY = 2;
+        int strideX = 4;
+        // Amount of "wiggle-room" past the halfway point of an image.
+        // Accounts for camera angle not being perfect, etc.
+        int tolerance = 50;
+        // The minimum number of green pixels in an area for that area to actually have green
+        int thresholdGreen = 20000/(strideX + strideY);
+        int innerGreen = 0;
+        int outerGreen = 0;
+        int subLeft = Math.max(subMapLeft - tolerance, 0);
+        int subRight = Math.min(subMapRight - tolerance, bufWidth);
+
+        for(int x = subLeft; x < subRight; x += strideX) {
+            for(int y = subMapTop; y < subMapBottom; y += strideY) {
+                innerGreen += isGreen(bitmap.getPixel(x, y));
+            }
+        }
+
+        for(int x = 0; x < bufWidth; x += strideX){
+            for(int y = subMapTop; y < subMapBottom; y += strideY) {
+                if((x >= subMapLeft && x <= subMapRight) && (y >= subMapTop && y <= subMapBottom))
+                    continue;
+                outerGreen += isGreen(bitmap.getPixel(x, y));
+            }
+        }
+
+        if(innerGreen + outerGreen >= thresholdGreen) {
+            if(innerGreen > outerGreen)
+                grnLocation = MarkerPos.Inner;
+            else
+                grnLocation = MarkerPos.Outer;
+        } else {
+            grnLocation = MarkerPos.Unseen;
+        }
         // TODO: Implement pseudo-code below
         //  'tolerace' is an imaginary buffer around your clipping region to handle
         //  human error from officials when positioning the marker.
@@ -232,7 +273,7 @@ public class IncepVision {
         // else
         //   return ( bar code location corresponding to highest green count)
         //
-        // For flexiblity, it might be better to just return some values representing:
+        // For flexibility, it might be better to just return some values representing:
         // LEFT/RIGHT/UNSEEN (or INSIDE/OUTSIDE/UNSEEN).
         // Then let the auto map those to the actual bar location.  This lets you decide
         // to position the robot uniquely for each auto without needing to change vision.
@@ -240,166 +281,15 @@ public class IncepVision {
         // Now display everything we learned.
         myLOpMode.telemetry.addData("box", "T %3s, B %3d, L %3d, R %3d, <-- %s/%s", clipTop, clipBottom, clipLeft, clipRight, tfodState ? "Updating" : "Frozen", clip ? "Clipped" : "Unclipped");
 
-        myLOpMode.telemetry.addData("Inside  grn:!grn ", "%d:%d", inGrnCnt, inNotGrnCnt);
-        myLOpMode.telemetry.addData("Outside grn:!grn ", "%d:%d", outGrnCnt, outNotGrnCnt);
-        myLOpMode.telemetry.addData("grnLocation", "%d", grnLocation);
-
-        myLOpMode.telemetry.update();
-
-    }
-
-    public void processImageUltimateGoal(Image image) {
-
-        int bufWidth = image.getBufferWidth();
-        int bufHeight = image.getBufferHeight();
-
-        Bitmap bitmap = Bitmap.createBitmap(image.getWidth(), image.getHeight(),
-                Bitmap.Config.RGB_565);
-        bitmap.copyPixelsFromBuffer(image.getPixels());
-
-        // I think x,y is 0,0 in the top,left corner of the image
-        // x goes left to right
-        // y goes top to bottom
-
-        // It's imperative that the rings are aligned properly in the frame in the clip box.
-        // Divide the clipping region in 10 slices.
-        // Compute the average value of the pixel inside each slice of the center 80%.
-        // Extend each slice to the right and left of the clipping box by 40% of box width.
-        // Compute the average value of the pixel in these wings.
-        // The wings should represent a reference value of gray for each slice.
-        // Compare the wings and the rings and see which slices look like they have ring.
-
-        // Slice the clipped image into 8 slices and check each slice.
-        final double NUM_SLICES = 8.0;
-        final int RED = 0, GREEN = 1, BLUE = 2;
-        int x, y, sIdx, color;
-
-        int[][] sliceColor = new int[3][(int) NUM_SLICES];
-        int[][] gndColor = new int[3][(int) NUM_SLICES];
-        int pixCount = 0;
-        int gndCount = 0;
-        int[] isRing = new int[(int) NUM_SLICES];
-        //int[] isRing2 = new int[(int)NUM_SLICES];
-
-        int ringTop = clipTop;
-        int ringBottom = bufHeight - clipBottom;
-        double sliceHeight = ((ringBottom - clipTop) / NUM_SLICES);
-        int ringRight = bufWidth - clipRight;
-        int ringLeft = clipLeft;
-        int ringWidth = ringRight - ringLeft;
-
-        // FIXME -- We need to bounds-check our x and y against the edge of the image
-        // Maybe add some telemetry to say something is suspicious if the box
-        // is very far outside our expectations?
-        //myLOpMode.telemetry.addData("bufsize", "w: %d x h: %d", bitmap.getWidth(),bitmap.getHeight());
-        //myLOpMode.telemetry.addData("clipping", "%d, %d, %d, %d", ringTop, ringBottom, ringRight, ringLeft);
-        //myLOpMode.telemetry.update();
-
-        // For each slice
-        for (sIdx = 0; sIdx < NUM_SLICES; sIdx++) {
-            pixCount = 0;
-            gndCount = 0;
-            for (y = (int) (ringBottom - (sliceHeight * (sIdx + 1))); y < (ringBottom - (sliceHeight * sIdx)); y++) {
-                // Wing on the left is 30% of the ring width
-                for (x = (int) (ringLeft - (ringWidth * 0.50)); x > (ringLeft - (ringWidth * 0.20)); x--) {
-                    color = bitmap.getPixel(x, y);
-                    gndColor[RED][sIdx] += Color.red(color);
-                    gndColor[GREEN][sIdx] += Color.red(color);
-                    gndColor[BLUE][sIdx] += Color.red(color);
-                    gndCount++;
-                }
-                // Use center 60% of the ring
-                for (x = (int) (ringLeft + (ringWidth * 0.20)); x < (ringRight - (ringWidth * 0.20)); x++) {
-                    color = bitmap.getPixel(x, y);
-                    sliceColor[RED][sIdx] += Color.red(color);
-                    sliceColor[GREEN][sIdx] += Color.green(color);
-                    sliceColor[BLUE][sIdx] += Color.blue(color);
-                    pixCount++;
-                }
-                // Wing on the right is 30% of the ring width
-                for (x = (int) (ringRight + (ringWidth * 0.20)); x < (ringRight + (ringWidth * 0.50)); x++) {
-                    color = bitmap.getPixel(x, y);
-                    gndColor[RED][sIdx] += Color.red(color);
-                    gndColor[GREEN][sIdx] += Color.red(color);
-                    gndColor[BLUE][sIdx] += Color.red(color);
-                    gndCount++;
-                }
-            }
-
-            // Get the averages
-            if (gndCount != 0) {
-                gndColor[RED][sIdx] /= gndCount;
-                gndColor[GREEN][sIdx] /= gndCount;
-                gndColor[BLUE][sIdx] /= gndCount;
-            }
-
-            if (pixCount != 0) {
-                sliceColor[RED][sIdx] /= pixCount;
-                sliceColor[GREEN][sIdx] /= pixCount;
-                sliceColor[BLUE][sIdx] /= pixCount;
-            }
-
-            // Do a straight-up compare of average blue.  No need to normalize
-            if (sliceColor[BLUE][sIdx] < (gndColor[BLUE][sIdx] / 2.0)) {
-                isRing[sIdx] = 1;
-            } else {
-                isRing[sIdx] = 0;
-            }
-
-            /*
-            // Now check the average for each slice
-            // What's the relative percentage of blue compared to the other colors?
-            // If the ground has more than twice the blue of the ring, then it's probably a ring
-            double gndBlue, sliceBlue;
-            gndBlue = (double)gndColor[BLUE][sIdx] / (double)(gndColor[RED][sIdx]+gndColor[GREEN][sIdx]+gndColor[BLUE][sIdx]) ;
-            sliceBlue = (double)sliceColor[BLUE][sIdx] / (double)(sliceColor[RED][sIdx]+sliceColor[GREEN][sIdx]+sliceColor[BLUE][sIdx]) ;
-            if ( sliceBlue < (gndBlue/2.0) ) {
-                isRing[sIdx]=1;
-            } else {
-                isRing[sIdx]=0;
-            }
-            */
-        }
-
-        // FIXME: Check the blue average in the top and bottom slices to the middle?  See if they need to be adjusted. Print to telemetry?
-
-        //ringSlices is how many slices we detect as ring
-        //ringCount is the actual amount of rings present
-        // Count the ring slices
-        int ringSlices = 0;
-        for (int i = 0; i < isRing.length; i++) {
-            if (isRing[i] == 1) {
-                ringSlices++;
-            }
-        }
-
-        // Convert to the number of actual rings
-        // The bottom ring is viewed from above, so it appears to be much larger in the bitmap
-        // than it actually is.  In fact, it coves 4 slices.  So we wil only call this '4' rings
-        // when we are REALLY sure (>=6 slices.)
-        if (ringSlices >= 6) {
-            ringCount = 4;
-        } else if (ringSlices > 0) {
-            ringCount = 1;
-        } else {
-            ringCount = 0;
-        }
-
-        // Now display everything we learned.
-        myLOpMode.telemetry.addData("box", "T %3s, B %3d, L %3d, R %3d, <-- %s/%s", clipTop, clipBottom, clipLeft, clipRight, tfodState ? "Updating" : "Frozen", clip ? "Clipped" : "Unclipped");
-
-        myLOpMode.telemetry.addData("gb", "%s", Arrays.toString(gndColor[BLUE]));
-        myLOpMode.telemetry.addData("sb", "%s", Arrays.toString(sliceColor[BLUE]));
-        myLOpMode.telemetry.addData("isRing", "%s", Arrays.toString(isRing));
-        myLOpMode.telemetry.addData("ringCount", "%d", ringCount);
+        myLOpMode.telemetry.addData("Inside  grn:!grn ", "%d:%d", innerGreen, (subMapWidth*subMapHeight - innerGreen)/(strideX * strideY));
+        myLOpMode.telemetry.addData("Outside grn:!grn ", "%d:%d", outerGreen, ((bufHeight*bufWidth) - (subMapWidth*subMapHeight + outerGreen))/(strideX * strideY));
+        myLOpMode.telemetry.addData("grnLocation", "%s", grnLocation == MarkerPos.Inner ? "inner" : grnLocation == MarkerPos.Outer ? "outer" : "unseen");
 
         myLOpMode.telemetry.update();
     }
 
-    public int getGrnLocation() {
-
+    public MarkerPos getGrnLocation() {
         if (tfod != null) {
-
             /*
             // We're not really using tensorFlow for anythign other than the clipping to allow
             // easier robot line-up.  Don't even bother with recognitions here.
