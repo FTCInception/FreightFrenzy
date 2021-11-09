@@ -101,7 +101,7 @@ public class RRMech_Teleop extends LinearOpMode {
     private RRMechBot robot = new RRMechBot();
 
     // Mech drive related variables
-    double[] speedIdx = new double[] {0, 0};
+    int[] speedIdx = new int[] {0, 0};
     double[] speedModifier = new double[] {0.6, 0.85};
     boolean[] FOV = new boolean[] {false, false};
     double[] forward = new double[2], strafe = new double[2], rotate = new double[2];
@@ -188,7 +188,7 @@ public class RRMech_Teleop extends LinearOpMode {
         double[] intakeSet = {0.0, MAX_INTAKE_POWER};
         int intakeIdx=0;
 
-        final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.7, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
+        final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
         double[] slideSet = {SLIDE_INTAKE, SLIDE_DRIVE, SLIDE_LOW, SLIDE_SHARED, SLIDE_MED, SLIDE_HIGH};
         final int SLIDE_INTAKE_IDX = 0, SLIDE_DRIVE_IDX = 1, SLIDE_HIGH_IDX = slideSet.length-1;
         int slideIdx=SLIDE_DRIVE_IDX;
@@ -296,7 +296,7 @@ public class RRMech_Teleop extends LinearOpMode {
             iter += 1;
 
             if (gp1Present) {
-                            gamepad= gamepad1;
+                gamepad= gamepad1;
                 padIdx = pad1;
 
                 // lTrig is now a boolean
@@ -405,7 +405,7 @@ public class RRMech_Teleop extends LinearOpMode {
                 // 'x': Speed toggle
                 if (gamepad.x) {
                     if (!xPrev[padIdx]) {
-                        speedIdx[padIdx] = (speedIdx[padIdx] + 1) % speedModifier.length;
+                        speedIdx[padIdx] = (int)( (speedIdx[padIdx] + 1) % speedModifier.length);
                         xPrev[padIdx] = true;
                     }
                 } else {
@@ -845,14 +845,14 @@ public class RRMech_Teleop extends LinearOpMode {
             }
 
             // This adds the powers from both controllers together scaled for each controller and FOV
-            l_f_motor_power = ((forward[pad1] + strafe[pad1] + rotate[pad1]) * speedModifier[pad1]) +
-                    ((forward[pad2] + strafe[pad2] + rotate[pad2]) * speedModifier[pad2]);
-            l_b_motor_power = ((forward[pad1] - strafe[pad1] + rotate[pad1]) * speedModifier[pad1]) +
-                    ((forward[pad2] - strafe[pad2] + rotate[pad2]) * speedModifier[pad2]);
-            r_f_motor_power = ((forward[pad1] - strafe[pad1] - rotate[pad1]) * speedModifier[pad1]) +
-                    ((forward[pad2] - strafe[pad2] - rotate[pad2]) * speedModifier[pad2]);
-            r_b_motor_power = ((forward[pad1] + strafe[pad1] - rotate[pad1]) * speedModifier[pad1]) +
-                    ((forward[pad2] + strafe[pad2] - rotate[pad2]) * speedModifier[pad2]);
+            l_f_motor_power = ((forward[pad1] + strafe[pad1] + rotate[pad1]) * speedModifier[speedIdx[pad1]]) +
+                    ((forward[pad2] + strafe[pad2] + rotate[pad2]) * speedModifier[speedIdx[pad2]]);
+            l_b_motor_power = ((forward[pad1] - strafe[pad1] + rotate[pad1]) * speedModifier[speedIdx[pad1]]) +
+                    ((forward[pad2] - strafe[pad2] + rotate[pad2]) * speedModifier[speedIdx[pad2]]);
+            r_f_motor_power = ((forward[pad1] - strafe[pad1] - rotate[pad1]) * speedModifier[speedIdx[pad1]]) +
+                    ((forward[pad2] - strafe[pad2] - rotate[pad2]) * speedModifier[speedIdx[pad2]]);
+            r_b_motor_power = ((forward[pad1] + strafe[pad1] - rotate[pad1]) * speedModifier[speedIdx[pad1]]) +
+                    ((forward[pad2] + strafe[pad2] - rotate[pad2]) * speedModifier[speedIdx[pad2]]);
 
             if(smoothDrive) {
                 // Find the largest power request ignoring sign
