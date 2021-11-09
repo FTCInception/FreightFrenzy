@@ -103,7 +103,7 @@ public class RRMech_Teleop extends LinearOpMode {
     // Mech drive related variables
     int[] speedIdx = new int[] {0, 0};
     double[] speedModifier = new double[] {0.6, 0.85};
-    boolean[] FOV = new boolean[] {false, false};
+    boolean[] FOD = new boolean[] {false, false};
     double[] forward = new double[2], strafe = new double[2], rotate = new double[2];
     double[] prevForward = new double[2], prevStrafe = new double[2], prevRotate = new double[2];
     double[] prevTime = new double[2];
@@ -264,16 +264,17 @@ public class RRMech_Teleop extends LinearOpMode {
         // Dpad left/right == slow turn
         // Dpad up/down == Slide up/down (discrete positions)
         //
-        // Right bumper == Nothing
-        // Left bumper == intake toggle on/off
+        // Right bumper == Start/Stop intake
+        // Left bumper == Reverse/unreverse intake (only if running)
         //
         // Right trigger == dump bucket
-        // Left trigger == Nothing
+        // Left trigger == Toggle between drive/intake position
         //
-        // 'a' == Fast/slow drive
+        // 'a' == Go to drive position
         // 'b' == Run duck wheels
-        // 'x' == Toggle FOV drive
-        // 'y' == reverse intake toggle
+        // 'x' == Robot speed
+        // 'y' == Go to top slide position
+        // 'back' == toggle FOD vs regular drive
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
@@ -370,13 +371,13 @@ public class RRMech_Teleop extends LinearOpMode {
                     rBumpPrev[padIdx] = false;
                 }
 
-                // 'back': Toggle FOV mode
+                // 'back': Toggle FOD mode
                 if (gamepad.back) {
                     if (!backPrev[padIdx]) {
-                        FOV[padIdx] = !FOV[padIdx];
+                        FOD[padIdx] = !FOD[padIdx];
                         backPrev[padIdx] = true;
 
-                        if (FOV[padIdx]) {
+                        if (FOD[padIdx]) {
                             // Set the 'front' towards the front of the bot
                             adjustAngle[padIdx] = Math.toDegrees(drive.getRawExternalHeading());
                         }
@@ -538,13 +539,13 @@ public class RRMech_Teleop extends LinearOpMode {
                     rBumpPrev[padIdx] = false;
                 }
 
-                // 'back': Toggle FOV mode
+                // 'back': Toggle FOD mode
                 if (gamepad.back) {
                     if (!backPrev[padIdx]) {
-                        FOV[padIdx] = !FOV[padIdx];
+                        FOD[padIdx] = !FOD[padIdx];
                         backPrev[padIdx] = true;
 
-                        if (FOV[padIdx]) {
+                        if (FOD[padIdx]) {
                             // Set the 'front' towards the front of the bot
                             adjustAngle[padIdx] = Math.toDegrees(drive.getRawExternalHeading());
                         }
@@ -815,11 +816,11 @@ public class RRMech_Teleop extends LinearOpMode {
 
             // This code is terrible.
             // Beware the function calls that pass information in and out via global vars
-            if (FOV[pad1] || FOV[pad2]) {
+            if (FOD[pad1] || FOD[pad2]) {
                 // Get the current robot heading
                 degrees = Math.toDegrees(drive.getRawExternalHeading());
 
-                if (FOV[pad1]) {
+                if (FOD[pad1]) {
                     // Convert the X/Y Cartesion for strafe and forward into Polar
                     CarToPol(strafe[pad1], forward[pad1]);
                     // Rotate the Polar coordinates by the robot's heading
@@ -832,7 +833,7 @@ public class RRMech_Teleop extends LinearOpMode {
                     // Now the robot moves in orientation of the field
                 }
 
-                if (FOV[pad2]) {
+                if (FOD[pad2]) {
                     CarToPol(strafe[pad2], forward[pad2]);
                     // Rotate the Polar coordinates by the robot's heading
                     theta -= AngleUnit.DEGREES.normalize(degrees - adjustAngle[pad2]);
@@ -844,7 +845,7 @@ public class RRMech_Teleop extends LinearOpMode {
                 }
             }
 
-            // This adds the powers from both controllers together scaled for each controller and FOV
+            // This adds the powers from both controllers together scaled for each controller and FOD
             l_f_motor_power = ((forward[pad1] + strafe[pad1] + rotate[pad1]) * speedModifier[speedIdx[pad1]]) +
                     ((forward[pad2] + strafe[pad2] + rotate[pad2]) * speedModifier[speedIdx[pad2]]);
             l_b_motor_power = ((forward[pad1] - strafe[pad1] + rotate[pad1]) * speedModifier[speedIdx[pad1]]) +
