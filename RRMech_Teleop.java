@@ -188,7 +188,10 @@ public class RRMech_Teleop extends LinearOpMode {
         double[] intakeSet = {0.0, MAX_INTAKE_POWER};
         int intakeIdx=0;
 
-        final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
+        // 1:1 slide
+        //final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
+        // 2:1 slide
+        final double SLIDE_INTAKE = 1.0-1.0, SLIDE_DRIVE = 1.0-0.9, SLIDE_LOW = 1.0-0.8, SLIDE_SHARED = 1.0-0.73, SLIDE_MED = 1.0-0.5, SLIDE_HIGH = 1.0-0.0;
         double[] slideSet = {SLIDE_INTAKE, SLIDE_DRIVE, SLIDE_LOW, SLIDE_SHARED, SLIDE_MED, SLIDE_HIGH};
         final int SLIDE_INTAKE_IDX = 0, SLIDE_DRIVE_IDX = 1, SLIDE_HIGH_IDX = slideSet.length-1;
         int slideIdx=SLIDE_DRIVE_IDX;
@@ -635,7 +638,10 @@ public class RRMech_Teleop extends LinearOpMode {
             // Only do this after someone has actually pressed a button.
             if (slidePressed) {
                 // Manage the allowed and requested bucket positions.
-                if (slideRequest < SLIDE_DRIVE) {
+                // 1:1 slide
+                // if (slideRequest < SLIDE_DRIVE) {
+                // 2:1 slide
+                if (slideRequest > SLIDE_DRIVE) {
                     // We're above the drive position, pretty much anything goes here
                     bucketAllowed = Math.min(bucketRequest[pad1], bucketRequest[pad2]);
                 } else if (slideRequest == SLIDE_DRIVE) {
