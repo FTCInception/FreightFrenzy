@@ -104,10 +104,10 @@ public class IncepVision {
             //  better idea for both robot lineup and ease of adjustment.
             // top, bottom, left, right
               {  0,      0,    0,     0},  // NONE
-              {  0,      0,    0,     0},  // BLUE_WAREHOUSE
-              {  0,      0,    0,     0},  // BLUE_DUCK
-              { 50,    140,    10,  410},  // RED_WAREHOUSE
-              { 50,    140,    10,  410}}; // RED_DUCK
+              {  10,    200,    70,  370},  // BLUE_WAREHOUSE
+               { 60,    150,    360,  80},  // BLUE_DUCK
+              { 60,    150,    360,  80},  // RED_WAREHOUSE
+              { 60,    150,    360,  80}}; // RED_DUCK
     /***
      * Initialize the Target Tracking and navigation interface
      * @param lOpMode    pointer to OpMode

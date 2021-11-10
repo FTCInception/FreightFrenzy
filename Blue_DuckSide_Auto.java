@@ -50,8 +50,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
  */
-@Autonomous(name="Red_DuckSide_Auto", group="RRMechBot")
-public class Red_DuckSide_Auto extends LinearOpMode {
+@Autonomous(name="Blue_DuckSide_Auto", group="RRMechBot")
+public class Blue_DuckSide_Auto extends LinearOpMode {
 
     public int targetLevel = 3;
 
@@ -60,8 +60,8 @@ public class Red_DuckSide_Auto extends LinearOpMode {
     private static final double intake_pickup_ring = 1.0;
 
     // This is the starting position of the center of the robot.
-    private static final double startingX = -44.0;
-    private static final double startingY = -63.0;
+    private static final double startingX = -27.0;
+    private static final double startingY = 63.0;
 
     // 1:1 slide
     //final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
@@ -196,7 +196,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         // Back against the -x wall, wheels aligned on first tile in -y
         // THIS MUST BE DONE BEFORE BUILDING
         // THIS MUST BE DONE AFTER THE ROBOT IS IN ITS FINAL POSITION
-        Pose2d startPose = new Pose2d(startingX+Sx, startingY+Sy, robot.drive.getRawExternalHeading()+Math.toRadians(270));
+        Pose2d startPose = new Pose2d(startingX+Sx, startingY+Sy, robot.drive.getRawExternalHeading()+Math.toRadians(90));
         robot.drive.setPoseEstimate(startPose);
 
         telemetry.addData("Computing paths","");
@@ -207,7 +207,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         telemetry.addData("Starting vision", "");
         telemetry.update();
         // Stare at the rings really hard until its time to go or stop
-        vision.initAutonomous(this, "webcam", vision.RED_DUCK);
+        vision.initAutonomous(this, "webcam", vision.BLUE_DUCK);
         vision.clip = false;
         boolean leftBOK = true, rightBOK = true;
         do {
@@ -293,55 +293,55 @@ public class Red_DuckSide_Auto extends LinearOpMode {
     private void buildTrajs(Trajectory[] traj) {
 
         int TIdx = 0;
-        // Starting X,Y = -44,-63
+        // Starting X,Y = -27, 63
 
         // Drive to hub while avoiding team marker
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .lineToConstantHeading(new Vector2d(-63,-40))
+                .lineToConstantHeading(new Vector2d(-63,40))
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToLinearHeading(new Pose2d(-38,-10, Math.toRadians(180)))
+                .lineToLinearHeading(new Pose2d(-38,10, Math.toRadians(180)))
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(-30,-25.5))
+                .lineToConstantHeading(new Vector2d(-30,25.5))
                 .build();
 
         //Drop Block Sequence
 
         //Duck Wheel
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .lineToLinearHeading(new Pose2d(-38,-15, Math.toRadians(270)))
+                .lineToLinearHeading(new Pose2d(-38,15, Math.toRadians(90)))
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .lineToConstantHeading(new Vector2d(-67,-30))
+                .lineToConstantHeading(new Vector2d(-67,30))
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
                 .forward(27)
                 .build();
 
-        //Duck Wheel ends motion at new Pose2d(-66,-54,Math.toRadians(270))
+        //Duck Wheel ends motion at new Pose2d(-66,-54,Math.toRadians(90))
         //Driving to Park
-        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(-66,-54,Math.toRadians(270)))
-                .lineToConstantHeading(new Vector2d(-60,-50))
+        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(-66,54,Math.toRadians(90)))
+                .lineToConstantHeading(new Vector2d(-60,50))
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToLinearHeading(new Pose2d(-30,-50, Math.toRadians(0)))
+                .lineToLinearHeading(new Pose2d(-30,50, Math.toRadians(0)))
                 .build();
 
         if(parkThroughOpening){
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .splineToConstantHeading(new Vector2d(0,-70), Math.toRadians(0))
-                    .splineToConstantHeading(new Vector2d(45,-70), Math.toRadians(0))
+                    .splineToConstantHeading(new Vector2d(0,70), Math.toRadians(0))
+                    .splineToConstantHeading(new Vector2d(45,70), Math.toRadians(0))
                     .build();
 
         } else {
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(55,-50, Math.toRadians(0)))
+                    .lineToLinearHeading(new Pose2d(55,50, Math.toRadians(0)))
                     .build();
         }
 
@@ -400,12 +400,12 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         //Run Duck Wheel
         //Turn on reverse intake in case we hit the duck after we finish
 
-        robot.duckR.setPosition(0.1);
+        robot.duckL.setPosition(0.9);
         CheckWait(true, 4000, 0);
-        robot.duckR.setPosition(.5);
+        robot.duckL.setPosition(.5);
         CheckWait(true, 200, 0);
         robot.intake_motor.setPower(-.8);
-
+        
         //Drive to park
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);

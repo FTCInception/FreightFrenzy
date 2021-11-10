@@ -180,7 +180,7 @@ public class RRMech_Teleop extends LinearOpMode {
         double duckRequest = DUCK_STOP;
 
         final double bucketDump = 0.32;
-        final double bucketDrive = 0.60;
+        final double bucketDrive = 0.6;
         final double bucketIntake = 0.70;
         double[] bucketRequest = {bucketDrive, bucketDrive};
         double bucketAllowed;
@@ -191,7 +191,7 @@ public class RRMech_Teleop extends LinearOpMode {
         // 1:1 slide
         //final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
         // 2:1 slide
-        final double SLIDE_INTAKE = 1.0-1.0, SLIDE_DRIVE = 1.0-0.9, SLIDE_LOW = 1.0-0.8, SLIDE_SHARED = 1.0-0.73, SLIDE_MED = 1.0-0.5, SLIDE_HIGH = 1.0-0.0;
+        final double SLIDE_INTAKE = (1.0-1.0)*.4+.3, SLIDE_DRIVE = (1.0-0.9)*.4+.3, SLIDE_LOW = (1.0-0.8)*.4+.3, SLIDE_SHARED = (1.0-0.73)*.4+.3, SLIDE_MED = (1.0-0.5)*.4+.3, SLIDE_HIGH = (1.0-0.0)*.4+.3;
         double[] slideSet = {SLIDE_INTAKE, SLIDE_DRIVE, SLIDE_LOW, SLIDE_SHARED, SLIDE_MED, SLIDE_HIGH};
         final int SLIDE_INTAKE_IDX = 0, SLIDE_DRIVE_IDX = 1, SLIDE_HIGH_IDX = slideSet.length-1;
         int slideIdx=SLIDE_DRIVE_IDX;
@@ -909,6 +909,8 @@ public class RRMech_Teleop extends LinearOpMode {
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.addData("", "");
+            telemetry.addData("Slide Goal:", slideRequest);
+            telemetry.addData("Slide POS", slide.getPosition());
             if( false ) {
                 telemetry.addData("Some message 1", "");
             } else {

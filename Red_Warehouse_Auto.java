@@ -63,6 +63,10 @@ public class Red_Warehouse_Auto extends LinearOpMode {
     private static final double startingX = 4.0;
     private static final double startingY = -63.0;
 
+    // 1:1 slide
+    //final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
+    // 2:1 slide
+    final double SLIDE_INTAKE = (1.0-1.0)*.4+.3, SLIDE_DRIVE = (1.0-0.9)*.4+.3, SLIDE_LOW = (1.0-0.8)*.4+.3, SLIDE_SHARED = (1.0-0.73)*.4+.3, SLIDE_MED = (1.0-0.5)*.4+.3, SLIDE_HIGH = (1.0-0.0)*.4+.3;
     private static boolean parkThroughOpening = true;
     private static boolean secondBlock = false;
     private static boolean option3 = true;
@@ -84,7 +88,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
         do {
             if ( gamepad1.y || gamepad2.y ) {
                 // Run slide to the top
-                robot.slide.setPosition(0.0);
+                robot.slide.setPosition(SLIDE_HIGH);
                 sleep(5000);
 
                 //Reset Bucket to drive position
@@ -92,7 +96,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
                 sleep(1000);
 
                 // Run slide to the bottom
-                robot.slide.setPosition(1.0);
+                robot.slide.setPosition(SLIDE_INTAKE);
                 sleep(5000);
                 break;
             }
@@ -203,7 +207,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
         telemetry.addData("Starting vision", "");
         telemetry.update();
         // Stare at the rings really hard until its time to go or stop
-        vision.initAutonomous(this, "webcam", vision.RED_DUCK);
+        vision.initAutonomous(this, "webcam", vision.RED_WAREHOUSE);
         vision.clip = false;
         boolean leftBOK = true, rightBOK = true;
         do {
@@ -216,9 +220,9 @@ public class Red_Warehouse_Auto extends LinearOpMode {
         // FIXME: Test the stopping in auto here again.
         if (opModeIsActive()) {
             if (grnLocation == IncepVision.MarkerPos.Outer) {
-                targetLevel = 2;
-            } else if (grnLocation == IncepVision.MarkerPos.Inner) {
                 targetLevel = 1;
+            } else if (grnLocation == IncepVision.MarkerPos.Inner) {
+                targetLevel = 2;
             } else {
                 // If it's not LEFT or RIGHT, assume unseen
                 targetLevel = 3;
@@ -372,16 +376,16 @@ public class Red_Warehouse_Auto extends LinearOpMode {
     private void runTrajs(Trajectory[] traj, int level) {
         int TIdx = 0;
 
-        robot.slide.setPosition(.9); //Reset Bucket to safe level
+        robot.slide.setPosition(SLIDE_DRIVE); //Reset Bucket to safe level
         CheckWait(true, 500, 0);
         robot.bucket.setPosition(.6); //Reset Bucket to drive position
         CheckWait(true, 200, 0);
 
         //Pick Level based on detected team marker placement
         switch (level){
-            case 1:  robot.slide.setPosition(.8); break;
-            case 2:  robot.slide.setPosition(.5); break;
-            case 3:  robot.slide.setPosition(0);  break;
+            case 1:  robot.slide.setPosition(SLIDE_LOW); break;
+            case 2:  robot.slide.setPosition(SLIDE_MED); break;
+            case 3:  robot.slide.setPosition(SLIDE_HIGH);  break;
         }
 
         //Drive to Hub around team marker
@@ -402,7 +406,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
         CheckWait(true, 1000, 0);
         robot.bucket.setPosition(.6); //Bucket Up
         CheckWait(true, 0, 0);
-        robot.slide.setPosition(.9); //Bucket to drive position
+        robot.slide.setPosition(SLIDE_DRIVE); //Bucket to drive position
         CheckWait(true, 500, 0);
 
         //Drive to park
@@ -416,8 +420,8 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             CheckWait(true, 0, 0);
             if(!opModeIsActive()){ return; }
 
-            robot.bucket.setPosition(.7); //Bucket Up
-            robot.slide.setPosition(1); //Bucket to drive position
+            robot.bucket.setPosition(.7); //Bucket intake
+            robot.slide.setPosition(SLIDE_INTAKE); //Bucket to drive position
             CheckWait(true, 500, 0);
             robot.intake_motor.setPower(0.85);
 
@@ -427,7 +431,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
 
             robot.intake_motor.setPower(0);
             CheckWait(true, 100, 0);
-            robot.slide.setPosition(.5); //Bucket to mid position
+            robot.slide.setPosition(SLIDE_HIGH); //Bucket to high position
             CheckWait(true, 250, 0);
             robot.bucket.setPosition(.6); //Bucket Up
 
@@ -447,7 +451,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             CheckWait(true, 1000, 0);
             robot.bucket.setPosition(.6); //Bucket Up
             CheckWait(true, 0, 0);
-            robot.slide.setPosition(.9); //Bucket to drive position
+            robot.slide.setPosition(SLIDE_DRIVE); //Bucket to drive position
             CheckWait(true, 500, 0);
 
             robot.drive.followTrajectoryAsync(traj[TIdx++]);
