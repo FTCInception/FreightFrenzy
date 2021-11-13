@@ -69,7 +69,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
     final double SLIDE_INTAKE = (1.0-1.0)*.4+.3, SLIDE_DRIVE = (1.0-0.9)*.4+.3, SLIDE_LOW = (1.0-0.8)*.4+.3, SLIDE_SHARED = (1.0-0.73)*.4+.3, SLIDE_MED = (1.0-0.5)*.4+.3, SLIDE_HIGH = (1.0-0.0)*.4+.3;
     private static boolean parkThroughOpening = true;
     private static boolean secondBlock = false;
-    private static boolean option3 = true;
+    private static boolean option3 = false;
 
     private IncepVision vision = new IncepVision();
     private IncepVision.MarkerPos grnLocation = IncepVision.MarkerPos.Unseen;
@@ -89,7 +89,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
             if ( gamepad1.y || gamepad2.y ) {
                 // Run slide to the top
                 robot.slide.setPosition(SLIDE_HIGH);
-                sleep(5000);
+                sleep(3000);
 
                 //Reset Bucket to drive position
                 robot.bucket.setPosition(.6);
@@ -97,7 +97,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
 
                 // Run slide to the bottom
                 robot.slide.setPosition(SLIDE_INTAKE);
-                sleep(5000);
+                sleep(3000);
                 break;
             }
 
@@ -305,14 +305,14 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(5,26))
+                .lineToConstantHeading(new Vector2d(5,24.5))
                 .build();
 
         //Drop Block Sequence
 
         if(secondBlock){
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(0, 66, Math.toRadians(0)))
+                    .lineToLinearHeading(new Pose2d(5, 66, Math.toRadians(0)))
                     .build();
 
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
@@ -328,7 +328,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
             //turn off intake, raise
 
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                    .lineToLinearHeading(new Pose2d(0, 70, Math.toRadians(0)))
+                    .lineToLinearHeading(new Pose2d(5, 70, Math.toRadians(0)))
                     .build();
 
             traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(0,66))
@@ -352,7 +352,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
         } else {
             if (parkThroughOpening) {
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToLinearHeading(new Pose2d(0, 66, Math.toRadians(0)))
+                        .lineToLinearHeading(new Pose2d(5, 66, Math.toRadians(0)))
                         .build();
 
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())

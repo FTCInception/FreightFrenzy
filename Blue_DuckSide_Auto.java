@@ -68,7 +68,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
     // 2:1 slide
     final double SLIDE_INTAKE = (1.0-1.0)*.4+.3, SLIDE_DRIVE = (1.0-0.9)*.4+.3, SLIDE_LOW = (1.0-0.8)*.4+.3, SLIDE_SHARED = (1.0-0.73)*.4+.3, SLIDE_MED = (1.0-0.5)*.4+.3, SLIDE_HIGH = (1.0-0.0)*.4+.3;
     private static boolean parkThroughOpening = true;
-    private static boolean option2 = true;
+    private static boolean warehousePark = true;
     private static boolean option3 = true;
 
     private IncepVision vision = new IncepVision();
@@ -89,7 +89,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
             if ( gamepad1.y || gamepad2.y ) {
                 // Run slide to the top
                 robot.slide.setPosition(SLIDE_HIGH);
-                sleep(5000);
+                sleep(3000);
 
                 //Reset Bucket to drive position
                 robot.bucket.setPosition(.6);
@@ -97,7 +97,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
 
                 // Run slide to the bottom
                 robot.slide.setPosition(SLIDE_INTAKE);
-                sleep(5000);
+                sleep(3000);
                 break;
             }
 
@@ -164,7 +164,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
 
             if ( gamepad1.x || gamepad2.x ) {
                 if (xOK) {
-                    option2 = !option2;
+                    warehousePark = !warehousePark;
                     xOK = false;
                 }
             } else {
@@ -185,7 +185,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
             telemetry.addData("Sx,Sy:", "(%.0f, %.0f); New:(%.0f, %.0f); Delta:(%.0f%s, %.0f%s)", startingX, startingY, startingX+Sx, startingY+Sy, Math.abs(Sx), (Sx<0)?" left":(Sx>0)?" right":"", Math.abs(Sy),(Sy<0)?" down":(Sy>0)?" up":"");
             telemetry.addData("Use dpad to adjust robot start position","");
             telemetry.addData("'Y' Park through opening?:","(%s)", parkThroughOpening?"true":"false");
-            telemetry.addData("'X' option2:","(%s)", option2?"true":"false");
+            telemetry.addData("'X' WarehousePark (OVERRIDES OPENING PARK):","(%s)", warehousePark?"true":"false");
             telemetry.addData("'B' option3:","(%s)", option3?"true":"false");
             telemetry.addData("'A' Proceed to Vision:","(%s)", "NA");
             telemetry.update();
@@ -305,7 +305,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(-30,25.5))
+                .lineToConstantHeading(new Vector2d(-30,24.5))
                 .build();
 
         //Drop Block Sequence
@@ -329,20 +329,29 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
                 .lineToConstantHeading(new Vector2d(-60,50))
                 .build();
 
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToLinearHeading(new Pose2d(-30,50, Math.toRadians(0)))
-                .build();
+        if(warehousePark){
 
-        if(parkThroughOpening){
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .splineToConstantHeading(new Vector2d(0,70), Math.toRadians(0))
-                    .splineToConstantHeading(new Vector2d(45,70), Math.toRadians(0))
+                    .lineToLinearHeading(new Pose2d(-30,50, Math.toRadians(0)))
                     .build();
 
+            if(parkThroughOpening){
+                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                        .splineToConstantHeading(new Vector2d(0,70), Math.toRadians(0))
+                        .splineToConstantHeading(new Vector2d(45,70), Math.toRadians(0))
+                        .build();
+
+            } else {
+                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                        .lineToLinearHeading(new Pose2d(55,47, Math.toRadians(0)))
+                        .build();
+            }
         } else {
+
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(55,50, Math.toRadians(0)))
+                    .lineToLinearHeading(new Pose2d(-63,36, Math.toRadians(0)))
                     .build();
+
         }
 
         showTrajPoses( "LEVEL3", TIdx, traj ) ;
@@ -415,9 +424,14 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
 
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
+        if(warehousePark) {
+
+            robot.drive.followTrajectoryAsync(traj[TIdx++]);
+            CheckWait(true, 0, 0);
+            if (!opModeIsActive()) {
+                return;
+            }
+        }
 
         //Turn off intake, should be parked
         robot.intake_motor.setPower(0);
