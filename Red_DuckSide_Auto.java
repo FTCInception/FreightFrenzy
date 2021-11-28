@@ -29,6 +29,9 @@
 
 package Inception.FreightFrenzy;
 
+import android.transition.Slide;
+
+import Inception.FreightFrenzy.RRMechBot.SlideHeight;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
@@ -53,7 +56,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 @Autonomous(name="Red_DuckSide_Auto", group="RRMechBot")
 public class Red_DuckSide_Auto extends LinearOpMode {
 
-    public int targetLevel = 3;
+    public SlideHeight targetLevel = SlideHeight.HighDrop;
 
     private RRMechBot robot = new RRMechBot();
 
@@ -222,12 +225,12 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         // FIXME: Test the stopping in auto here again.
         if (opModeIsActive()) {
             if (grnLocation == IncepVision.MarkerPos.Outer) {
-                targetLevel = 1;
+                targetLevel = SlideHeight.LowDrop;
             } else if (grnLocation == IncepVision.MarkerPos.Inner) {
-                targetLevel = 2;
+                targetLevel = SlideHeight.MidDrop;
             } else {
                 // If it's not LEFT or RIGHT, assume unseen
-                targetLevel = 3;
+                targetLevel = SlideHeight.HighDrop;
             }
 
             runTrajs(trajs ,targetLevel);
@@ -363,20 +366,16 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         showTrajPoses( "LEVEL3", TIdx, traj ) ;
     }
 
-    private void runTrajs(Trajectory[] traj, int level) {
+    private void runTrajs(Trajectory[] traj, SlideHeight level) {
         int TIdx = 0;
 
-        robot.setSlidePosition(robot.SLIDE_DRIVE_IDX, robot.SLIDE_PWR); //Reset Bucket to safe level
+        robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
         CheckWait(true, 500, 0);
         robot.bucket.setPosition(.6); //Reset Bucket to drive position
         CheckWait(true, 200, 0);
 
         //Pick Level based on detected team marker placement
-        switch (level){
-            case 1:  robot.setSlidePosition(robot.SLIDE_LOW_IDX, robot.SLIDE_PWR); break;
-            case 2:  robot.setSlidePosition(robot.SLIDE_MED_IDX, robot.SLIDE_PWR); break;
-            case 3:  robot.setSlidePosition(robot.SLIDE_HIGH_IDX, robot.SLIDE_PWR);  break;
-        }
+        robot.setSlidePosition(level);
 
         //Drive to Hub around team marker
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
@@ -396,7 +395,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         CheckWait(true, 1000, 0);
         robot.bucket.setPosition(.6); //Bucket Up
         CheckWait(true, 0, 0);
-        robot.setSlidePosition(robot.SLIDE_DRIVE_IDX, robot.SLIDE_PWR); //Bucket to drive position
+        robot.setSlidePosition(SlideHeight.Drive); //Bucket to drive position
         CheckWait(true, 500, 0);
 
         //Drive to Duck Wheel

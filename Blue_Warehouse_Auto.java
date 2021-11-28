@@ -29,6 +29,7 @@
 
 package Inception.FreightFrenzy;
 
+import Inception.FreightFrenzy.RRMechBot.SlideHeight;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
@@ -55,7 +56,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 @Autonomous(name="Blue_Warehouse_Auto", group="RRMechBot")
 public class Blue_Warehouse_Auto extends LinearOpMode {
 
-    public int targetLevel = 3;
+    public SlideHeight targetLevel = SlideHeight.HighDrop;
 
     private RRMechBot robot = new RRMechBot();
 
@@ -224,12 +225,12 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
         // FIXME: Test the stopping in auto here again.
         if (opModeIsActive()) {
             if (grnLocation == IncepVision.MarkerPos.Outer) {
-                targetLevel = 3;
+                targetLevel = SlideHeight.HighDrop;
             } else if (grnLocation == IncepVision.MarkerPos.Inner) {
-                targetLevel = 2;
+                targetLevel = SlideHeight.MidDrop;
             } else {
                 // If it's not LEFT or RIGHT, assume unseen
-                targetLevel = 1;
+                targetLevel = SlideHeight.LowDrop;
             }
 
             runTrajs(trajs ,targetLevel);
@@ -377,21 +378,17 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
         showTrajPoses( "LEVEL3", TIdx, traj ) ;
     }
 
-    private void runTrajs(Trajectory[] traj, int level) {
+    private void runTrajs(Trajectory[] traj, SlideHeight level) {
         int TIdx = 0;
 
-        /* TODO
-        robot.slide.setPosition(SLIDE_DRIVE); //Reset Bucket to safe level
+
+        robot.setSlidePosition(SlideHeight.Drive, 2.343334); //Reset Bucket to safe level
         CheckWait(true, 500, 0);
         robot.bucket.setPosition(.6); //Reset Bucket to drive position
         CheckWait(true, 200, 0);
 
         //Pick Level based on detected team marker placement
-        switch (level){
-            case 1:  robot.slide.setPosition(SLIDE_LOW); break;
-            case 2:  robot.slide.setPosition(SLIDE_MED); break;
-            case 3:  robot.slide.setPosition(SLIDE_HIGH);  break;
-        }
+        robot.setSlidePosition(level, 0.6);
 
         //Drive to Hub around team marker
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
@@ -411,7 +408,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
         CheckWait(true, 1000, 0);
         robot.bucket.setPosition(.6); //Bucket Up
         CheckWait(true, 0, 0);
-        robot.slide.setPosition(SLIDE_DRIVE); //Bucket to drive position
+        robot.setSlidePosition(SlideHeight.Drive); //Bucket to drive position
         CheckWait(true, 500, 0);
 
         //Drive to park
@@ -426,7 +423,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
             if(!opModeIsActive()){ return; }
 
             robot.bucket.setPosition(.7); //Bucket intake
-            robot.slide.setPosition(SLIDE_INTAKE); //Bucket to drive position
+            robot.setSlidePosition(SlideHeight.Intake); //Bucket to intake position
             CheckWait(true, 500, 0);
             robot.intake_motor.setPower(0.85);
 
@@ -436,7 +433,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
 
             robot.intake_motor.setPower(0);
             CheckWait(true, 100, 0);
-            robot.slide.setPosition(SLIDE_HIGH); //Bucket to high position
+            robot.setSlidePosition(SlideHeight.HighDrop, 0.7); //Bucket to high position
             CheckWait(true, 250, 0);
             robot.bucket.setPosition(.6); //Bucket Up
 
@@ -456,7 +453,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
             CheckWait(true, 1000, 0);
             robot.bucket.setPosition(.6); //Bucket Up
             CheckWait(true, 0, 0);
-            robot.slide.setPosition(SLIDE_DRIVE); //Bucket to drive position
+            robot.setSlidePosition(SlideHeight.LowDrop); //Bucket to drive position
             CheckWait(true, 500, 0);
 
             robot.drive.followTrajectoryAsync(traj[TIdx++]);
@@ -476,6 +473,6 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
             CheckWait(true, 0, 0);
             if(!opModeIsActive()){ return; }
         }
-        */
+
     }
 }

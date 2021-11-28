@@ -347,7 +347,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
 
             } else {
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToLinearHeading(new Pose2d(55,47, Math.toRadians(0)))
+                        .lineToLinearHeading(new Pose2d(55,48.5, Math.toRadians(0)))
                         .build();
             }
         } else {

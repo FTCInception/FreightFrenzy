@@ -70,20 +70,22 @@ public class RRMechBot {
     public Servo duckL=null,duckR=null;
     public SampleMecanumDrive drive = null;
 
-    //final double SLIDE_INTAKE = 0.0, SLIDE_DRIVE = 0.1, SLIDE_LOW = 0.2, SLIDE_SHARED = 0.27, SLIDE_MED = 0.5, SLIDE_HIGH = 1.0;
-    public int SLIDE_INTAKE_IDX = 0;  // 0.0
-    public int SLIDE_DRIVE_IDX  = 1;  // 0.1
-    public int SLIDE_LOW_IDX    = 2;  // 0.2
-    public int SLIDE_SHARED_IDX = 3;  // 0.27
-    public int SLIDE_MED_IDX    = 4;  // 0.5
-    public int SLIDE_HIGH_IDX   = 5;  // 1.0
-    public double SLIDE_PWR = 0.7;
+    private double SLIDE_PWR = 0.7;
 
     final double PULLEY_D = 38.2;
     final double RACK_STROKE = 430.0;
     final double SLIDE_MAX_REV = RACK_STROKE / (PULLEY_D * Math.PI);
     final double SLIDE_TICKS_PER_REV = ((((1.0+(46.0/17.0))) * (1.0+(46.0/11.0))) * 28.0);  // 312 RPM HEX shaft (5202 series)
     // https://www.gobilda.com/5203-series-yellow-jacket-planetary-gear-motor-19-2-1-ratio-24mm-length-8mm-rex-shaft-312-rpm-3-3-5v-encoder/
+    public enum SlideHeight {
+        Intake,
+        Drive,
+        LowDrop,
+        SharedDrop,
+        MidDrop,
+        HighDrop
+    }
+
     final int slideTargets[] = {(int)(0.0 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.1 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.2 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
@@ -211,10 +213,16 @@ public class RRMechBot {
         slide_motor.setVelocityPIDFCoefficients(4.0,3.5,2.0,12.0);
     }
 
-    public void setSlidePosition(int slidePos, double power){
-        slide_motor.setTargetPosition(slideTargets[slidePos]);
+    public void setSlidePosition(SlideHeight slidePos, double power){
+        slide_motor.setTargetPosition(slideTargets[slidePos.ordinal()]);
         slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         slide_motor.setPower(power);
+    }
+
+    public void setSlidePosition(SlideHeight slidePos){
+        slide_motor.setTargetPosition(slideTargets[slidePos.ordinal()]);
+        slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        slide_motor.setPower(SLIDE_PWR);
     }
 
     public void intakeStop(){

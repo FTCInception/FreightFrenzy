@@ -29,6 +29,7 @@
 
 package Inception.FreightFrenzy;
 
+import Inception.FreightFrenzy.RRMechBot.SlideHeight;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -195,8 +196,8 @@ public class RRMech_Teleop extends LinearOpMode {
         //final double SLIDE_INTAKE = (1.0-1.0)*.4+.3, SLIDE_DRIVE = (1.0-0.9)*.4+.3, SLIDE_LOW = (1.0-0.8)*.4+.3, SLIDE_SHARED = (1.0-0.73)*.4+.3, SLIDE_MED = (1.0-0.5)*.4+.3, SLIDE_HIGH = (1.0-0.0)*.4+.3;
         //double[] slideSet = {SLIDE_INTAKE, SLIDE_DRIVE, SLIDE_LOW, SLIDE_SHARED, SLIDE_MED, SLIDE_HIGH};
         //final int SLIDE_INTAKE_IDX = 0, SLIDE_DRIVE_IDX = 1, SLIDE_HIGH_IDX = slideSet.length-1;
-        int slideIdx=robot.SLIDE_DRIVE_IDX;
-        //double slideRequest=robot.slideTargets[slideIdx];
+        SlideHeight slideLevel = SlideHeight.Drive;
+        //double slideRequest=robot.slideTargets[slideLevel];
 
         double prevLTrigVal=0.0;
         double prevRTrigVal=0.0;
@@ -332,16 +333,16 @@ public class RRMech_Teleop extends LinearOpMode {
                     if (!lTrigPrev[padIdx]) {
                         if (!slidePressed) {
                             // On the first press, INTAKE is not safe, force DRIVE.
-                            slideIdx = robot.SLIDE_DRIVE_IDX;
+                            slideLevel = SlideHeight.Drive;
                             slidePressed = true;
                         } else {
-                            if (slideIdx != robot.SLIDE_DRIVE_IDX) {
-                                slideIdx = robot.SLIDE_DRIVE_IDX;
+                            if (slideLevel != SlideHeight.Drive) {
+                                slideLevel = SlideHeight.Drive;
                             } else {
-                                slideIdx = robot.SLIDE_INTAKE_IDX;
+                                slideLevel = SlideHeight.Intake;
                             }
                         }
-                        //slideRequest = slideSet[slideIdx];
+                        //slideRequest = slideSet[slideLevel];
                         lTrigPrev[padIdx] = true;
                     }
                 } else {
@@ -412,8 +413,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         slidePressed = true;
                     }
                     if (!aPrev[padIdx]) {
-                        slideIdx = robot.SLIDE_DRIVE_IDX;
-                        //slideRequest = slideSet[slideIdx];
+                        slideLevel = SlideHeight.Drive;
+                        //slideRequest = slideSet[slideLevel];
                         aPrev[padIdx] = true;
                     }
                 } else {
@@ -439,8 +440,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         slidePressed = true;
                     }
                     if (!yPrev[padIdx]) {
-                        slideIdx = robot.SLIDE_HIGH_IDX;
-                        //slideRequest = slideSet[slideIdx];
+                        slideLevel = SlideHeight.HighDrop;
+                        //slideRequest = slideSet[slideLevel];
                         yPrev[padIdx] = true;
                     }
                 } else {
@@ -454,8 +455,10 @@ public class RRMech_Teleop extends LinearOpMode {
                         slidePressed = true;
                     }
                     if (!dUpPrev[padIdx]) {
-                        slideIdx = Math.min((slideIdx + 1), robot.slideTargets.length - 1);
-                        //slideRequest = slideSet[slideIdx];
+                        slideLevel = SlideHeight.values()[
+                                Math.min((slideLevel.ordinal() + 1), robot.slideTargets.length - 1)
+                        ];
+                        //slideRequest = slideSet[slideLevel];
                         dUpPrev[padIdx] = true;
                     }
                 } else {
@@ -467,11 +470,13 @@ public class RRMech_Teleop extends LinearOpMode {
                     if (!slidePressed) {
                         // On the first press, down is not safe.  Just go to DRIVE.
                         slidePressed = true;
-                        slideIdx = robot.SLIDE_DRIVE_IDX;
+                        slideLevel = SlideHeight.Drive;
                     } else {
                         if (!dDownPrev[padIdx]) {
-                            slideIdx = Math.max((slideIdx - 1), 0);
-                            //slideRequest = slideSet[slideIdx];
+                            slideLevel = SlideHeight.values()[
+                                    Math.max((slideLevel.ordinal() - 1), 0)
+                            ];
+                            //slideRequest = slideSet[slideLevel];
                             dDownPrev[padIdx] = true;
                         }
                     }
@@ -500,16 +505,16 @@ public class RRMech_Teleop extends LinearOpMode {
                     if (!lTrigPrev[padIdx]) {
                         if (!slidePressed) {
                             // On the first press, INTAKE is not safe, force DRIVE.
-                            slideIdx = robot.SLIDE_DRIVE_IDX;
+                            slideLevel = SlideHeight.Drive;
                             slidePressed = true;
                         } else {
-                            if (slideIdx != robot.SLIDE_DRIVE_IDX) {
-                                slideIdx = robot.SLIDE_DRIVE_IDX;
+                            if (slideLevel != SlideHeight.Drive) {
+                                slideLevel = SlideHeight.Drive;
                             } else {
-                                slideIdx = robot.SLIDE_INTAKE_IDX;
+                                slideLevel = SlideHeight.Intake;
                             }
                         }
-                        //slideRequest = slideSet[slideIdx];
+                        //slideRequest = slideSet[slideLevel];
                         lTrigPrev[padIdx] = true;
                     }
                 } else {
@@ -580,8 +585,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         slidePressed = true;
                     }
                     if (!aPrev[padIdx]) {
-                        slideIdx = robot.SLIDE_DRIVE_IDX;
-                        //slideRequest = slideSet[slideIdx];
+                        slideLevel = SlideHeight.Drive;
+                        //slideRequest = slideSet[slideLevel];
                         aPrev[padIdx] = true;
                     }
                 } else {
@@ -607,8 +612,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         slidePressed = true;
                     }
                     if (!yPrev[padIdx]) {
-                        slideIdx = robot.SLIDE_HIGH_IDX;
-                        //slideRequest = slideSet[slideIdx];
+                        slideLevel = SlideHeight.HighDrop;
+                        //slideRequest = slideSet[slideLevel];
                         yPrev[padIdx] = true;
                     }
                 } else {
@@ -622,8 +627,10 @@ public class RRMech_Teleop extends LinearOpMode {
                         slidePressed = true;
                     }
                     if (!dUpPrev[padIdx]) {
-                        slideIdx = Math.min((slideIdx + 1), robot.slideTargets.length - 1);
-                        //slideRequest = slideSet[slideIdx];
+                        slideLevel = SlideHeight.values()[
+                                Math.min((slideLevel.ordinal() + 1), robot.slideTargets.length - 1)
+                        ];
+                        //slideRequest = slideSet[slideLevel];
                         dUpPrev[padIdx] = true;
                     }
                 } else {
@@ -635,11 +642,13 @@ public class RRMech_Teleop extends LinearOpMode {
                     if (!slidePressed) {
                         // On the first press, down is not safe.  Just go to DRIVE.
                         slidePressed = true;
-                        slideIdx = robot.SLIDE_DRIVE_IDX;
+                        slideLevel = SlideHeight.Drive;
                     } else {
                         if (!dDownPrev[padIdx]) {
-                            slideIdx = Math.max((slideIdx - 1), 0);
-                            //slideRequest = slideSet[slideIdx];
+                            slideLevel = SlideHeight.values()[
+                                    Math.max((slideLevel.ordinal() - 1), 0)
+                            ];
+                            //slideRequest = slideSet[slideLevel];
                             dDownPrev[padIdx] = true;
                         }
                     }
@@ -657,16 +666,16 @@ public class RRMech_Teleop extends LinearOpMode {
                 // 1:1 slide
                 // if (slideRequest < SLIDE_DRIVE) {
                 // 2:1 slide
-                if (slideIdx > robot.SLIDE_DRIVE_IDX) {
+                if (slideLevel.ordinal() > SlideHeight.Drive.ordinal()) {
                     // We're above the drive position, pretty much anything goes here
                     bucketAllowed = Math.min(bucketRequest[pad1], bucketRequest[pad2]);
-                } else if (slideIdx == robot.SLIDE_DRIVE_IDX) {
+                } else if (slideLevel == SlideHeight.Drive) {
                     bucketAllowed = bucketDrive;
                 } else {
                     bucketAllowed = bucketIntake;
                 }
 
-                robot.setSlidePosition(slideIdx,robot.SLIDE_PWR);
+                robot.setSlidePosition(slideLevel);
                 bucket.setPosition(bucketAllowed);
             }
 
@@ -899,7 +908,7 @@ public class RRMech_Teleop extends LinearOpMode {
                 if (((Math.abs(l_f_motor_power) > 0.1) ||
                         (Math.abs(l_b_motor_power) > 0.1) ||
                         (Math.abs(r_f_motor_power) > 0.1) ||
-                        (Math.abs(r_b_motor_power) > 0.1)) && (slideIdx == robot.SLIDE_INTAKE_IDX)) {
+                        (Math.abs(r_b_motor_power) > 0.1)) && (slideLevel == SlideHeight.Intake)) {
                     gamepad1.rumble(Gamepad.RUMBLE_DURATION_CONTINUOUS);
                     gamepad2.rumble(Gamepad.RUMBLE_DURATION_CONTINUOUS);
                 } else {
@@ -925,12 +934,12 @@ public class RRMech_Teleop extends LinearOpMode {
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.addData("", "");
-            telemetry.addData("Slide Goal:", robot.slideTargets[slideIdx]);
+            telemetry.addData("Slide Goal:", robot.slideTargets[slideLevel.ordinal()]);
             telemetry.addData("Slide POS: ", slide_motor.getCurrentPosition());
             telemetry.addData("Bucket Req: ", bucketRequest[pad1]);
             telemetry.addData("Bucket POS: ", bucketAllowed);
             telemetry.addData("Heading", Math.toDegrees(drive.getRawExternalHeading()));
-            if( false ) {
+            if(false) {
                 telemetry.addData("Some message 1", "");
             } else {
                 telemetry.addData("Some message 2", "");
