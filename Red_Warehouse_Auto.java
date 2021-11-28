@@ -85,10 +85,11 @@ public class Red_Warehouse_Auto extends LinearOpMode {
         robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
         // We must initialize the slide position to make sure it hasn't skipped any gears
+        /* TODO
         do {
             if ( gamepad1.y || gamepad2.y ) {
                 // Run slide to the top
-                robot.slide.setPosition(SLIDE_HIGH);
+                robot.setSlidePosition(robot.SLIDE_HIGH_IDX, robot.SLIDE_PWR);
                 sleep(3000);
 
                 //Reset Bucket to drive position
@@ -96,7 +97,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
                 sleep(1000);
 
                 // Run slide to the bottom
-                robot.slide.setPosition(SLIDE_INTAKE);
+                robot.setSlidePosition(robot.SLIDE_INTAKE_IDX, robot.SLIDE_PWR);
                 sleep(3000);
                 break;
             }
@@ -114,6 +115,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             telemetry.update();
 
         } while (!isStarted() && (!isStopRequested())) ;
+        */
 
         // This code allows for processing the starting location of something variable
         // And controls some enable/disable options
@@ -376,16 +378,16 @@ public class Red_Warehouse_Auto extends LinearOpMode {
     private void runTrajs(Trajectory[] traj, int level) {
         int TIdx = 0;
 
-        robot.slide.setPosition(SLIDE_DRIVE); //Reset Bucket to safe level
+        robot.setSlidePosition(robot.SLIDE_DRIVE_IDX, robot.SLIDE_PWR); //Reset Bucket to safe level
         CheckWait(true, 500, 0);
         robot.bucket.setPosition(.6); //Reset Bucket to drive position
         CheckWait(true, 200, 0);
 
         //Pick Level based on detected team marker placement
         switch (level){
-            case 1:  robot.slide.setPosition(SLIDE_LOW); break;
-            case 2:  robot.slide.setPosition(SLIDE_MED); break;
-            case 3:  robot.slide.setPosition(SLIDE_HIGH);  break;
+            case 1: robot.setSlidePosition(robot.SLIDE_LOW_IDX, robot.SLIDE_PWR); break;
+            case 2: robot.setSlidePosition(robot.SLIDE_MED_IDX, robot.SLIDE_PWR); break;
+            case 3: robot.setSlidePosition(robot.SLIDE_HIGH_IDX, robot.SLIDE_PWR);  break;
         }
 
         //Drive to Hub around team marker
@@ -406,7 +408,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
         CheckWait(true, 1000, 0);
         robot.bucket.setPosition(.6); //Bucket Up
         CheckWait(true, 0, 0);
-        robot.slide.setPosition(SLIDE_DRIVE); //Bucket to drive position
+        robot.setSlidePosition(robot.SLIDE_DRIVE_IDX, robot.SLIDE_PWR); //Bucket to drive position
         CheckWait(true, 500, 0);
 
         //Drive to park
@@ -420,8 +422,8 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             CheckWait(true, 0, 0);
             if(!opModeIsActive()){ return; }
 
-            robot.bucket.setPosition(.7); //Bucket intake
-            robot.slide.setPosition(SLIDE_INTAKE); //Bucket to drive position
+            robot.bucket.setPosition(.8); //Bucket intake
+            robot.setSlidePosition(robot.SLIDE_INTAKE_IDX, robot.SLIDE_PWR); //Bucket to drive position
             CheckWait(true, 500, 0);
             robot.intake_motor.setPower(0.85);
 
@@ -431,7 +433,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
 
             robot.intake_motor.setPower(0);
             CheckWait(true, 100, 0);
-            robot.slide.setPosition(SLIDE_HIGH); //Bucket to high position
+            robot.setSlidePosition(robot.SLIDE_HIGH_IDX, robot.SLIDE_PWR); //Bucket to high position
             CheckWait(true, 250, 0);
             robot.bucket.setPosition(.6); //Bucket Up
 
@@ -451,7 +453,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             CheckWait(true, 1000, 0);
             robot.bucket.setPosition(.6); //Bucket Up
             CheckWait(true, 0, 0);
-            robot.slide.setPosition(SLIDE_DRIVE); //Bucket to drive position
+            robot.setSlidePosition(robot.SLIDE_DRIVE_IDX, robot.SLIDE_PWR); //Bucket to drive position
             CheckWait(true, 500, 0);
 
             robot.drive.followTrajectoryAsync(traj[TIdx++]);

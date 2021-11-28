@@ -91,9 +91,10 @@ public class RRMech_Teleop extends LinearOpMode {
     //private static ExpansionHubEx expansionHub1;
     //private static ExpansionHubEx expansionHub2;
     private static DcMotor intake_motor;
-    private static Servo bucket, slide, duckL, duckR;
+    private static DcMotorEx slide_motor;
+    private static Servo bucket, duckL, duckR;
 
-    double MAX_INTAKE_POWER = 0.85;
+    double MAX_INTAKE_POWER = 0.4;
 
     //private BotLog logger = new BotLog();
     private boolean enableCSVLogging = false;
@@ -102,7 +103,7 @@ public class RRMech_Teleop extends LinearOpMode {
 
     // Mech drive related variables
     int[] speedIdx = new int[] {0, 0};
-    double[] speedModifier = new double[] {0.6, 0.85};
+    double[] speedModifier = new double[] {0.75, 0.90};
     boolean[] FOD = new boolean[] {false, false};
     double[] forward = new double[2], strafe = new double[2], rotate = new double[2];
     double[] prevForward = new double[2], prevStrafe = new double[2], prevRotate = new double[2];
@@ -175,15 +176,15 @@ public class RRMech_Teleop extends LinearOpMode {
 
         final double DUCK_STOP = 0.5;
         final double MAX_DUCK_SPEED = 0.5;
-        final double MAX_DUCK_CHANGE = 1.0;   // Change per second
+        final double MAX_DUCK_CHANGE = 2.0;   // Change per second
         double prevDuckTime = 0;
         double duckRequest = DUCK_STOP;
 
         final double bucketDump = 0.32;
         final double bucketDrive = 0.6;
-        final double bucketIntake = 0.70;
+        final double bucketIntake = 0.80;
         double[] bucketRequest = {bucketDrive, bucketDrive};
-        double bucketAllowed;
+        double bucketAllowed = bucketDrive;
 
         double[] intakeSet = {0.0, MAX_INTAKE_POWER};
         int intakeIdx=0;
@@ -191,11 +192,11 @@ public class RRMech_Teleop extends LinearOpMode {
         // 1:1 slide
         //final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
         // 2:1 slide
-        final double SLIDE_INTAKE = (1.0-1.0)*.4+.3, SLIDE_DRIVE = (1.0-0.9)*.4+.3, SLIDE_LOW = (1.0-0.8)*.4+.3, SLIDE_SHARED = (1.0-0.73)*.4+.3, SLIDE_MED = (1.0-0.5)*.4+.3, SLIDE_HIGH = (1.0-0.0)*.4+.3;
-        double[] slideSet = {SLIDE_INTAKE, SLIDE_DRIVE, SLIDE_LOW, SLIDE_SHARED, SLIDE_MED, SLIDE_HIGH};
-        final int SLIDE_INTAKE_IDX = 0, SLIDE_DRIVE_IDX = 1, SLIDE_HIGH_IDX = slideSet.length-1;
-        int slideIdx=SLIDE_DRIVE_IDX;
-        double slideRequest=slideSet[slideIdx];
+        //final double SLIDE_INTAKE = (1.0-1.0)*.4+.3, SLIDE_DRIVE = (1.0-0.9)*.4+.3, SLIDE_LOW = (1.0-0.8)*.4+.3, SLIDE_SHARED = (1.0-0.73)*.4+.3, SLIDE_MED = (1.0-0.5)*.4+.3, SLIDE_HIGH = (1.0-0.0)*.4+.3;
+        //double[] slideSet = {SLIDE_INTAKE, SLIDE_DRIVE, SLIDE_LOW, SLIDE_SHARED, SLIDE_MED, SLIDE_HIGH};
+        //final int SLIDE_INTAKE_IDX = 0, SLIDE_DRIVE_IDX = 1, SLIDE_HIGH_IDX = slideSet.length-1;
+        int slideIdx=robot.SLIDE_DRIVE_IDX;
+        //double slideRequest=robot.slideTargets[slideIdx];
 
         double prevLTrigVal=0.0;
         double prevRTrigVal=0.0;
@@ -220,7 +221,10 @@ public class RRMech_Teleop extends LinearOpMode {
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
-        robot.acquireHW(hardwareMap);
+        //robot.acquireHW(hardwareMap);
+        robot.init(hardwareMap);
+        robot.initAutonomous(this);  // Temporary for test only
+
 
         // Initialize custom cancelable SampleMecanumDrive class
         SampleMecanumDrive drive = robot.drive;
@@ -237,12 +241,24 @@ public class RRMech_Teleop extends LinearOpMode {
         /*************************************************************/
 
         intake_motor = robot.intake_motor;
-        intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
-        intake_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        intake_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        //intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        //intake_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        //intake_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        slide = robot.slide;
+        slide_motor = robot.slide_motor;
+        // Zero out the wobble motor in the auto init
+        //slide_motor.setPower(0.0);
+        //slide_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        //slide_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        //slide_motor.setTargetPosition(0);
+        //slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        //// This is for the in-person autos.  Need to see if the non-in-person can handle these settings...
+        //// Note that the RUN_TO_POSITION uses both the 'P' of the setPosition API
+        //// and the IDF of the setVelocity API
+        //slide_motor.setPositionPIDFCoefficients(5.0);
+        //slide_motor.setVelocityPIDFCoefficients(5.0,0.5,3.0,11.1);
+
         duckL = robot.duckL;
         duckR = robot.duckR;
         bucket = robot.bucket;
@@ -316,16 +332,16 @@ public class RRMech_Teleop extends LinearOpMode {
                     if (!lTrigPrev[padIdx]) {
                         if (!slidePressed) {
                             // On the first press, INTAKE is not safe, force DRIVE.
-                            slideIdx = SLIDE_DRIVE_IDX;
+                            slideIdx = robot.SLIDE_DRIVE_IDX;
                             slidePressed = true;
                         } else {
-                            if (slideIdx != SLIDE_DRIVE_IDX) {
-                                slideIdx = SLIDE_DRIVE_IDX;
+                            if (slideIdx != robot.SLIDE_DRIVE_IDX) {
+                                slideIdx = robot.SLIDE_DRIVE_IDX;
                             } else {
-                                slideIdx = SLIDE_INTAKE_IDX;
+                                slideIdx = robot.SLIDE_INTAKE_IDX;
                             }
                         }
-                        slideRequest = slideSet[slideIdx];
+                        //slideRequest = slideSet[slideIdx];
                         lTrigPrev[padIdx] = true;
                     }
                 } else {
@@ -396,8 +412,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         slidePressed = true;
                     }
                     if (!aPrev[padIdx]) {
-                        slideIdx = SLIDE_DRIVE_IDX;
-                        slideRequest = slideSet[slideIdx];
+                        slideIdx = robot.SLIDE_DRIVE_IDX;
+                        //slideRequest = slideSet[slideIdx];
                         aPrev[padIdx] = true;
                     }
                 } else {
@@ -423,8 +439,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         slidePressed = true;
                     }
                     if (!yPrev[padIdx]) {
-                        slideIdx = SLIDE_HIGH_IDX;
-                        slideRequest = slideSet[slideIdx];
+                        slideIdx = robot.SLIDE_HIGH_IDX;
+                        //slideRequest = slideSet[slideIdx];
                         yPrev[padIdx] = true;
                     }
                 } else {
@@ -438,8 +454,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         slidePressed = true;
                     }
                     if (!dUpPrev[padIdx]) {
-                        slideIdx = Math.min((slideIdx + 1), slideSet.length - 1);
-                        slideRequest = slideSet[slideIdx];
+                        slideIdx = Math.min((slideIdx + 1), robot.slideTargets.length - 1);
+                        //slideRequest = slideSet[slideIdx];
                         dUpPrev[padIdx] = true;
                     }
                 } else {
@@ -451,11 +467,11 @@ public class RRMech_Teleop extends LinearOpMode {
                     if (!slidePressed) {
                         // On the first press, down is not safe.  Just go to DRIVE.
                         slidePressed = true;
-                        slideIdx = SLIDE_DRIVE_IDX;
+                        slideIdx = robot.SLIDE_DRIVE_IDX;
                     } else {
                         if (!dDownPrev[padIdx]) {
                             slideIdx = Math.max((slideIdx - 1), 0);
-                            slideRequest = slideSet[slideIdx];
+                            //slideRequest = slideSet[slideIdx];
                             dDownPrev[padIdx] = true;
                         }
                     }
@@ -467,9 +483,9 @@ public class RRMech_Teleop extends LinearOpMode {
                 // 'dpad right' = slow turn code below
             }
 
-            if (gp2Present) {
-                gamepad= gamepad2;
-                padIdx = pad2;
+            if (gp1Present) {
+                gamepad= gamepad1;
+                padIdx = pad1;
 
                 // lTrig is now a boolean
                 if (lTrigPrev[padIdx] && (gamepad.left_trigger < 0.30)) {
@@ -484,16 +500,16 @@ public class RRMech_Teleop extends LinearOpMode {
                     if (!lTrigPrev[padIdx]) {
                         if (!slidePressed) {
                             // On the first press, INTAKE is not safe, force DRIVE.
-                            slideIdx = SLIDE_DRIVE_IDX;
+                            slideIdx = robot.SLIDE_DRIVE_IDX;
                             slidePressed = true;
                         } else {
-                            if (slideIdx != SLIDE_DRIVE_IDX) {
-                                slideIdx = SLIDE_DRIVE_IDX;
+                            if (slideIdx != robot.SLIDE_DRIVE_IDX) {
+                                slideIdx = robot.SLIDE_DRIVE_IDX;
                             } else {
-                                slideIdx = SLIDE_INTAKE_IDX;
+                                slideIdx = robot.SLIDE_INTAKE_IDX;
                             }
                         }
-                        slideRequest = slideSet[slideIdx];
+                        //slideRequest = slideSet[slideIdx];
                         lTrigPrev[padIdx] = true;
                     }
                 } else {
@@ -564,8 +580,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         slidePressed = true;
                     }
                     if (!aPrev[padIdx]) {
-                        slideIdx = SLIDE_DRIVE_IDX;
-                        slideRequest = slideSet[slideIdx];
+                        slideIdx = robot.SLIDE_DRIVE_IDX;
+                        //slideRequest = slideSet[slideIdx];
                         aPrev[padIdx] = true;
                     }
                 } else {
@@ -577,7 +593,7 @@ public class RRMech_Teleop extends LinearOpMode {
                 // 'x': Speed toggle
                 if (gamepad.x) {
                     if (!xPrev[padIdx]) {
-                        speedIdx[padIdx] = (speedIdx[padIdx] + 1) % speedModifier.length;
+                        speedIdx[padIdx] = (int)( (speedIdx[padIdx] + 1) % speedModifier.length);
                         xPrev[padIdx] = true;
                     }
                 } else {
@@ -591,8 +607,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         slidePressed = true;
                     }
                     if (!yPrev[padIdx]) {
-                        slideIdx = SLIDE_HIGH_IDX;
-                        slideRequest = slideSet[slideIdx];
+                        slideIdx = robot.SLIDE_HIGH_IDX;
+                        //slideRequest = slideSet[slideIdx];
                         yPrev[padIdx] = true;
                     }
                 } else {
@@ -606,8 +622,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         slidePressed = true;
                     }
                     if (!dUpPrev[padIdx]) {
-                        slideIdx = Math.min((slideIdx + 1), slideSet.length - 1);
-                        slideRequest = slideSet[slideIdx];
+                        slideIdx = Math.min((slideIdx + 1), robot.slideTargets.length - 1);
+                        //slideRequest = slideSet[slideIdx];
                         dUpPrev[padIdx] = true;
                     }
                 } else {
@@ -619,11 +635,11 @@ public class RRMech_Teleop extends LinearOpMode {
                     if (!slidePressed) {
                         // On the first press, down is not safe.  Just go to DRIVE.
                         slidePressed = true;
-                        slideIdx = SLIDE_DRIVE_IDX;
+                        slideIdx = robot.SLIDE_DRIVE_IDX;
                     } else {
                         if (!dDownPrev[padIdx]) {
                             slideIdx = Math.max((slideIdx - 1), 0);
-                            slideRequest = slideSet[slideIdx];
+                            //slideRequest = slideSet[slideIdx];
                             dDownPrev[padIdx] = true;
                         }
                     }
@@ -641,16 +657,16 @@ public class RRMech_Teleop extends LinearOpMode {
                 // 1:1 slide
                 // if (slideRequest < SLIDE_DRIVE) {
                 // 2:1 slide
-                if (slideRequest > SLIDE_DRIVE) {
+                if (slideIdx > robot.SLIDE_DRIVE_IDX) {
                     // We're above the drive position, pretty much anything goes here
                     bucketAllowed = Math.min(bucketRequest[pad1], bucketRequest[pad2]);
-                } else if (slideRequest == SLIDE_DRIVE) {
+                } else if (slideIdx == robot.SLIDE_DRIVE_IDX) {
                     bucketAllowed = bucketDrive;
                 } else {
                     bucketAllowed = bucketIntake;
                 }
 
-                slide.setPosition(slideRequest);
+                robot.setSlidePosition(slideIdx,robot.SLIDE_PWR);
                 bucket.setPosition(bucketAllowed);
             }
 
@@ -883,7 +899,7 @@ public class RRMech_Teleop extends LinearOpMode {
                 if (((Math.abs(l_f_motor_power) > 0.1) ||
                         (Math.abs(l_b_motor_power) > 0.1) ||
                         (Math.abs(r_f_motor_power) > 0.1) ||
-                        (Math.abs(r_b_motor_power) > 0.1)) && (slideIdx == SLIDE_INTAKE_IDX)) {
+                        (Math.abs(r_b_motor_power) > 0.1)) && (slideIdx == robot.SLIDE_INTAKE_IDX)) {
                     gamepad1.rumble(Gamepad.RUMBLE_DURATION_CONTINUOUS);
                     gamepad2.rumble(Gamepad.RUMBLE_DURATION_CONTINUOUS);
                 } else {
@@ -909,8 +925,11 @@ public class RRMech_Teleop extends LinearOpMode {
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.addData("", "");
-            telemetry.addData("Slide Goal:", slideRequest);
-            telemetry.addData("Slide POS", slide.getPosition());
+            telemetry.addData("Slide Goal:", robot.slideTargets[slideIdx]);
+            telemetry.addData("Slide POS: ", slide_motor.getCurrentPosition());
+            telemetry.addData("Bucket Req: ", bucketRequest[pad1]);
+            telemetry.addData("Bucket POS: ", bucketAllowed);
+            telemetry.addData("Heading", Math.toDegrees(drive.getRawExternalHeading()));
             if( false ) {
                 telemetry.addData("Some message 1", "");
             } else {

@@ -35,6 +35,7 @@ import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 /**
  * This file houses Autonomous code
@@ -50,6 +51,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
  */
+@Disabled
 @Autonomous(name="Blue_DuckSide_Auto", group="RRMechBot")
 public class Blue_DuckSide_Auto extends LinearOpMode {
 
@@ -85,6 +87,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
         robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
         // We must initialize the slide position to make sure it hasn't skipped any gears
+        /* TODO
         do {
             if ( gamepad1.y || gamepad2.y ) {
                 // Run slide to the top
@@ -114,6 +117,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
             telemetry.update();
 
         } while (!isStarted() && (!isStopRequested())) ;
+        */
 
         // This code allows for processing the starting location of something variable
         // And controls some enable/disable options
@@ -360,6 +364,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
     private void runTrajs(Trajectory[] traj, int level) {
         int TIdx = 0;
 
+        /* TODO
         robot.slide.setPosition(SLIDE_DRIVE); //Reset Bucket to safe level
         CheckWait(true, 500, 0);
         robot.bucket.setPosition(.6); //Reset Bucket to drive position
@@ -435,5 +440,6 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
 
         //Turn off intake, should be parked
         robot.intake_motor.setPower(0);
+        */
     }
 }

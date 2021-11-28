@@ -65,9 +65,31 @@ import java.util.Locale;
 public class RRMechBot {
     /* Public OpMode members. */
     public DcMotor intake_motor;
-    public Servo slide=null,bucket=null;
+    public DcMotorEx slide_motor;
+    public Servo bucket=null;
     public Servo duckL=null,duckR=null;
     public SampleMecanumDrive drive = null;
+
+    //final double SLIDE_INTAKE = 0.0, SLIDE_DRIVE = 0.1, SLIDE_LOW = 0.2, SLIDE_SHARED = 0.27, SLIDE_MED = 0.5, SLIDE_HIGH = 1.0;
+    public int SLIDE_INTAKE_IDX = 0;  // 0.0
+    public int SLIDE_DRIVE_IDX  = 1;  // 0.1
+    public int SLIDE_LOW_IDX    = 2;  // 0.2
+    public int SLIDE_SHARED_IDX = 3;  // 0.27
+    public int SLIDE_MED_IDX    = 4;  // 0.5
+    public int SLIDE_HIGH_IDX   = 5;  // 1.0
+    public double SLIDE_PWR = 0.7;
+
+    final double PULLEY_D = 38.2;
+    final double RACK_STROKE = 430.0;
+    final double SLIDE_MAX_REV = RACK_STROKE / (PULLEY_D * Math.PI);
+    final double SLIDE_TICKS_PER_REV = ((((1.0+(46.0/17.0))) * (1.0+(46.0/11.0))) * 28.0);  // 312 RPM HEX shaft (5202 series)
+    // https://www.gobilda.com/5203-series-yellow-jacket-planetary-gear-motor-19-2-1-ratio-24mm-length-8mm-rex-shaft-312-rpm-3-3-5v-encoder/
+    final int slideTargets[] = {(int)(0.0 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
+            (int)(0.1 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
+            (int)(0.2 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
+            (int)(0.27*SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
+            (int)(0.5 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
+            (int)(1.0 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV) };
 
     public BotLog logger = new BotLog();
 
@@ -111,19 +133,14 @@ public class RRMechBot {
         // Do things here at the beginning of autonomous that might be needed to setup
         // Take up slack on a spindle, run to a 'stop position' to index '0'
         // Set the starting location of a servo
-        /*
-        // Run the wobble arm for a teeny little bit at low power just to take out and slack...
-        motor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motor1.setPower(-0.033);
-        myLOpMode.sleep(500);
-        motor1.setPower(0.0);
-        motor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motor1.setTargetPosition(0);
-        motor1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-        servo1.setPosition(1.0);
-        servo2.setPosition(0.0);
-        */
+        // Run the slide for a teeny little bit at low power just to take out and slack...
+        slide_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        slide_motor.setPower(-0.10);
+        myLOpMode.sleep(1000);
+        slide_motor.setPower(0.0);
+        slide_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        slide_motor.setTargetPosition(0);
+        slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
 
     /* Initialize standard Hardware interfaces */
@@ -143,7 +160,7 @@ public class RRMechBot {
 
         // TODO: Finish getting all the device mapped
         intake_motor = hardwareMap.dcMotor.get("intake_motor");
-        slide = hardwareMap.servo.get("slide");
+        slide_motor = hardwareMap.get(DcMotorEx.class,"slide_motor");
         bucket = hardwareMap.servo.get("bucket");
         duckL = hardwareMap.servo.get("duck_left");
         duckR = hardwareMap.servo.get("duck_right");
@@ -176,10 +193,28 @@ public class RRMechBot {
 
         // Common init for for auto and non-auto cases
         intake_motor.setPower(0.0);
-        intake_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        intake_motor.setDirection(DcMotorSimple.Direction.FORWARD);
         intake_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         intake_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        // Zero out the slide motor in the auto init
+        slide_motor.setPower(0.0);
+        slide_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        slide_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        slide_motor.setTargetPosition(0);
+        slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        // This is for the in-person autos.  Need to see if the non-in-person can handle these settings...
+        // Note that the RUN_TO_POSITION uses both the 'P' of the setPosition API
+        // and the IDF of the setVelocity API
+        slide_motor.setPositionPIDFCoefficients(4.0);
+        slide_motor.setVelocityPIDFCoefficients(4.0,3.5,2.0,12.0);
+    }
+
+    public void setSlidePosition(int slidePos, double power){
+        slide_motor.setTargetPosition(slideTargets[slidePos]);
+        slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        slide_motor.setPower(power);
     }
 
     public void intakeStop(){
