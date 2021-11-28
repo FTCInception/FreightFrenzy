@@ -382,7 +382,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
         int TIdx = 0;
 
 
-        robot.setSlidePosition(SlideHeight.Drive, 2.343334); //Reset Bucket to safe level
+        robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
         CheckWait(true, 500, 0);
         robot.bucket.setPosition(.6); //Reset Bucket to drive position
         CheckWait(true, 200, 0);
