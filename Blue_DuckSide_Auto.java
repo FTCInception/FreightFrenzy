@@ -29,6 +29,7 @@
 
 package Inception.FreightFrenzy;
 
+import Inception.FreightFrenzy.RRMechBot.SlideHeight;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
@@ -51,11 +52,10 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
  */
-@Disabled
 @Autonomous(name="Blue_DuckSide_Auto", group="RRMechBot")
 public class Blue_DuckSide_Auto extends LinearOpMode {
 
-    public int targetLevel = 3;
+    public SlideHeight targetLevel = SlideHeight.HighDrop;
 
     private RRMechBot robot = new RRMechBot();
 
@@ -63,7 +63,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
 
     // This is the starting position of the center of the robot.
     private static final double startingX = -27.0;
-    private static final double startingY = 63.0;
+    private static final double startingY = 65.0;
 
     // 1:1 slide
     //final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
@@ -224,12 +224,12 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
         // FIXME: Test the stopping in auto here again.
         if (opModeIsActive()) {
             if (grnLocation == IncepVision.MarkerPos.Outer) {
-                targetLevel = 1;
+                targetLevel = SlideHeight.HighDrop;
             } else if (grnLocation == IncepVision.MarkerPos.Inner) {
-                targetLevel = 2;
+                targetLevel = SlideHeight.MidDrop;
             } else {
                 // If it's not LEFT or RIGHT, assume unseen
-                targetLevel = 3;
+                targetLevel = SlideHeight.LowDrop;
             }
 
             runTrajs(trajs ,targetLevel);
@@ -309,7 +309,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(-30,24.5))
+                .lineToConstantHeading(new Vector2d(-28,24.5))
                 .build();
 
         //Drop Block Sequence
@@ -324,12 +324,12 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .forward(27)
+                .forward(29)
                 .build();
 
-        //Duck Wheel ends motion at new Pose2d(-66,-54,Math.toRadians(90))
+        //Duck Wheel ends motion at new Pose2d(-66,55,Math.toRadians(90))
         //Driving to Park
-        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(-66,54,Math.toRadians(90)))
+        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(-66,55,Math.toRadians(90)))
                 .lineToConstantHeading(new Vector2d(-60,50))
                 .build();
 
@@ -342,12 +342,12 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
             if(parkThroughOpening){
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
                         .splineToConstantHeading(new Vector2d(0,70), Math.toRadians(0))
-                        .splineToConstantHeading(new Vector2d(45,70), Math.toRadians(0))
+                        .splineToConstantHeading(new Vector2d(45,76), Math.toRadians(0))
                         .build();
 
             } else {
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToLinearHeading(new Pose2d(55,48.5, Math.toRadians(0)))
+                        .lineToLinearHeading(new Pose2d(60,48.5, Math.toRadians(0)))
                         .build();
             }
         } else {
@@ -361,21 +361,16 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
         showTrajPoses( "LEVEL3", TIdx, traj ) ;
     }
 
-    private void runTrajs(Trajectory[] traj, int level) {
+    private void runTrajs(Trajectory[] traj, SlideHeight level) {
         int TIdx = 0;
 
-        /* TODO
-        robot.slide.setPosition(SLIDE_DRIVE); //Reset Bucket to safe level
+        robot.setSlidePosition(RRMechBot.SlideHeight.Drive); //Reset Bucket to safe level
         CheckWait(true, 500, 0);
-        robot.bucket.setPosition(.6); //Reset Bucket to drive position
+        robot.bucket.setPosition(robot.bucketDrive); //Reset Bucket to drive position
         CheckWait(true, 200, 0);
 
         //Pick Level based on detected team marker placement
-        switch (level){
-            case 1:  robot.slide.setPosition(SLIDE_LOW); break;
-            case 2:  robot.slide.setPosition(SLIDE_MED); break;
-            case 3:  robot.slide.setPosition(SLIDE_HIGH);  break;
-        }
+        robot.setSlidePosition(level);
 
         //Drive to Hub around team marker
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
@@ -391,11 +386,11 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
 
-        robot.bucket.setPosition(.3); //Drop freight
+        robot.bucket.setPosition(robot.bucketDump); //Drop freight
         CheckWait(true, 1000, 0);
-        robot.bucket.setPosition(.6); //Bucket Up
-        CheckWait(true, 0, 0);
-        robot.slide.setPosition(SLIDE_DRIVE); //Bucket to drive position
+        robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
+        CheckWait(true, 200, 0);
+        robot.setSlidePosition(RRMechBot.SlideHeight.Drive); //Bucket to drive position
         CheckWait(true, 500, 0);
 
         //Drive to Duck Wheel
@@ -440,6 +435,5 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
 
         //Turn off intake, should be parked
         robot.intake_motor.setPower(0);
-        */
     }
 }

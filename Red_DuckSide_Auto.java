@@ -64,7 +64,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
 
     // This is the starting position of the center of the robot.
     private static final double startingX = -44.0;
-    private static final double startingY = -63.0;
+    private static final double startingY = -65.0;
 
     // 1:1 slide
     //final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
@@ -314,7 +314,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(-30,-24.5))
+                .lineToConstantHeading(new Vector2d(-28,-24.5))
                 .build();
 
         //Drop Block Sequence
@@ -329,12 +329,12 @@ public class Red_DuckSide_Auto extends LinearOpMode {
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .forward(27)
+                .forward(29)
                 .build();
 
-        //Duck Wheel ends motion at new Pose2d(-66,-54,Math.toRadians(270))
+        //Duck Wheel ends motion at new Pose2d(-66,-55,Math.toRadians(270))
         //Driving to Park
-        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(-66,-54,Math.toRadians(270)))
+        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(-66,-55,Math.toRadians(270)))
                 .lineToConstantHeading(new Vector2d(-60,-50))
                 .build();
 
@@ -347,12 +347,12 @@ public class Red_DuckSide_Auto extends LinearOpMode {
             if(parkThroughOpening){
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
                         .splineToConstantHeading(new Vector2d(0,-70), Math.toRadians(0))
-                        .splineToConstantHeading(new Vector2d(45,-70), Math.toRadians(0))
+                        .splineToConstantHeading(new Vector2d(45,-76), Math.toRadians(0))
                         .build();
 
             } else {
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToLinearHeading(new Pose2d(55,-47, Math.toRadians(0)))
+                        .lineToLinearHeading(new Pose2d(60,-47, Math.toRadians(0)))
                         .build();
             }
         } else {
@@ -371,7 +371,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
 
         robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
         CheckWait(true, 500, 0);
-        robot.bucket.setPosition(.6); //Reset Bucket to drive position
+        robot.bucket.setPosition(robot.bucketDrive); //Reset Bucket to drive position
         CheckWait(true, 200, 0);
 
         //Pick Level based on detected team marker placement
@@ -391,10 +391,10 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
 
-        robot.bucket.setPosition(.3); //Drop freight
+        robot.bucket.setPosition(robot.bucketDump); //Drop freight
         CheckWait(true, 1000, 0);
-        robot.bucket.setPosition(.6); //Bucket Up
-        CheckWait(true, 0, 0);
+        robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
+        CheckWait(true, 200, 0);
         robot.setSlidePosition(SlideHeight.Drive); //Bucket to drive position
         CheckWait(true, 500, 0);
 

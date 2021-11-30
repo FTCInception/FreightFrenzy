@@ -181,11 +181,8 @@ public class RRMech_Teleop extends LinearOpMode {
         double prevDuckTime = 0;
         double duckRequest = DUCK_STOP;
 
-        final double bucketDump = 0.32;
-        final double bucketDrive = 0.6;
-        final double bucketIntake = 0.80;
-        double[] bucketRequest = {bucketDrive, bucketDrive};
-        double bucketAllowed = bucketDrive;
+        double[] bucketRequest = {robot.bucketDrive, robot.bucketDrive};
+        double bucketAllowed = robot.bucketDrive;
 
         double[] intakeSet = {0.0, MAX_INTAKE_POWER};
         int intakeIdx=0;
@@ -357,23 +354,24 @@ public class RRMech_Teleop extends LinearOpMode {
                     // Give some slop of 10% depression to avoid accidental presses
                     // 10% press is really '0' so subtract 0.1 but don't let it go negative
                     // Then scale back to 100%
-                    final double travelDistance = (bucketDrive - bucketDump) * (1.1 * Math.max(0,  (gamepad.right_trigger - 0.1)));
+                    final double travelDistance = (robot.bucketDrive - robot.bucketDump) * (1.1 * Math.max(0,  (gamepad.right_trigger - 0.1)));
 
-                    bucketRequest[padIdx] = bucketDrive - travelDistance;
+                    bucketRequest[padIdx] = robot.bucketDrive - travelDistance;
                     //bucket.setPosition(bucketIntake - travelDistance);
                 } else {
-                    bucketRequest[padIdx] = bucketDrive;
+                    bucketRequest[padIdx] = robot.bucketDrive;
                 }
 
                 // Reverse the intake
                 if (gamepad.left_bumper) {
                     if (!lBumpPrev[padIdx]) {
                         // Reverse polarity on motor
-                        if (intake_motor.getPower() > 0) {
-                            intake_motor.setPower(-intakeSet[intakeIdx]);
+                        if (intake_motor.getPower() >= -0.0) {
+                            intake_motor.setPower(-intakeSet[1]);
                         } else {
-                            intake_motor.setPower(intakeSet[intakeIdx]);
+                            intake_motor.setPower(0);
                         }
+                        intakeIdx = 0;
                         lBumpPrev[padIdx] = true;
                     }
                 } else {
@@ -529,12 +527,12 @@ public class RRMech_Teleop extends LinearOpMode {
                     // Give some slop of 10% depression to avoid accidental presses
                     // 10% press is really '0' so subtract 0.1 but don't let it go negative
                     // Then scale back to 100%
-                    final double travelDistance = (bucketDrive - bucketDump) * (1.1 * Math.max(0,  (gamepad.right_trigger - 0.1)));
+                    final double travelDistance = (robot.bucketDrive - robot.bucketDump) * (1.1 * Math.max(0,  (gamepad.right_trigger - 0.1)));
 
-                    bucketRequest[padIdx] = bucketDrive - travelDistance;
+                    bucketRequest[padIdx] = robot.bucketDrive - travelDistance;
                     //bucket.setPosition(bucketIntake - travelDistance);
                 } else {
-                    bucketRequest[padIdx] = bucketDrive;
+                    bucketRequest[padIdx] = robot.bucketDrive;
                 }
 
                 // Reverse the intake
@@ -670,9 +668,9 @@ public class RRMech_Teleop extends LinearOpMode {
                     // We're above the drive position, pretty much anything goes here
                     bucketAllowed = Math.min(bucketRequest[pad1], bucketRequest[pad2]);
                 } else if (slideLevel == SlideHeight.Drive) {
-                    bucketAllowed = bucketDrive;
+                    bucketAllowed = robot.bucketDrive;
                 } else {
-                    bucketAllowed = bucketIntake;
+                    bucketAllowed = robot.bucketIntake;
                 }
 
                 robot.setSlidePosition(slideLevel);

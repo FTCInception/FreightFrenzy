@@ -62,7 +62,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
 
     // This is the starting position of the center of the robot.
     private static final double startingX = 4.0;
-    private static final double startingY = -63.0;
+    private static final double startingY = -65.0;
 
     // 1:1 slide
     //final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
@@ -94,7 +94,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
                 sleep(3000);
 
                 //Reset Bucket to drive position
-                robot.bucket.setPosition(.6);
+                robot.bucket.setPosition(robot.bucketDrive);
                 sleep(1000);
 
                 // Run slide to the bottom
@@ -381,7 +381,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
 
         robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
         CheckWait(true, 500, 0);
-        robot.bucket.setPosition(.6); //Reset Bucket to drive position
+        robot.bucket.setPosition(robot.bucketDrive); //Reset Bucket to drive position
         CheckWait(true, 200, 0);
 
         //Pick Level based on detected team marker placement
@@ -401,10 +401,10 @@ public class Red_Warehouse_Auto extends LinearOpMode {
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
 
-        robot.bucket.setPosition(.3); //Drop freight
+        robot.bucket.setPosition(robot.bucketDump); //Drop freight
         CheckWait(true, 1000, 0);
-        robot.bucket.setPosition(.6); //Bucket Up
-        CheckWait(true, 0, 0);
+        robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
+        CheckWait(true, 200, 0);
         robot.setSlidePosition(SlideHeight.Drive); //Bucket to drive position
         CheckWait(true, 500, 0);
 
@@ -419,7 +419,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             CheckWait(true, 0, 0);
             if(!opModeIsActive()){ return; }
 
-            robot.bucket.setPosition(.8); //Bucket intake
+            robot.bucket.setPosition(robot.bucketIntake); //Bucket intake
             robot.setSlidePosition(SlideHeight.Intake); //Bucket to intake position
             CheckWait(true, 500, 0);
             robot.intake_motor.setPower(0.85);
@@ -432,7 +432,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             CheckWait(true, 100, 0);
             robot.setSlidePosition(SlideHeight.HighDrop); //Bucket to high position
             CheckWait(true, 250, 0);
-            robot.bucket.setPosition(.6); //Bucket Up
+            robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
 
             robot.drive.followTrajectoryAsync(traj[TIdx++]);
             CheckWait(true, 0, 0);
@@ -446,9 +446,9 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             CheckWait(true, 0, 0);
             if(!opModeIsActive()){ return; }
 
-            robot.bucket.setPosition(.3); //Drop freight
+            robot.bucket.setPosition(robot.bucketDump); //Drop freight
             CheckWait(true, 1000, 0);
-            robot.bucket.setPosition(.6); //Bucket Up
+            robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
             CheckWait(true, 0, 0);
             robot.setSlidePosition(SlideHeight.Drive); //Bucket to drive position
             CheckWait(true, 500, 0);

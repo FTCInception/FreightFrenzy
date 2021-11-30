@@ -86,12 +86,17 @@ public class RRMechBot {
         HighDrop
     }
 
-    final int slideTargets[] = {(int)(0.0 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
-            (int)(0.1 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
+    final int slideTargets[] = {
+            (int)(0.0 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
+            (int)(0.13 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.2 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.27*SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.5 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(1.0 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV) };
+
+    final double bucketDump = 0.4;
+    final double bucketDrive = 0.6;
+    final double bucketIntake = 0.80;
 
     public BotLog logger = new BotLog();
 
