@@ -221,7 +221,7 @@ public class RRMech_Teleop extends LinearOpMode {
 
         //robot.acquireHW(hardwareMap);
         robot.init(hardwareMap);
-        robot.initAutonomous(this);  // Temporary for test only
+        //robot.initAutonomous(this);  // Temporary for test only
 
 
         // Initialize custom cancelable SampleMecanumDrive class
