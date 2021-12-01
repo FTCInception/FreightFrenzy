@@ -121,6 +121,14 @@ public class Red_Warehouse_Auto extends LinearOpMode {
         } while (!isStarted() && (!isStopRequested())) ;
         */
 
+
+        parkThroughOpening = true;
+        secondBlock = false;
+        option3 = true;
+
+        Dx = 0.0;
+        Dy = 0.0;
+
         // This code allows for processing the starting location of something variable
         // And controls some enable/disable options
         boolean leftOK = true, rightOK = true, upOK = true, downOK = true, bOK=true, xOK=true, yOK=true;
@@ -270,6 +278,8 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             // Get the time
             now = localClock.seconds();
 
+            // Explanation for useless telemetry messages here:
+            // http://firsttechchallenge.blogspot.com/2018/11/info-on-wi-fi-disconnects-for-motorola.html
             telemetry.addData("This is a message with no purpose besides preventing Motorola from scanning networks. Thanks a lot Motorola.","");
             telemetry.update();
 
