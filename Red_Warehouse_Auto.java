@@ -72,6 +72,9 @@ public class Red_Warehouse_Auto extends LinearOpMode {
     private static boolean secondBlock = false;
     private static boolean option3 = false;
 
+    private static double Dx = 0.0;
+    private static double Dy = 0.0;
+
     private IncepVision vision = new IncepVision();
     private IncepVision.MarkerPos grnLocation = IncepVision.MarkerPos.Unseen;
     private Trajectory[] trajs = new Trajectory[25];
@@ -120,13 +123,11 @@ public class Red_Warehouse_Auto extends LinearOpMode {
 
         // This code allows for processing the starting location of something variable
         // And controls some enable/disable options
-        double Sx = 0.0;
-        double Sy = 0.0;
         boolean leftOK = true, rightOK = true, upOK = true, downOK = true, bOK=true, xOK=true, yOK=true;
         do {
             if ( gamepad1.dpad_left || gamepad2.dpad_left ) {
                 if (leftOK) {
-                    Sx -= 1.0;
+                    Dx -= 1.0;
                     leftOK = false;
                 }
             } else {
@@ -134,7 +135,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             }
             if ( gamepad1.dpad_right || gamepad2.dpad_right) {
                 if (rightOK) {
-                    Sx += 1.0;
+                    Dx += 1.0;
                     rightOK = false;
                 }
             } else {
@@ -142,7 +143,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             }
             if ( gamepad1.dpad_down || gamepad2.dpad_down ) {
                 if (downOK) {
-                    Sy -= 1.0;
+                    Dy -= 1.0;
                     downOK = false;
                 }
             } else {
@@ -150,7 +151,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             }
             if ( gamepad1.dpad_up || gamepad2.dpad_up ) {
                 if (upOK) {
-                    Sy += 1.0;
+                    Dy += 1.0;
                     upOK = false;
                 }
             } else {
@@ -185,7 +186,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
                 break;
             }
 
-            telemetry.addData("Sx,Sy:", "(%.0f, %.0f); New:(%.0f, %.0f); Delta:(%.0f%s, %.0f%s)", startingX, startingY, startingX+Sx, startingY+Sy, Math.abs(Sx), (Sx<0)?" left":(Sx>0)?" right":"", Math.abs(Sy),(Sy<0)?" down":(Sy>0)?" up":"");
+            telemetry.addData("Park Changes:", "x:%f, y:%f", Dx, Dy);
             telemetry.addData("Use dpad to adjust robot start position","");
             telemetry.addData("'Y' Park through opening?:","(%s)", parkThroughOpening?"true":"false");
             telemetry.addData("'X' Second Block Attempt?:","(%s)", secondBlock?"true":"false");
@@ -199,7 +200,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
         // Back against the -x wall, wheels aligned on first tile in -y
         // THIS MUST BE DONE BEFORE BUILDING
         // THIS MUST BE DONE AFTER THE ROBOT IS IN ITS FINAL POSITION
-        Pose2d startPose = new Pose2d(startingX+Sx, startingY+Sy, robot.drive.getRawExternalHeading()+Math.toRadians(270));
+        Pose2d startPose = new Pose2d(startingX, startingY, robot.drive.getRawExternalHeading()+Math.toRadians(270));
         robot.drive.setPoseEstimate(startPose);
 
         telemetry.addData("Computing paths","");
@@ -269,6 +270,9 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             // Get the time
             now = localClock.seconds();
 
+            telemetry.addData("This is a message with no purpose besides preventing Motorola from scanning networks. Thanks a lot Motorola.","");
+            telemetry.update();
+
             // Master stop
             if(!opModeIsActive()){ return; }
 
@@ -308,7 +312,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(5,-24.5))
+                .lineToConstantHeading(new Vector2d(6,-24.5))
                 .build();
 
         //Drop Block Sequence
@@ -359,16 +363,16 @@ public class Red_Warehouse_Auto extends LinearOpMode {
                         .build();
 
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToLinearHeading(new Pose2d(45, -70, Math.toRadians(0)))
+                        .lineToLinearHeading(new Pose2d(45, -74, Math.toRadians(0)))
                         .build();
 
             } else {
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToLinearHeading(new Pose2d(5, -45, Math.toRadians(0)))
+                        .lineToLinearHeading(new Pose2d(5, -45 + Dy, Math.toRadians(0)))
                         .build();
 
                 traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToLinearHeading(new Pose2d(55, -45, Math.toRadians(0)))
+                        .lineToLinearHeading(new Pose2d(55 + Dx, -45 + Dy, Math.toRadians(0)))
                         .build();
             }
         }
@@ -402,11 +406,9 @@ public class Red_Warehouse_Auto extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         robot.bucket.setPosition(robot.bucketDump); //Drop freight
-        CheckWait(true, 1000, 0);
+        CheckWait(true, 2000, 0);
         robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
         CheckWait(true, 200, 0);
-        robot.setSlidePosition(SlideHeight.Drive); //Bucket to drive position
-        CheckWait(true, 500, 0);
 
         //Drive to park
 
@@ -414,6 +416,9 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             robot.drive.followTrajectoryAsync(traj[TIdx++]);
             CheckWait(true, 0, 0);
             if(!opModeIsActive()){ return; }
+
+            robot.setSlidePosition(SlideHeight.Drive); //Bucket to drive position
+            CheckWait(true, 200, 0);
 
             robot.drive.followTrajectoryAsync(traj[TIdx++]);
             CheckWait(true, 0, 0);
@@ -465,6 +470,9 @@ public class Red_Warehouse_Auto extends LinearOpMode {
             robot.drive.followTrajectoryAsync(traj[TIdx++]);
             CheckWait(true, 0, 0);
             if(!opModeIsActive()){ return; }
+
+            robot.setSlidePosition(SlideHeight.Drive); //Bucket to drive position
+            CheckWait(true, 200, 0);
 
             robot.drive.followTrajectoryAsync(traj[TIdx++]);
             CheckWait(true, 0, 0);
