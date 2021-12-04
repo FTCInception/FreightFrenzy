@@ -87,7 +87,7 @@ public class RRMechBot {
     }
 
     final int slideTargets[] = {
-            (int)(0.0 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
+            (int)(0.025 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.13 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.2 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.27*SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
@@ -103,7 +103,7 @@ public class RRMechBot {
     }
 
     final int slideTargetsTeleOp[] = {
-            (int)(0.005 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
+            (int)(0.025*SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.13 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.27*SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.42 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
