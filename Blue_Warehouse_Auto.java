@@ -341,7 +341,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
             //turn on intake, drive slow
 
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(43, 70, Math.toRadians(0)))
+                    .lineToLinearHeading(new Pose2d(52, 70, Math.toRadians(0)))
                     .build();
 
             //turn off intake, raise
@@ -365,7 +365,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
                     .build();
 
             traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(55, 45, Math.toRadians(0)))
+                    .lineToLinearHeading(new Pose2d(65, 45, Math.toRadians(0)))
                     .build();
 
         } else {
@@ -440,14 +440,15 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
             robot.bucket.setPosition(robot.bucketIntake); //Bucket intake
             robot.setSlidePosition(SlideHeight.Intake); //Bucket to intake position
             CheckWait(true, 500, 0);
-            robot.intake_motor.setPower(0.85);
+            robot.intake_motor.setPower(.4);
 
             robot.drive.followTrajectoryAsync(traj[TIdx++]);
             CheckWait(true, 0, 0);
             if(!opModeIsActive()){ return; }
 
-            robot.intake_motor.setPower(0);
+            robot.intake_motor.setPower(-.8);
             CheckWait(true, 100, 0);
+            robot.intake_motor.setPower(0);
             robot.setSlidePosition(SlideHeight.HighDrop, 0.7); //Bucket to high position
             CheckWait(true, 250, 0);
             robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
@@ -469,7 +470,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
             robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
             CheckWait(true, 200, 0);
             robot.setSlidePosition(SlideHeight.LowDrop); //Bucket to drive position
-            CheckWait(true, 500, 0);
+            CheckWait(true, 200, 0);
 
             robot.drive.followTrajectoryAsync(traj[TIdx++]);
             CheckWait(true, 0, 0);
