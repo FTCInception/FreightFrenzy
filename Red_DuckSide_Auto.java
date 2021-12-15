@@ -60,16 +60,10 @@ public class Red_DuckSide_Auto extends LinearOpMode {
 
     private RRMechBot robot = new RRMechBot();
 
-    private static final double intake_pickup_ring = 1.0;
-
     // This is the starting position of the center of the robot.
     private static final double startingX = -44.0;
     private static final double startingY = -65.0;
 
-    // 1:1 slide
-    //final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
-    // 2:1 slide
-    final double SLIDE_INTAKE = (1.0-1.0)*.4+.3, SLIDE_DRIVE = (1.0-0.9)*.4+.3, SLIDE_LOW = (1.0-0.8)*.4+.3, SLIDE_SHARED = (1.0-0.73)*.4+.3, SLIDE_MED = (1.0-0.5)*.4+.3, SLIDE_HIGH = (1.0-0.0)*.4+.3;
     private static boolean parkThroughOpening = true;
     private static boolean warehousePark = true;
     private static boolean option3 = true;
@@ -222,7 +216,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         // Stare at the rings really hard until its time to go or stop
         vision.initAutonomous(this, "webcam", vision.RED_DUCK);
         vision.clip = false;
-        boolean leftBOK = true, rightBOK = true;
+
         do {
             grnLocation = vision.getGrnLocation();
             vision.manageVisionBox(gamepad1, gamepad2);
