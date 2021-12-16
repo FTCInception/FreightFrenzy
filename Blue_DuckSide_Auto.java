@@ -215,7 +215,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
         // Stare at the rings really hard until its time to go or stop
         vision.initAutonomous(this, "webcam", vision.BLUE_DUCK);
         vision.clip = false;
-        
+
         do {
             grnLocation = vision.getGrnLocation();
             vision.manageVisionBox(gamepad1, gamepad2);
