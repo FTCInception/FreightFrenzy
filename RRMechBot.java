@@ -39,6 +39,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.hardware.rev.RevColorSensorV3;
+
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import Inception.FreightFrenzy.drive.SampleMecanumDrive;
@@ -64,11 +66,14 @@ import java.util.Locale;
  */
 public class RRMechBot {
     /* Public OpMode members. */
-    public DcMotor intake_motor;
-    public DcMotorEx slide_motor;
+    public DcMotor intake_motor=null;
+    public DcMotorEx slide_motor=null;
+    public DcMotorEx tapeLength_motor=null;
     public Servo bucket=null;
     public Servo duckL=null,duckR=null;
+    public Servo tapeRotation=null,tapeHeight=null;
     public SampleMecanumDrive drive = null;
+    public RevColorSensorV3 color = null;
 
     private double SLIDE_PWR = 0.7;
 
@@ -118,6 +123,7 @@ public class RRMechBot {
     /* local OpMode members. */
     HardwareMap hardwareMap = null;
     private static LinearOpMode myLOpMode;
+    private static boolean hasTape=false;
 
     // SW PID with some limits
     //MiniPID pid = new MiniPID(P,I,D,F);
@@ -134,7 +140,12 @@ public class RRMechBot {
     public VoltageSensor Vsense;
 
     /* Constructor */
-    public RRMechBot() {
+    public RRMechBot( ) {
+        hasTape = false;
+    }
+
+    public RRMechBot( boolean tape ) {
+        hasTape = tape;
     }
 
     public double getBatteryVoltage() {
@@ -186,6 +197,14 @@ public class RRMechBot {
         bucket = hardwareMap.servo.get("bucket");
         duckL = hardwareMap.servo.get("duck_left");
         duckR = hardwareMap.servo.get("duck_right");
+        //color = hardwareMap.get(RevColorSensorV3.class, "colorSensor");
+        //color.setGain(8);
+
+        if( hasTape ) {
+            tapeLength_motor = hardwareMap.get(DcMotorEx.class, "tape_length_motor");
+            tapeRotation = hardwareMap.servo.get("tape_rotation");
+            tapeHeight = hardwareMap.servo.get("tape_height");
+        }
 
         for (VoltageSensor sensor : hardwareMap.voltageSensor) {
             if (Vsense == null) {

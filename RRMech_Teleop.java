@@ -29,8 +29,12 @@
 
 package Inception.FreightFrenzy;
 
+import android.graphics.Color;
+
 import Inception.FreightFrenzy.RRMechBot.SlideHeightTeleOp;
 import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.rev.RevColorSensorV3;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -38,6 +42,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ServoControllerEx;
@@ -111,6 +116,7 @@ public class RRMech_Teleop extends LinearOpMode {
     double[] prevTime = new double[2];
     double maxForwardChange=4.0, maxRotateChange=5.0, maxStrafeChange=3.0;
     boolean smoothDrive = true;
+    private TapeMeasureV4 tape = new TapeMeasureV4();
 
     double l_f_motor_power;
     double l_b_motor_power;
@@ -261,6 +267,9 @@ public class RRMech_Teleop extends LinearOpMode {
         duckR = robot.duckR;
         bucket = robot.bucket;
 
+        // Setup tapeMeasure object
+        tape.init(this, robot.tapeHeight, robot.tapeRotation, robot.tapeLength_motor, gamepad2);
+
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Status", "Waiting for start...");
         telemetry.update();
@@ -299,12 +308,6 @@ public class RRMech_Teleop extends LinearOpMode {
             if (!gp1Present) {
                 if (!gamepad1.atRest()) {
                     gp1Present = true ;
-                }
-            }
-
-            if (!gp2Present) {
-                if (!gamepad2.atRest()) {
-                    gp2Present = true ;
                 }
             }
 
@@ -486,178 +489,6 @@ public class RRMech_Teleop extends LinearOpMode {
                 // 'dpad right' = slow turn code below
             }
 
-            if (gp1Present) {
-                gamepad= gamepad1;
-                padIdx = pad1;
-
-                // lTrig is now a boolean
-                if (lTrigPrev[padIdx] && (gamepad.left_trigger < 0.30)) {
-                    lTrig[padIdx] = false;
-                }
-                if (!lTrigPrev[padIdx] && (gamepad.left_trigger > 0.70)) {
-                    lTrig[padIdx] = true;
-                }
-
-                // 'lTrig': Toggle between drive and intake
-                if (lTrig[padIdx]) {
-                    if (!lTrigPrev[padIdx]) {
-                        if (!slidePressed) {
-                            // On the first press, INTAKE is not safe, force DRIVE.
-                            slideLevel = SlideHeightTeleOp.Drive;
-                            slidePressed = true;
-                        } else {
-                            if (slideLevel != SlideHeightTeleOp.Drive) {
-                                slideLevel = SlideHeightTeleOp.Drive;
-                            } else {
-                                slideLevel = SlideHeightTeleOp.Intake;
-                            }
-                        }
-                        //slideRequest = slideSet[slideLevel];
-                        lTrigPrev[padIdx] = true;
-                    }
-                } else {
-                    lTrigPrev[padIdx] = false;
-                }
-
-                // Right trigger is dump block
-                // The check on 'prev' is to make sure we set to '0' when we release
-                if ((gamepad.right_trigger > 0.0) || (prevRTrigVal > 0.0)) {
-                    prevRTrigVal = gamepad.right_trigger;
-
-                    // Give some slop of 10% depression to avoid accidental presses
-                    // 10% press is really '0' so subtract 0.1 but don't let it go negative
-                    // Then scale back to 100%
-                    final double travelDistance = (robot.bucketDrive - robot.bucketDump) * (1.1 * Math.max(0,  (gamepad.right_trigger - 0.1)));
-
-                    bucketRequest[padIdx] = robot.bucketDrive - travelDistance;
-                    //bucket.setPosition(bucketIntake - travelDistance);
-                } else {
-                    bucketRequest[padIdx] = robot.bucketDrive;
-                }
-
-                // Reverse the intake
-                if (gamepad.left_bumper) {
-                    if (!lBumpPrev[padIdx]) {
-                        // Reverse polarity on motor
-                        if (intake_motor.getPower() > 0) {
-                            intake_motor.setPower(-intakeSet[intakeIdx]);
-                        } else {
-                            intake_motor.setPower(intakeSet[intakeIdx]);
-                        }
-                        lBumpPrev[padIdx] = true;
-                    }
-                } else {
-                    lBumpPrev[padIdx] = false;
-                }
-
-                // Start/stop the intake
-                if (gamepad.right_bumper) {
-                    if (!rBumpPrev[padIdx]) {
-                        intakeIdx = (intakeIdx + 1) % intakeSet.length;
-                        intake_motor.setPower(intakeSet[intakeIdx]);
-                        rBumpPrev[padIdx] = true;
-                    }
-                } else {
-                    rBumpPrev[padIdx] = false;
-                }
-
-                // 'back': Toggle FOD mode
-                if (gamepad.back) {
-                    if (!backPrev[padIdx]) {
-                        FOD[padIdx] = !FOD[padIdx];
-                        backPrev[padIdx] = true;
-
-                        if (FOD[padIdx]) {
-                            // Set the 'front' towards the front of the bot
-                            adjustAngle[padIdx] = Math.toDegrees(drive.getRawExternalHeading());
-                        }
-                    }
-                } else {
-                    backPrev[padIdx] = false;
-                }
-
-                // 'a': Slide to drive position
-                if (gamepad.a) {
-                    if (!slidePressed) {
-                        // On the first press, DRIVE is OK.
-                        slidePressed = true;
-                    }
-                    if (!aPrev[padIdx]) {
-                        slideLevel = SlideHeightTeleOp.Drive;
-                        //slideRequest = slideSet[slideLevel];
-                        aPrev[padIdx] = true;
-                    }
-                } else {
-                    aPrev[padIdx] = false;
-                }
-
-                // gamped 'b' is combined duck wheel managed below
-
-                // 'x': Speed toggle
-                if (gamepad.x) {
-                    if (!xPrev[padIdx]) {
-                        speedIdx[padIdx] = (int)( (speedIdx[padIdx] + 1) % speedModifier.length);
-                        xPrev[padIdx] = true;
-                    }
-                } else {
-                    xPrev[padIdx] = false;
-                }
-
-                // 'y': Slide to high position
-                if (gamepad.y) {
-                    if (!slidePressed) {
-                        // On the first press, up is safe.  Just do it.
-                        slidePressed = true;
-                    }
-                    if (!yPrev[padIdx]) {
-                        slideLevel = SlideHeightTeleOp.HighDrop;
-                        //slideRequest = slideSet[slideLevel];
-                        yPrev[padIdx] = true;
-                    }
-                } else {
-                    yPrev[padIdx] = false;
-                }
-
-                // 'up' slide higher
-                if (gamepad.dpad_up) {
-                    if (!slidePressed) {
-                        // On the first press, 'up' is safe.  Just go up.
-                        slidePressed = true;
-                    }
-                    if (!dUpPrev[padIdx]) {
-                        slideLevel = SlideHeightTeleOp.values()[
-                                Math.min((slideLevel.ordinal() + 1), robot.slideTargetsTeleOp.length - 1)
-                        ];
-                        //slideRequest = slideSet[slideLevel];
-                        dUpPrev[padIdx] = true;
-                    }
-                } else {
-                    dUpPrev[padIdx] = false;
-                }
-
-                // 'down' slide lower
-                if (gamepad.dpad_down) {
-                    if (!slidePressed) {
-                        // On the first press, down is not safe.  Just go to DRIVE.
-                        slidePressed = true;
-                        slideLevel = SlideHeightTeleOp.Drive;
-                    } else {
-                        if (!dDownPrev[padIdx]) {
-                            slideLevel = SlideHeightTeleOp.values()[
-                                    Math.max((slideLevel.ordinal() - 1), 0)
-                            ];
-                            //slideRequest = slideSet[slideLevel];
-                            dDownPrev[padIdx] = true;
-                        }
-                    }
-                } else {
-                    dDownPrev[padIdx] = false;
-                }
-
-                // 'dpad left' = slow turn code below
-                // 'dpad right' = slow turn code below
-            }
-
             // Only do this after someone has actually pressed a button.
             if (slidePressed) {
                 // Manage the allowed and requested bucket positions.
@@ -680,7 +511,7 @@ public class RRMech_Teleop extends LinearOpMode {
             // Manage combined duck wheel on 'b' buttons
             now = runtime.seconds();
             deltaT = now - prevDuckTime;
-            if (gamepad1.b || gamepad2.b) {
+            if (gamepad1.b) {
                 duckRequest = Math.min(MAX_DUCK_SPEED, duckRequest + (MAX_DUCK_CHANGE * deltaT));
             } else {
                 duckRequest = 0;
@@ -696,6 +527,16 @@ public class RRMech_Teleop extends LinearOpMode {
             strafe[padIdx] = gamepad.left_stick_x*1.25;
             forward[padIdx] = -gamepad.left_stick_y;
             rotate[padIdx] = gamepad.right_stick_x*1.5;
+
+            /* High Precision Mode is 25% power */
+            if( gamepad.left_stick_button ) {
+                strafe[padIdx] *= .25;
+                forward[padIdx] *= .25;
+            }
+
+            if( gamepad.right_stick_button ) {
+                rotate[padIdx] *= .25;
+            }
 
             if(smoothDrive) {
                 if ((prevStrafe[padIdx] != 0) && (strafe[padIdx] != 0) && (Math.signum(prevStrafe[padIdx]) != Math.signum(strafe[padIdx]))) {
@@ -766,86 +607,9 @@ public class RRMech_Teleop extends LinearOpMode {
                 rotate[padIdx] += 0.4;
             }
 
-            gamepad= gamepad2;
-            padIdx = pad2;
-            // gampead2 is reversed to let the second driver drive in reverse easier.
-            strafe[padIdx] = gamepad.left_stick_x;
-            forward[padIdx] = -gamepad.left_stick_y;
-            rotate[padIdx] = gamepad.right_stick_x;
-
-            if( smoothDrive ) {
-
-                if((prevStrafe[padIdx] != 0) && (strafe[padIdx] != 0) && (Math.signum(prevStrafe[padIdx]) != Math.signum(strafe[padIdx]))) {
-                    strafe[padIdx] = 0;
-                }
-                if((prevForward[padIdx] != 0) && (forward[padIdx] != 0) && (Math.signum(prevForward[padIdx]) != Math.signum(forward[padIdx]))) {
-                    forward[padIdx] = 0;
-                }
-                if((prevRotate[padIdx] != 0) && (rotate[padIdx] != 0) && (Math.signum(prevRotate[padIdx]) != Math.signum(rotate[padIdx]))) {
-                    rotate[padIdx] = 0;
-                }
-
-                now = runtime.seconds();
-                deltaT = now - prevTime[padIdx];
-                if (Math.abs(strafe[padIdx]) > 0.20) {
-                    if (prevStrafe[padIdx] < strafe[padIdx]) {
-                        strafe[padIdx] = Math.min(strafe[padIdx], prevStrafe[padIdx] + (maxStrafeChange * deltaT));
-                    } else {
-                        strafe[padIdx] = Math.max(strafe[padIdx], prevStrafe[padIdx] - (maxStrafeChange * deltaT));
-                    }
-                }
-                if (Math.abs(forward[padIdx]) > 0.20) {
-                    if (prevForward[padIdx] < forward[padIdx]) {
-                        forward[padIdx] = Math.min(forward[padIdx], prevForward[padIdx] + (maxForwardChange * deltaT));
-                    } else {
-                        forward[padIdx] = Math.max(forward[padIdx], prevForward[padIdx] - (maxForwardChange * deltaT));
-                    }
-                }
-                if (Math.abs(rotate[padIdx]) > 0.20) {
-                    if (prevRotate[padIdx] < rotate[padIdx]) {
-                        rotate[padIdx] = Math.min(rotate[padIdx], prevRotate[padIdx] + (maxRotateChange * deltaT));
-                    } else {
-                        rotate[padIdx] = Math.max(rotate[padIdx], prevRotate[padIdx] - (maxRotateChange * deltaT));
-                    }
-                }
-                prevTime[padIdx] = now;
-                prevStrafe[padIdx] = strafe[padIdx];
-                prevForward[padIdx] = forward[padIdx];
-                prevRotate[padIdx] = rotate[padIdx];
-
-                // Remove 15% deadzone
-                if (strafe[padIdx] >= 0.025) {
-                    strafe[padIdx] = (strafe[padIdx] * 0.85) + 0.15;
-                }
-                if (forward[padIdx] >= 0.025) {
-                    forward[padIdx] = (forward[padIdx] * 0.85) + 0.15;
-                }
-                if (rotate[padIdx] >= 0.025) {
-                    rotate[padIdx] = (rotate[padIdx] * 0.85) + 0.15;
-                }
-                if (strafe[padIdx] <= -0.025) {
-                    strafe[padIdx] = (strafe[padIdx] * 0.85) - 0.15;
-                }
-                if (forward[padIdx] <= -0.025) {
-                    forward[padIdx] = (forward[padIdx] * 0.85) - 0.15;
-                }
-                if (rotate[padIdx] <= -0.025) {
-                    rotate[padIdx] = (rotate[padIdx] * 0.85) - 0.15;
-                }
-            }
-
-            // Rotate a little left
-            if (gamepad.dpad_left) {
-                rotate[padIdx] -= 0.25;
-            }
-            // Rotate a little right
-            if (gamepad.dpad_right) {
-                rotate[padIdx] += 0.25;
-            }
-
             // This code is terrible.
             // Beware the function calls that pass information in and out via global vars
-            if (FOD[pad1] || FOD[pad2]) {
+            if (FOD[pad1]) {
                 // Get the current robot heading
                 degrees = Math.toDegrees(drive.getRawExternalHeading());
 
@@ -861,28 +625,13 @@ public class RRMech_Teleop extends LinearOpMode {
                     forward[pad1] = new_y;
                     // Now the robot moves in orientation of the field
                 }
-
-                if (FOD[pad2]) {
-                    CarToPol(strafe[pad2], forward[pad2]);
-                    // Rotate the Polar coordinates by the robot's heading
-                    theta -= AngleUnit.DEGREES.normalize(degrees - adjustAngle[pad2]);
-                    // Convert the new Polar back into Cartesian
-                    PolToCar(r_speed);
-                    // Replace the strafe and forward power with translated values
-                    strafe[pad2] = new_x;
-                    forward[pad2] = new_y;
-                }
             }
 
             // This adds the powers from both controllers together scaled for each controller and FOD
-            l_f_motor_power = ((forward[pad1] + strafe[pad1] + rotate[pad1]) * speedModifier[speedIdx[pad1]]) +
-                    ((forward[pad2] + strafe[pad2] + rotate[pad2]) * speedModifier[speedIdx[pad2]]);
-            l_b_motor_power = ((forward[pad1] - strafe[pad1] + rotate[pad1]) * speedModifier[speedIdx[pad1]]) +
-                    ((forward[pad2] - strafe[pad2] + rotate[pad2]) * speedModifier[speedIdx[pad2]]);
-            r_f_motor_power = ((forward[pad1] - strafe[pad1] - rotate[pad1]) * speedModifier[speedIdx[pad1]]) +
-                    ((forward[pad2] - strafe[pad2] - rotate[pad2]) * speedModifier[speedIdx[pad2]]);
-            r_b_motor_power = ((forward[pad1] + strafe[pad1] - rotate[pad1]) * speedModifier[speedIdx[pad1]]) +
-                    ((forward[pad2] + strafe[pad2] - rotate[pad2]) * speedModifier[speedIdx[pad2]]);
+            l_f_motor_power = ((forward[pad1] + strafe[pad1] + rotate[pad1]) * speedModifier[speedIdx[pad1]]);
+            l_b_motor_power = ((forward[pad1] - strafe[pad1] + rotate[pad1]) * speedModifier[speedIdx[pad1]]);
+            r_f_motor_power = ((forward[pad1] - strafe[pad1] - rotate[pad1]) * speedModifier[speedIdx[pad1]]);
+            r_b_motor_power = ((forward[pad1] + strafe[pad1] - rotate[pad1]) * speedModifier[speedIdx[pad1]]);
 
             if(smoothDrive) {
                 // Find the largest power request ignoring sign
@@ -908,13 +657,9 @@ public class RRMech_Teleop extends LinearOpMode {
                         (Math.abs(r_f_motor_power) > 0.1) ||
                         (Math.abs(r_b_motor_power) > 0.1)) && (slideLevel == SlideHeightTeleOp.Intake)) {
                     gamepad1.rumble(Gamepad.RUMBLE_DURATION_CONTINUOUS);
-                    gamepad2.rumble(Gamepad.RUMBLE_DURATION_CONTINUOUS);
                 } else {
                     if (gamepad1.isRumbling()) {
                         gamepad1.stopRumble();
-                    }
-                    if (gamepad2.isRumbling()) {
-                        gamepad2.stopRumble();
                     }
                 }
             }
@@ -929,6 +674,8 @@ public class RRMech_Teleop extends LinearOpMode {
             // control to the automatic mode
             drive.setMotorPowers(l_f_motor_power, l_b_motor_power, r_b_motor_power, r_f_motor_power);
 
+            tape.ManageTape( runtime.seconds() );
+
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.addData("", "");
@@ -936,12 +683,17 @@ public class RRMech_Teleop extends LinearOpMode {
             telemetry.addData("Slide POS: ", slide_motor.getCurrentPosition());
             telemetry.addData("Bucket Req: ", bucketRequest[pad1]);
             telemetry.addData("Bucket POS: ", bucketAllowed);
-            telemetry.addData("Heading", Math.toDegrees(drive.getRawExternalHeading()));
-            if(false) {
-                telemetry.addData("Some message 1", "");
-            } else {
-                telemetry.addData("Some message 2", "");
+            telemetry.addData("Heading", "%.1f", Math.toDegrees(drive.getRawExternalHeading()));
+            telemetry.addData("Stick Buttons: ", "%s, %s", gamepad1.left_stick_button, gamepad1.right_stick_button);
+            tape.telemetry( telemetry );
+            if(robot.color != null) {
+                telemetry.addData("Distance:", "%.3f", robot.color.getDistance(DistanceUnit.CM));
             }
+            //if(false) {
+            //    telemetry.addData("Some message 1", "");
+            //} else {
+            //    telemetry.addData("Some message 2", "");
+            //}
             telemetry.update();
         }
 
@@ -962,5 +714,4 @@ public class RRMech_Teleop extends LinearOpMode {
         new_x = r * Math.cos(theta);
         new_y = r * Math.sin(theta);
     }
-
 }
