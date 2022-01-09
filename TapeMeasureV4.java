@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ServoControllerEx;
+import com.qualcomm.robotcore.robot.Robot;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -28,10 +29,11 @@ public class TapeMeasureV4 {
     private static DcMotorEx tapeLength_motor;
     private static Servo tapeHeight, tapeRotation;
     private double tapeLengthReq=0.0, tapeHeightReq=0.0, tapeRotationReq=0.0;
-    private double prevTapeLength=0, prevTapeHeight=0.5, prevTapeRotation=0.5;
+    private double targTapeLength=0, targTapeHeight=0.5, targTapeRotation=0.5;
     private double prevTime, deltaT;
     private static double divisor=0.0;
     private static LinearOpMode lOpMode;
+    private static RRMechBot robot;
     private static int tape;
     private static final int NONE = 0;
     private static final int TAPE_LENGTH_HOME = 0;
@@ -46,10 +48,10 @@ public class TapeMeasureV4 {
 
     private static final int HGT = 0;
     private static final int ROT = 1;
-    private static final double posTargets[][] = {
+    private static final double[][] posTargets = {
             { 0.87, 0.71 },   // 0 Nothing
             { 0.87, 0.71 },   // 1 TAPE_DRIVE
-            { 0.5, 0.5 },     // 2 TAPE_AUTO
+            { 0.5, 0.5 },     // 2 TAPE_AUTO TODO: FIND A POSITION SUITABLE FOR AUTO
             { 0.5, 0.5 },     // 3 TAPE_ENDGAME_RED
             { 0.5, 0.5 },     // 4 TAPE_ENDGAME_BLUE
             { 0.5, 0.5 },     // 5 TAPE_SCORE_RED
@@ -81,10 +83,16 @@ public class TapeMeasureV4 {
     public TapeMeasureV4() {
     }
 
-    public void init(LinearOpMode i_lOpMode, Servo i_tapeHeight, Servo i_tapeRotation, DcMotorEx i_tapeLength_motor, Gamepad i_gamepad) {
+    // TODO: I have no clue if this works
+    private boolean isAutoOpMode() {
+        String lOpMode_class = lOpMode.getClass().getSimpleName();
+        return lOpMode_class.substring(lOpMode_class.length() - 4, lOpMode_class.length()).equals("Auto");
+    }
 
+    public void init(LinearOpMode i_lOpMode, RRMechBot i_robot, Servo i_tapeHeight, Servo i_tapeRotation, DcMotorEx i_tapeLength_motor, Gamepad i_gamepad) {
         gamepad = i_gamepad;
         lOpMode = i_lOpMode;
+        robot = i_robot;
         tapeHeight = i_tapeHeight;
         tapeRotation = i_tapeRotation;
         tapeLength_motor = i_tapeLength_motor;
@@ -96,8 +104,8 @@ public class TapeMeasureV4 {
             tapeLength_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             tapeLength_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
-        prevTapeHeight=posTargets[TAPE_DRIVE][HGT];
-        prevTapeRotation=posTargets[TAPE_DRIVE][ROT];
+        targTapeHeight=posTargets[TAPE_DRIVE][HGT];
+        targTapeRotation=posTargets[TAPE_DRIVE][ROT];
     }
 
     private void TapeSpecialReqCheck() {
@@ -112,7 +120,8 @@ public class TapeMeasureV4 {
     }
 
     public void ManageTape( double now ) {
-        if( tapeLength_motor != null ) {
+        // TODO: Add check for unreasonable tape positions in certain drive positions
+        if(tapeLength_motor != null) {
             // Buttons first as these may setup certain states for motion
             ManageButtons(now);
             ManageMotion(now);
@@ -120,7 +129,7 @@ public class TapeMeasureV4 {
     }
 
     private void ManageButtons( double now ) {
-
+        specialTapeRequest = NONE;
         // TODO: Find the right divisor for each length
         if (gamepad.y) {
             if (!yPrev) {
@@ -159,12 +168,12 @@ public class TapeMeasureV4 {
         }
         if (gamepad.dpad_up) {
             if (!dUpPrev) {
-                prevTapeHeight -= amount ;
+                targTapeHeight -= amount ;
                 dUpPrev = true;
                 dUpPrevTime = now;
             }
             else if ((now - dUpPrevTime) > 0.1) {
-                prevTapeHeight -= amount ;
+                targTapeHeight -= amount ;
                 dUpPrevTime = now;
             }
         } else {
@@ -174,12 +183,12 @@ public class TapeMeasureV4 {
 
         if (gamepad.dpad_down) {
             if (!dDownPrev) {
-                prevTapeHeight += amount ;
+                targTapeHeight += amount ;
                 dDownPrev = true;
                 dDownPrevTime = now;
             }
             else if ((now - dDownPrevTime) > 0.1) {
-                prevTapeHeight += amount ;
+                targTapeHeight += amount ;
                 dDownPrevTime = now;
             }
         } else {
@@ -189,12 +198,12 @@ public class TapeMeasureV4 {
 
         if (gamepad.dpad_right) {
             if (!dRightPrev) {
-                prevTapeRotation -= amount ;
+                targTapeRotation -= amount ;
                 dRightPrev = true;
                 dRightPrevTime = now;
             }
             else if ((now - dRightPrevTime) > 0.2) {
-                prevTapeRotation -= amount ;
+                targTapeRotation -= amount ;
                 dRightPrevTime = now;
             }
         } else {
@@ -204,21 +213,25 @@ public class TapeMeasureV4 {
 
         if (gamepad.dpad_left) {
             if (!dLeftPrev) {
-                prevTapeRotation += amount ;
+                targTapeRotation += amount ;
                 dLeftPrev = true;
                 dLeftPrevTime = now;
             }
             else if ((now - dLeftPrevTime) > 0.2) {
-                prevTapeRotation += amount ;
+                targTapeRotation += amount ;
                 dLeftPrevTime = now;
             }
         } else {
             dLeftPrev = false;
             dLeftPrevTime = 0;
         }
+
+        if(isAutoOpMode()) {
+            specialTapeRequest = TAPE_AUTO;
+        }
     }
 
-    private void NormalMotion( ) {
+    private void NormalMotion() {
         // Use discrete programming for height
         // Range is 0 <--> 1.0
         // Add or subtract a little from the position base on stick and time
@@ -254,7 +267,6 @@ public class TapeMeasureV4 {
     }
 
     public void ManageMotion( double now ) {
-
         // Make sure we start at rest
         tapeLengthReq = 0;
         tapeRotationReq = 0;
@@ -263,10 +275,10 @@ public class TapeMeasureV4 {
         // Check if we're trying to move manually
         TapeSpecialReqCheck();
 
-        if( specialTapeRequest == NONE) {
+        if (specialTapeRequest == NONE) {
             NormalMotion();
-        } else if(specialTapeRequest == TAPE_SCORE_RED) {
-            RequestTapeScoringPositionRed();
+        } else {
+            RequestTapePosition(specialTapeRequest);
         }
 
         tapeLengthReq *= 0.80;
@@ -281,9 +293,9 @@ public class TapeMeasureV4 {
         // 11 far TSE @ 5200 (button at 60% here)
         tapeHeightReq *= deltaT / (2.0 + ((double)(tapeLength_motor.getCurrentPosition())/450.0));
         //tapeHeightReq *= (deltaT / (2.0 + divisor));
-        tapeHeightReq += prevTapeHeight;
+        tapeHeightReq += targTapeHeight;
         tapeHeightReq = Math.max(0.0, Math.min(tapeHeightReq, 1.0));
-        prevTapeHeight = tapeHeightReq;
+        targTapeHeight = tapeHeightReq;
 
         // Points for divisor
         // 6 near TSE @ 2000
@@ -291,9 +303,9 @@ public class TapeMeasureV4 {
         // 16 far TSE @ 5200 (button at 60% here)
         tapeRotationReq *= -(deltaT / (2.0 + ((double)(tapeLength_motor.getCurrentPosition())/325.0)));
         //tapeRotationReq *= -(deltaT / (2.0 + divisor));
-        tapeRotationReq += prevTapeRotation;
+        tapeRotationReq += targTapeRotation;
         tapeRotationReq = Math.max(0.00, Math.min(tapeRotationReq, 1.0));
-        prevTapeRotation = tapeRotationReq;
+        targTapeRotation = tapeRotationReq;
 
         // Now apply the power:
         if ((tapeLength_motor.getCurrentPosition() < 50.0) && (tapeLengthReq < 0.0)  ) {
@@ -304,48 +316,33 @@ public class TapeMeasureV4 {
         tapeHeight.setPosition(tapeHeightReq);
     }
 
-    public void RequestTapeLengthHome() {
-    }
-
-    public void RequestTapeDrivePosition() {
-    }
-
-    public void RequestTapeAutoPosition() {
-    }
-
-    public void RequestTapeStartEndGamePositionRed() {
-    }
-
-    public void RequestTapeStartEndGamePositionBlue() {
-    }
-
-    public void RequestTapeScoringPositionRed() {
-        double targRot = posTargets[TAPE_SCORE_RED][ROT] ;
-        double targHgt = posTargets[TAPE_SCORE_RED][HGT] ;
-        double rotationDelta = Math.abs(targRot - prevTapeRotation);
-        double heightDelta = Math.abs(targHgt - prevTapeHeight);
+    public void RequestTapePosition(int pos) {
+        double targRot = posTargets[pos][ROT] ;
+        double targHgt = posTargets[pos][HGT] ;
+        double rotationDelta = Math.abs(targRot - targTapeRotation);
+        double heightDelta = Math.abs(targHgt - targTapeHeight);
 
         if (rotationDelta > 0.01) {
             // If we're 'far' away, fake some controller requests to limit correction speed
             tapeRotationReq = 0.5;
-            if (prevTapeRotation < targRot) {
+            if (targTapeRotation < targRot) {
                 tapeRotationReq *= -1.0;
             }
         } else {
             // if we're close, just set the position directly and no controller
-            prevTapeRotation = targRot ;
+            targTapeRotation = targRot;
             tapeRotationReq = 0;
         }
 
         if (heightDelta > 0.01) {
             // If we're 'far' away, fake some controller requests to limit correction speed
             tapeHeightReq = -0.25;
-            if (prevTapeHeight < targHgt) {
+            if (targTapeHeight < targHgt) {
                 tapeHeightReq *= -1.0;
             }
         } else {
             // if we're close, just set the position directly and no controller
-            prevTapeHeight = targHgt ;
+            targTapeHeight = targHgt ;
             tapeHeightReq = 0;
         }
 
@@ -353,9 +350,6 @@ public class TapeMeasureV4 {
         if ((rotationDelta <= 0.005) && (heightDelta <= 0.005)) {
             specialTapeRequest = NONE;
         }
-    }
-
-    public void RequestTapeScoringPositionBlue() {
     }
 
     public void telemetry( Telemetry telem ) {

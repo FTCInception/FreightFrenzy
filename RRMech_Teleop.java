@@ -268,7 +268,7 @@ public class RRMech_Teleop extends LinearOpMode {
         bucket = robot.bucket;
 
         // Setup tapeMeasure object
-        tape.init(this, robot.tapeHeight, robot.tapeRotation, robot.tapeLength_motor, gamepad2);
+        tape.init(this, robot, robot.tapeHeight, robot.tapeRotation, robot.tapeLength_motor, gamepad2);
 
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Status", "Waiting for start...");
