@@ -105,7 +105,7 @@ public class RRMech_Teleop extends LinearOpMode {
     //private BotLog logger = new BotLog();
     private boolean enableCSVLogging = false;
 
-    private RRMechBot robot = new RRMechBot();
+    private RRMechBot robot = new RRMechBot(true);
 
     // Mech drive related variables
     int[] speedIdx = new int[] {0, 0};
@@ -517,7 +517,8 @@ public class RRMech_Teleop extends LinearOpMode {
                 duckRequest = 0;
             }
             prevDuckTime = now;
-            duckL.setPosition(DUCK_STOP + duckRequest);
+            // FIXME: FIX blue/red spin direction!!!!
+            duckL.setPosition(DUCK_STOP - duckRequest);
             duckR.setPosition(DUCK_STOP - duckRequest);
 
             // Now handle driving commands below for both gamepads.

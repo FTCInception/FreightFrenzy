@@ -27,8 +27,8 @@ public class TapeMeasureV4 {
 
     private static DcMotorEx tapeLength_motor;
     private static Servo tapeHeight, tapeRotation;
-    private double tapeLengthReq, tapeHeightReq, tapeRotationReq;
-    private double prevTapeLength, prevTapeHeight, prevTapeRotation;
+    private double tapeLengthReq=0.0, tapeHeightReq=0.0, tapeRotationReq=0.0;
+    private double prevTapeLength=0, prevTapeHeight=0.5, prevTapeRotation=0.5;
     private double prevTime, deltaT;
     private static double divisor=0.0;
     private static LinearOpMode lOpMode;
@@ -43,6 +43,17 @@ public class TapeMeasureV4 {
     private static final int TAPE_SCORE_BLUE = 6;
     private static int specialTapeRequest = NONE;
     private static Gamepad gamepad;
+
+    private static final int HGT = 0;
+    private static final int ROT = 1;
+    private static final double posTargets[][] = {
+            { 0.87, 0.71 },   // 0 Nothing
+            { 0.87, 0.71 },   // 1 TAPE_DRIVE
+            { 0.5, 0.5 },     // 2 TAPE_AUTO
+            { 0.5, 0.5 },     // 3 TAPE_ENDGAME_RED
+            { 0.5, 0.5 },     // 4 TAPE_ENDGAME_BLUE
+            { 0.5, 0.5 },     // 5 TAPE_SCORE_RED
+            { 0.5, 0.5 } } ;  // 6 TAPE_SCORE_BLUE
 
     private static boolean lBumpPrev  = false;
     private static boolean rBumpPrev  = false;
@@ -60,6 +71,11 @@ public class TapeMeasureV4 {
     private static boolean dLeftPrev  = false;
     private static boolean dRightPrev = false;
     private static boolean guidePrev  = false;
+
+    private static double dUpPrevTime    = 0;
+    private static double dDownPrevTime  = 0;
+    private static double dLeftPrevTime  = 0;
+    private static double dRightPrevTime = 0;
 
     /* Constructor */
     public TapeMeasureV4() {
@@ -80,6 +96,8 @@ public class TapeMeasureV4 {
             tapeLength_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             tapeLength_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
+        prevTapeHeight=posTargets[TAPE_DRIVE][HGT];
+        prevTapeRotation=posTargets[TAPE_DRIVE][ROT];
     }
 
     private void TapeSpecialReqCheck() {
@@ -133,45 +151,71 @@ public class TapeMeasureV4 {
             xPrev = false;
         }
 
+        double amount = 0.005;
         // Use dpad and bumpers to nudge the tape a teeny little bit
         // Add continuous hold mode?
+        if (tapeLength_motor.getCurrentPosition() > 4500) {
+            amount = 0.0030;
+        }
         if (gamepad.dpad_up) {
             if (!dUpPrev) {
-                prevTapeHeight -= 0.0025 ;
+                prevTapeHeight -= amount ;
                 dUpPrev = true;
+                dUpPrevTime = now;
+            }
+            else if ((now - dUpPrevTime) > 0.1) {
+                prevTapeHeight -= amount ;
+                dUpPrevTime = now;
             }
         } else {
             dUpPrev = false;
+            dUpPrevTime = 0;
         }
 
         if (gamepad.dpad_down) {
             if (!dDownPrev) {
-                prevTapeHeight += 0.0025 ;
+                prevTapeHeight += amount ;
                 dDownPrev = true;
+                dDownPrevTime = now;
+            }
+            else if ((now - dDownPrevTime) > 0.1) {
+                prevTapeHeight += amount ;
+                dDownPrevTime = now;
             }
         } else {
             dDownPrev = false;
+            dDownPrevTime = 0;
         }
 
         if (gamepad.dpad_right) {
             if (!dRightPrev) {
-                prevTapeRotation -= 0.0025 ;
+                prevTapeRotation -= amount ;
                 dRightPrev = true;
+                dRightPrevTime = now;
+            }
+            else if ((now - dRightPrevTime) > 0.2) {
+                prevTapeRotation -= amount ;
+                dRightPrevTime = now;
             }
         } else {
             dRightPrev = false;
+            dRightPrevTime = 0;
         }
 
         if (gamepad.dpad_left) {
             if (!dLeftPrev) {
-                prevTapeRotation += 0.0025 ;
+                prevTapeRotation += amount ;
                 dLeftPrev = true;
+                dLeftPrevTime = now;
+            }
+            else if ((now - dLeftPrevTime) > 0.2) {
+                prevTapeRotation += amount ;
+                dLeftPrevTime = now;
             }
         } else {
             dLeftPrev = false;
+            dLeftPrevTime = 0;
         }
-
-        // TODO: Add button/bumper nudge for Length?
     }
 
     private void NormalMotion( ) {
@@ -199,6 +243,14 @@ public class TapeMeasureV4 {
         if (tapeLengthReq <= -0.05) {
             tapeLengthReq = (tapeLengthReq * 0.85) - 0.15;
         }
+
+        // Slow in/out
+        if (gamepad.left_bumper) {
+            tapeLengthReq = -0.2;
+        }
+        if (gamepad.right_bumper) {
+            tapeLengthReq = 0.2;
+        }
     }
 
     public void ManageMotion( double now ) {
@@ -217,20 +269,28 @@ public class TapeMeasureV4 {
             RequestTapeScoringPositionRed();
         }
 
-        tapeLengthReq *= 0.40;
+        tapeLengthReq *= 0.80;
 
         deltaT = now - prevTime;
         prevTime = now;
 
         //1500 is close bar code, 3000 is far
-        //tapeHeightReq *= deltaT / (2.0 + ((double)(tapeLength_motor.getCurrentPosition())/300.0));
-        tapeHeightReq *= (deltaT / (2.0 + divisor));
+        // Points for divisor
+        // 4.5 near TSE @ 2000
+        // 9 at wobble @ 4000
+        // 11 far TSE @ 5200 (button at 60% here)
+        tapeHeightReq *= deltaT / (2.0 + ((double)(tapeLength_motor.getCurrentPosition())/450.0));
+        //tapeHeightReq *= (deltaT / (2.0 + divisor));
         tapeHeightReq += prevTapeHeight;
         tapeHeightReq = Math.max(0.0, Math.min(tapeHeightReq, 1.0));
         prevTapeHeight = tapeHeightReq;
 
-        //tapeRotationReq *= deltaT / (2.0 + ((double)(tapeLength_motor.getCurrentPosition())/150.0));
-        tapeRotationReq *= -(deltaT / (2.0 + divisor));
+        // Points for divisor
+        // 6 near TSE @ 2000
+        // 13 at the wobble @ 4000
+        // 16 far TSE @ 5200 (button at 60% here)
+        tapeRotationReq *= -(deltaT / (2.0 + ((double)(tapeLength_motor.getCurrentPosition())/325.0)));
+        //tapeRotationReq *= -(deltaT / (2.0 + divisor));
         tapeRotationReq += prevTapeRotation;
         tapeRotationReq = Math.max(0.00, Math.min(tapeRotationReq, 1.0));
         prevTapeRotation = tapeRotationReq;
@@ -260,28 +320,37 @@ public class TapeMeasureV4 {
     }
 
     public void RequestTapeScoringPositionRed() {
-        double rotationDelta = Math.abs(0.28 - prevTapeRotation);
-        double heightDelta = Math.abs(0.34 - prevTapeHeight);
+        double targRot = posTargets[TAPE_SCORE_RED][ROT] ;
+        double targHgt = posTargets[TAPE_SCORE_RED][HGT] ;
+        double rotationDelta = Math.abs(targRot - prevTapeRotation);
+        double heightDelta = Math.abs(targHgt - prevTapeHeight);
 
         if (rotationDelta > 0.01) {
-            if (prevTapeRotation < 0.28) {
-                tapeRotationReq = -0.5;
-            } else {
-                tapeRotationReq = 0.5;
+            // If we're 'far' away, fake some controller requests to limit correction speed
+            tapeRotationReq = 0.5;
+            if (prevTapeRotation < targRot) {
+                tapeRotationReq *= -1.0;
             }
         } else {
+            // if we're close, just set the position directly and no controller
+            prevTapeRotation = targRot ;
             tapeRotationReq = 0;
         }
+
         if (heightDelta > 0.01) {
-            if (prevTapeHeight < 0.34) {
-                tapeHeightReq = 0.5;
-            } else {
-                tapeHeightReq = -0.5;
+            // If we're 'far' away, fake some controller requests to limit correction speed
+            tapeHeightReq = -0.25;
+            if (prevTapeHeight < targHgt) {
+                tapeHeightReq *= -1.0;
             }
         } else {
+            // if we're close, just set the position directly and no controller
+            prevTapeHeight = targHgt ;
             tapeHeightReq = 0;
         }
-        if ((rotationDelta <= 0.01) && (heightDelta <= 0.01)) {
+
+        // If we're really close on both, then we're done
+        if ((rotationDelta <= 0.005) && (heightDelta <= 0.005)) {
             specialTapeRequest = NONE;
         }
     }
