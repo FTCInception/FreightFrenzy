@@ -31,31 +31,30 @@ public class TapeMeasureV4 {
     private double tapeLengthReq=0.0, tapeHeightReq=0.0, tapeRotationReq=0.0;
     private double targTapeLength=0, targTapeHeight=0.5, targTapeRotation=0.5;
     private double prevTime, deltaT;
-    private static double divisor=0.0;
+    private static double divisor=6.0;
     private static LinearOpMode lOpMode;
     private static RRMechBot robot;
-    private static int tape;
-    private static final int NONE = 0;
-    private static final int TAPE_LENGTH_HOME = 0;
-    private static final int TAPE_DRIVE = 1;
-    private static final int TAPE_AUTO = 2;
-    private static final int TAPE_ENDGAME_RED = 3;
-    private static final int TAPE_ENDGAME_BLUE = 4;
-    private static final int TAPE_SCORE_RED = 5;
-    private static final int TAPE_SCORE_BLUE = 6;
+    static final int NONE = 0;
+    static final int TAPE_LENGTH_HOME = 0;
+    static final int TAPE_DRIVE = 1;
+    static final int TAPE_AUTO = 2;
+    static final int TAPE_ENDGAME_RED = 3;
+    static final int TAPE_ENDGAME_BLUE = 4;
+    static final int TAPE_SCORE_RED = 5;
+    static final int TAPE_SCORE_BLUE = 6;
     private static int specialTapeRequest = NONE;
     private static Gamepad gamepad;
 
     private static final int HGT = 0;
     private static final int ROT = 1;
     private static final double[][] posTargets = {
-            { 0.87, 0.71 },   // 0 Nothing
-            { 0.87, 0.71 },   // 1 TAPE_DRIVE
-            { 0.5, 0.5 },     // 2 TAPE_AUTO TODO: FIND A POSITION SUITABLE FOR AUTO
-            { 0.5, 0.5 },     // 3 TAPE_ENDGAME_RED
-            { 0.5, 0.5 },     // 4 TAPE_ENDGAME_BLUE
-            { 0.5, 0.5 },     // 5 TAPE_SCORE_RED
-            { 0.5, 0.5 } } ;  // 6 TAPE_SCORE_BLUE
+            { 0.71, 0.71 },   // 0 Nothing
+            { 0.71, 0.71 },   // 1 TAPE_DRIVE
+            { 0.95, 0.71 },    // 2 TAPE_AUTO TODO: FIND A POSITION SUITABLE FOR AUTO
+            { 0.71, 0.71 },     // 3 TAPE_ENDGAME_RED
+            { 0.71, 0.71 },     // 4 TAPE_ENDGAME_BLUE
+            { 0.71, 0.71 },     // 5 TAPE_SCORE_RED
+            { 0.71, 0.71 } } ;  // 6 TAPE_SCORE_BLUE
 
     private static boolean lBumpPrev  = false;
     private static boolean rBumpPrev  = false;
@@ -83,19 +82,28 @@ public class TapeMeasureV4 {
     public TapeMeasureV4() {
     }
 
+    /*
     // TODO: I have no clue if this works
     private boolean isAutoOpMode() {
         String lOpMode_class = lOpMode.getClass().getSimpleName();
         return lOpMode_class.substring(lOpMode_class.length() - 4, lOpMode_class.length()).equals("Auto");
     }
+    */
 
-    public void init(LinearOpMode i_lOpMode, RRMechBot i_robot, Servo i_tapeHeight, Servo i_tapeRotation, DcMotorEx i_tapeLength_motor, Gamepad i_gamepad) {
+    public void setPosition(int position) {
+        targTapeHeight=posTargets[position][HGT];
+        targTapeRotation=posTargets[position][ROT];
+        tapeRotation.setPosition(targTapeRotation);
+        tapeHeight.setPosition(targTapeHeight);
+    }
+
+    public void init(LinearOpMode i_lOpMode, RRMechBot i_robot, Gamepad i_gamepad) {
         gamepad = i_gamepad;
         lOpMode = i_lOpMode;
         robot = i_robot;
-        tapeHeight = i_tapeHeight;
-        tapeRotation = i_tapeRotation;
-        tapeLength_motor = i_tapeLength_motor;
+        tapeHeight = robot.tapeHeight;
+        tapeRotation = robot.tapeRotation;
+        tapeLength_motor = robot.tapeLength_motor;
 
         if( tapeLength_motor != null ) {
             tapeLength_motor.setPower(0.0);
@@ -104,8 +112,6 @@ public class TapeMeasureV4 {
             tapeLength_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             tapeLength_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
-        targTapeHeight=posTargets[TAPE_DRIVE][HGT];
-        targTapeRotation=posTargets[TAPE_DRIVE][ROT];
     }
 
     private void TapeSpecialReqCheck() {
@@ -133,7 +139,7 @@ public class TapeMeasureV4 {
         // TODO: Find the right divisor for each length
         if (gamepad.y) {
             if (!yPrev) {
-                divisor += 1 ;
+                divisor += 1.0 ;
                 yPrev = true;
             }
         } else {
@@ -143,7 +149,7 @@ public class TapeMeasureV4 {
         // TODO: Find the right divisor for each length
         if (gamepad.a) {
             if (!aPrev) {
-                divisor = Math.max(1, divisor - 1) ;
+                divisor = Math.max(1.0, divisor - 1.0) ;
                 aPrev = true;
             }
         } else {
@@ -226,9 +232,11 @@ public class TapeMeasureV4 {
             dLeftPrevTime = 0;
         }
 
+        /*
         if(isAutoOpMode()) {
             specialTapeRequest = TAPE_AUTO;
         }
+        */
     }
 
     private void NormalMotion() {
@@ -267,6 +275,7 @@ public class TapeMeasureV4 {
     }
 
     public void ManageMotion( double now ) {
+        double currPos;
         // Make sure we start at rest
         tapeLengthReq = 0;
         tapeRotationReq = 0;
@@ -286,23 +295,23 @@ public class TapeMeasureV4 {
         deltaT = now - prevTime;
         prevTime = now;
 
+        currPos = Math.min(0.0,(double)(tapeLength_motor.getCurrentPosition()));
+
         //1500 is close bar code, 3000 is far
         // Points for divisor
-        // 4.5 near TSE @ 2000
-        // 9 at wobble @ 4000
-        // 11 far TSE @ 5200 (button at 60% here)
-        tapeHeightReq *= deltaT / (2.0 + ((double)(tapeLength_motor.getCurrentPosition())/450.0));
-        //tapeHeightReq *= (deltaT / (2.0 + divisor));
+        // 6.5 near TSE @ 2000
+        // 11 at wobble @ 4000
+        // 13 far TSE @ 5200 (button at 60% here)
+        tapeHeightReq *= deltaT / (divisor + Math.max(0.0,((currPos-1700)/450.0)));
         tapeHeightReq += targTapeHeight;
         tapeHeightReq = Math.max(0.0, Math.min(tapeHeightReq, 1.0));
         targTapeHeight = tapeHeightReq;
 
         // Points for divisor
-        // 6 near TSE @ 2000
-        // 13 at the wobble @ 4000
-        // 16 far TSE @ 5200 (button at 60% here)
-        tapeRotationReq *= -(deltaT / (2.0 + ((double)(tapeLength_motor.getCurrentPosition())/325.0)));
-        //tapeRotationReq *= -(deltaT / (2.0 + divisor));
+        // 8 near TSE @ 2000
+        // 15 at the wobble @ 4000
+        // 18 far TSE @ 5200 (button at 60% here)
+        tapeRotationReq *= -(deltaT / (divisor + Math.max(0.0,((currPos-1250)/325.0))));
         tapeRotationReq += targTapeRotation;
         tapeRotationReq = Math.max(0.00, Math.min(tapeRotationReq, 1.0));
         targTapeRotation = tapeRotationReq;
@@ -354,7 +363,7 @@ public class TapeMeasureV4 {
 
     public void telemetry( Telemetry telem ) {
         if( tapeLength_motor != null ) {
-            telem.addData("Tape: ", "L:%.2f, H:%.2f, R:%.2f, P:%d, D:%.0f", tapeLengthReq, tapeHeightReq, tapeRotationReq, tapeLength_motor.getCurrentPosition(), divisor);
+            telem.addData("Tape: ", "L:%.2f, H:%.2f, R:%.2f, P:%d, D:%.0f", tapeLengthReq, tapeHeight.getPosition(), tapeRotation.getPosition(), tapeLength_motor.getCurrentPosition(), divisor);
         } else {
             telem.addData("Tape: ", "Not installed");
         }

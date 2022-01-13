@@ -59,7 +59,8 @@ public class Red_Ref_Auto extends LinearOpMode {
     private final int BAR2=1;
     private final int BAR3=2;
 
-    private RRMechBot robot = new RRMechBot();
+    private RRMechBot robot = new RRMechBot(true);
+    private TapeMeasureV4 tape = new TapeMeasureV4();
 
     private static final double intake_pickup_ring = 1.0;
 
@@ -82,6 +83,8 @@ public class Red_Ref_Auto extends LinearOpMode {
         // Init the robot and subsystems.  Set Roadrunner timeout to 0.25s to save some time.
         robot.init(hardwareMap,0.5);
         robot.initAutonomous(this);
+        tape.init(this, robot, gamepad2);
+        tape.setPosition(tape.TAPE_AUTO);
         robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
         // This code allows for processing the starting location of something variable
@@ -190,6 +193,8 @@ public class Red_Ref_Auto extends LinearOpMode {
         // TODO: Make sure the INNER/OUTER/UNSEEN mapping here is correct for every auto.
         // FIXME: Test the stopping in auto here again.
         if (opModeIsActive()) {
+            tape.setPosition(tape.TAPE_DRIVE);
+
             if (grnLocation == IncepVision.MarkerPos.Inner) {
                 Bar1(trajs[BAR1]);
             } else if (grnLocation == IncepVision.MarkerPos.Outer) {

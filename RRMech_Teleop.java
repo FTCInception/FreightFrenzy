@@ -100,7 +100,7 @@ public class RRMech_Teleop extends LinearOpMode {
     private static DcMotorEx slide_motor;
     private static Servo bucket, duckL, duckR;
 
-    double MAX_INTAKE_POWER = 0.4;
+    double MAX_INTAKE_POWER = 0.6;
 
     //private BotLog logger = new BotLog();
     private boolean enableCSVLogging = false;
@@ -125,6 +125,9 @@ public class RRMech_Teleop extends LinearOpMode {
 
     double theta, r_speed, new_x, new_y, degrees;
     double[] adjustAngle = {0,0};
+
+    double bucketFullTime = 0;
+    boolean bucketFull=false,prevBucketFull=false;
 
     // Declare other variables
     public BNO055IMU initIMU(String imuName) {
@@ -192,6 +195,7 @@ public class RRMech_Teleop extends LinearOpMode {
 
         double[] intakeSet = {0.0, MAX_INTAKE_POWER};
         int intakeIdx=0;
+        double currIntakePower = 0.0;
 
         // 1:1 slide
         //final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
@@ -214,6 +218,8 @@ public class RRMech_Teleop extends LinearOpMode {
 
         double now;
         double deltaT;
+
+        double colorDist=0;
 
         if (enableCSVLogging) {
             // Enable debug logging
@@ -268,10 +274,12 @@ public class RRMech_Teleop extends LinearOpMode {
         bucket = robot.bucket;
 
         // Setup tapeMeasure object
-        tape.init(this, robot, robot.tapeHeight, robot.tapeRotation, robot.tapeLength_motor, gamepad2);
+        tape.init(this, robot, gamepad2);
+        tape.setPosition(tape.TAPE_DRIVE);
 
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Status", "Waiting for start...");
+        tape.telemetry( telemetry );
         telemetry.update();
         /*************************************************************/
         /************ No movement allowed during init! ***************/
@@ -365,14 +373,46 @@ public class RRMech_Teleop extends LinearOpMode {
                     bucketRequest[padIdx] = robot.bucketDrive;
                 }
 
+                // If the intake is running in forward and we're at intake level
+                if((currIntakePower > 0.0) && (slideLevel == SlideHeightTeleOp.Intake)) {
+                    // Check for an element in the bucket
+                    colorDist = robot.color.getDistance(DistanceUnit.CM);
+                    if (colorDist > 2.0) {
+                        bucketFull = false;
+                    } else {
+                        if (bucketFull == false) {
+                            bucketFullTime = runtime.seconds();
+                            bucketFull = true;
+                        } else {
+                            // If we've been full for > 0.5 seconds
+                            if ((runtime.seconds() - bucketFullTime) > 0.25) {
+                                // And we're not holding the button down
+                                if (!gamepad.right_bumper) {
+                                    // Turn the intake off
+                                    intake_motor.setPower(-intakeSet[1]);
+                                    sleep(100);
+                                    intakeIdx = 0;
+                                    intake_motor.setPower(intakeSet[intakeIdx]);
+                                    currIntakePower = intakeSet[intakeIdx];
+                                    if (robot.color.getDistance(DistanceUnit.CM) < 2.0) {
+                                        slideLevel = SlideHeightTeleOp.Drive;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Reverse the intake
                 if (gamepad.left_bumper) {
                     if (!lBumpPrev[padIdx]) {
                         // Reverse polarity on motor
-                        if (intake_motor.getPower() >= -0.0) {
+                        if (currIntakePower >= -0.0) {
                             intake_motor.setPower(-intakeSet[1]);
+                            currIntakePower = -intakeSet[1];
                         } else {
                             intake_motor.setPower(0);
+                            currIntakePower = 0;
                         }
                         intakeIdx = 0;
                         lBumpPrev[padIdx] = true;
@@ -386,6 +426,7 @@ public class RRMech_Teleop extends LinearOpMode {
                     if (!rBumpPrev[padIdx]) {
                         intakeIdx = (intakeIdx + 1) % intakeSet.length;
                         intake_motor.setPower(intakeSet[intakeIdx]);
+                        currIntakePower = intakeSet[intakeIdx];
                         rBumpPrev[padIdx] = true;
                     }
                 } else {
@@ -679,17 +720,15 @@ public class RRMech_Teleop extends LinearOpMode {
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
-            telemetry.addData("", "");
-            telemetry.addData("Slide Goal:", robot.slideTargetsTeleOp[slideLevel.ordinal()]);
-            telemetry.addData("Slide POS: ", slide_motor.getCurrentPosition());
-            telemetry.addData("Bucket Req: ", bucketRequest[pad1]);
-            telemetry.addData("Bucket POS: ", bucketAllowed);
-            telemetry.addData("Heading", "%.1f", Math.toDegrees(drive.getRawExternalHeading()));
-            telemetry.addData("Stick Buttons: ", "%s, %s", gamepad1.left_stick_button, gamepad1.right_stick_button);
+            //telemetry.addData("", "");
+            //telemetry.addData("Slide Goal:", robot.slideTargetsTeleOp[slideLevel.ordinal()]);
+            //telemetry.addData("Slide POS: ", slide_motor.getCurrentPosition());
+            //telemetry.addData("Bucket Req: ", bucketRequest[pad1]);
+            //telemetry.addData("Bucket POS: ", bucketAllowed);
+            //telemetry.addData("Heading", "%.1f", Math.toDegrees(drive.getRawExternalHeading()));
+            //telemetry.addData("Stick Buttons: ", "%s, %s", gamepad1.left_stick_button, gamepad1.right_stick_button);
+            telemetry.addData("Intake Assist:", "D:%.2f, T:%.1f", colorDist, (bucketFull ? (runtime.seconds()-bucketFullTime) : (0.0)));
             tape.telemetry( telemetry );
-            if(robot.color != null) {
-                telemetry.addData("Distance:", "%.3f", robot.color.getDistance(DistanceUnit.CM));
-            }
             //if(false) {
             //    telemetry.addData("Some message 1", "");
             //} else {

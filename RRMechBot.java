@@ -197,8 +197,8 @@ public class RRMechBot {
         bucket = hardwareMap.servo.get("bucket");
         duckL = hardwareMap.servo.get("duck_left");
         duckR = hardwareMap.servo.get("duck_right");
-        //color = hardwareMap.get(RevColorSensorV3.class, "colorSensor");
-        //color.setGain(8);
+        color = hardwareMap.get(RevColorSensorV3.class, "colorSensor");
+        color.setGain(8);
 
         if( hasTape ) {
             tapeLength_motor = hardwareMap.get(DcMotorEx.class, "tape_length_motor");
