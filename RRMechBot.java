@@ -190,7 +190,7 @@ public class RRMechBot {
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
-        drive = new SampleMecanumDrive(hardwareMap, 0.5);
+        drive = new SampleMecanumDrive(hardwareMap, driveTimeout);
 
         // TODO: Finish getting all the device mapped
         intake_motor = hardwareMap.dcMotor.get("intake_motor");
