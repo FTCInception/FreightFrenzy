@@ -219,7 +219,7 @@ public class RRMech_Teleop extends LinearOpMode {
         double now;
         double deltaT;
 
-        double colorDist=0;
+        double colorDist=0, sideDist=0;
 
         if (enableCSVLogging) {
             // Enable debug logging
@@ -728,6 +728,13 @@ public class RRMech_Teleop extends LinearOpMode {
             //telemetry.addData("Heading", "%.1f", Math.toDegrees(drive.getRawExternalHeading()));
             //telemetry.addData("Stick Buttons: ", "%s, %s", gamepad1.left_stick_button, gamepad1.right_stick_button);
             telemetry.addData("Intake Assist:", "D:%.2f, T:%.1f", colorDist, (bucketFull ? (runtime.seconds()-bucketFullTime) : (0.0)));
+            sideDist = robot.side.getDistance(DistanceUnit.CM);
+            telemetry.addData("Side Assist:", "D:%.2f", sideDist );
+            NormalizedRGBA colors = robot.side.getNormalizedColors();
+            telemetry.addLine()
+                    .addData("Red", "%.3f", colors.red)
+                    .addData("Green", "%.3f", colors.green)
+                    .addData("Blue", "%.3f", colors.blue);
             tape.telemetry( telemetry );
             //if(false) {
             //    telemetry.addData("Some message 1", "");

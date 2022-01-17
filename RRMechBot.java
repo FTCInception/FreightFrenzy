@@ -74,6 +74,7 @@ public class RRMechBot {
     public Servo tapeRotation=null,tapeHeight=null;
     public SampleMecanumDrive drive = null;
     public RevColorSensorV3 color = null;
+    public RevColorSensorV3 side = null;
 
     private double SLIDE_PWR = 0.7;
 
@@ -199,6 +200,9 @@ public class RRMechBot {
         duckR = hardwareMap.servo.get("duck_right");
         color = hardwareMap.get(RevColorSensorV3.class, "colorSensor");
         color.setGain(8);
+
+        side = hardwareMap.get(RevColorSensorV3.class, "side");
+        side.setGain(8);
 
         if( hasTape ) {
             tapeLength_motor = hardwareMap.get(DcMotorEx.class, "tape_length_motor");
