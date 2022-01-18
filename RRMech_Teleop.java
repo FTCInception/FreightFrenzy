@@ -355,6 +355,9 @@ public class RRMech_Teleop extends LinearOpMode {
                                 slideLevel = SlideHeightTeleOp.Drive;
                             } else {
                                 slideLevel = SlideHeightTeleOp.Intake;
+                                intakeIdx = 0;
+                                intake_motor.setPower(intakeSet[intakeIdx]);
+                                currIntakePower = intakeSet[intakeIdx];
                             }
                         }
                         //slideRequest = slideSet[slideLevel];
@@ -456,13 +459,13 @@ public class RRMech_Teleop extends LinearOpMode {
                 }
 
                 // 'back': Toggle FOD mode
-                if (gamepad.options) {
-                    if (!optionsPrev[padIdx]) {
+                if (gamepad.guide) {
+                    if (!guidePrev[padIdx]) {
                         RedAlliance = !RedAlliance;
-                        optionsPrev[padIdx] = true;
+                        guidePrev[padIdx] = true;
                     }
                 } else {
-                    optionsPrev[padIdx] = false;
+                    guidePrev[padIdx] = false;
                 }
 
                 // 'a': Slide to drive position
@@ -533,8 +536,13 @@ public class RRMech_Teleop extends LinearOpMode {
                     } else {
                         if (!dDownPrev[padIdx]) {
                             slideLevel = SlideHeightTeleOp.values()[
-                                    Math.max((slideLevel.ordinal() - 1), 0)
-                            ];
+                                    Math.max((slideLevel.ordinal() - 1), 0)];
+                            if (slideLevel == SlideHeightTeleOp.Intake ){
+                                intakeIdx = 0;
+                                intake_motor.setPower(intakeSet[intakeIdx]);
+                                currIntakePower = intakeSet[intakeIdx];
+                            }
+
                             //slideRequest = slideSet[slideLevel];
                             dDownPrev[padIdx] = true;
                         }
