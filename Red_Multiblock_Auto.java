@@ -689,6 +689,6 @@ public class Red_Multiblock_Auto extends LinearOpMode {
         if (!opModeIsActive()) {
             return;
         }
-
     }
 }
+
