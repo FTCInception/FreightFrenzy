@@ -99,6 +99,8 @@ public class RRMech_Teleop extends LinearOpMode {
     private static DcMotor intake_motor;
     private static DcMotorEx slide_motor;
     private static Servo bucket, duckL, duckR;
+    private String className = this.getClass().getSimpleName().toLowerCase();
+    public boolean RedAlliance = true;
 
     double MAX_INTAKE_POWER = 0.6;
 
@@ -183,6 +185,8 @@ public class RRMech_Teleop extends LinearOpMode {
         boolean[] dLeftPrev = new boolean[]{false, false};
         boolean[] dRightPrev = new boolean[]{false, false};
         boolean[] guidePrev = new boolean[]{false, false};
+        boolean[] optionsPrev = new boolean[]{false, false};
+
 
         final double DUCK_STOP = 0.5;
         final double MAX_DUCK_SPEED = 0.5;
@@ -219,7 +223,7 @@ public class RRMech_Teleop extends LinearOpMode {
         double now;
         double deltaT;
 
-        double colorDist=0, sideDist=0;
+        double colorDist=0, colorUpperDist=0;
 
         if (enableCSVLogging) {
             // Enable debug logging
@@ -273,11 +277,14 @@ public class RRMech_Teleop extends LinearOpMode {
         duckR = robot.duckR;
         bucket = robot.bucket;
 
+        if (className.contains("blue")) { RedAlliance = false; }
+
         // Setup tapeMeasure object
-        tape.init(this, robot, gamepad2);
+        tape.init(this, robot, gamepad2, RedAlliance);
         tape.setPosition(tape.TAPE_DRIVE);
 
         // Wait for the game to start (driver presses PLAY)
+        telemetry.addData("Alliance:", "%s", RedAlliance ? "RED" : "BLUE" );
         telemetry.addData("Status", "Waiting for start...");
         tape.telemetry( telemetry );
         telemetry.update();
@@ -448,6 +455,16 @@ public class RRMech_Teleop extends LinearOpMode {
                     backPrev[padIdx] = false;
                 }
 
+                // 'back': Toggle FOD mode
+                if (gamepad.options) {
+                    if (!optionsPrev[padIdx]) {
+                        RedAlliance = !RedAlliance;
+                        optionsPrev[padIdx] = true;
+                    }
+                } else {
+                    optionsPrev[padIdx] = false;
+                }
+
                 // 'a': Slide to drive position
                 if (gamepad.a) {
                     if (!slidePressed) {
@@ -558,9 +575,13 @@ public class RRMech_Teleop extends LinearOpMode {
                 duckRequest = 0;
             }
             prevDuckTime = now;
-            // FIXME: FIX blue/red spin direction!!!!
-            duckL.setPosition(DUCK_STOP - duckRequest);
-            duckR.setPosition(DUCK_STOP - duckRequest);
+            if( RedAlliance ) {
+                duckL.setPosition(DUCK_STOP - duckRequest);
+                duckR.setPosition(DUCK_STOP - duckRequest);
+            } else {
+                duckL.setPosition(DUCK_STOP + duckRequest);
+                duckR.setPosition(DUCK_STOP + duckRequest);
+            }
 
             // Now handle driving commands below for both gamepads.
             gamepad = gamepad1;
@@ -727,20 +748,11 @@ public class RRMech_Teleop extends LinearOpMode {
             //telemetry.addData("Bucket POS: ", bucketAllowed);
             //telemetry.addData("Heading", "%.1f", Math.toDegrees(drive.getRawExternalHeading()));
             //telemetry.addData("Stick Buttons: ", "%s, %s", gamepad1.left_stick_button, gamepad1.right_stick_button);
-            telemetry.addData("Intake Assist:", "D:%.2f, T:%.1f", colorDist, (bucketFull ? (runtime.seconds()-bucketFullTime) : (0.0)));
-            sideDist = robot.side.getDistance(DistanceUnit.CM);
-            telemetry.addData("Side Assist:", "D:%.2f", sideDist );
-            NormalizedRGBA colors = robot.side.getNormalizedColors();
-            telemetry.addLine()
-                    .addData("Red", "%.3f", colors.red)
-                    .addData("Green", "%.3f", colors.green)
-                    .addData("Blue", "%.3f", colors.blue);
+            telemetry.addData("Lower Intake Assist:", "D:%.2f, T:%.1f", colorDist, (bucketFull ? (runtime.seconds()-bucketFullTime) : (0.0)));
+            colorUpperDist = robot.colorUpper.getDistance(DistanceUnit.CM);
+            telemetry.addData("Side Assist:", "D:%.2f", colorUpperDist );
+            telemetry.addData("Alliance:", "%s", RedAlliance ? "RED" : "BLUE" );
             tape.telemetry( telemetry );
-            //if(false) {
-            //    telemetry.addData("Some message 1", "");
-            //} else {
-            //    telemetry.addData("Some message 2", "");
-            //}
             telemetry.update();
         }
 

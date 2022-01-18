@@ -83,7 +83,7 @@ public class Red_Ref_Auto extends LinearOpMode {
         // Init the robot and subsystems.  Set Roadrunner timeout to 0.25s to save some time.
         robot.init(hardwareMap,0.5);
         robot.initAutonomous(this);
-        tape.init(this, robot, gamepad2);
+        tape.init(this, robot, gamepad2, true);
         tape.setPosition(tape.TAPE_AUTO);
         robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 

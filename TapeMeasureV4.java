@@ -44,6 +44,7 @@ public class TapeMeasureV4 {
     static final int TAPE_SCORE_BLUE = 6;
     private static int specialTapeRequest = NONE;
     private static Gamepad gamepad;
+    private static boolean RedAlliance = true;
 
     private static final int HGT = 0;
     private static final int ROT = 1;
@@ -97,10 +98,11 @@ public class TapeMeasureV4 {
         tapeHeight.setPosition(targTapeHeight);
     }
 
-    public void init(LinearOpMode i_lOpMode, RRMechBot i_robot, Gamepad i_gamepad) {
+    public void init(LinearOpMode i_lOpMode, RRMechBot i_robot, Gamepad i_gamepad, boolean i_red) {
         gamepad = i_gamepad;
         lOpMode = i_lOpMode;
         robot = i_robot;
+        RedAlliance = i_red;
         tapeHeight = robot.tapeHeight;
         tapeRotation = robot.tapeRotation;
         tapeLength_motor = robot.tapeLength_motor;
@@ -164,7 +166,11 @@ public class TapeMeasureV4 {
         if (gamepad.x) {
             if (!xPrev) {
                 xPrev = true;
-                setPosition(TAPE_SCORE_RED);
+                if( RedAlliance ) {
+                    setPosition(TAPE_SCORE_RED);
+                } else {
+                    setPosition(TAPE_SCORE_BLUE);
+                }
             }
         } else {
             xPrev = false;
