@@ -2,6 +2,7 @@ package Inception.FreightFrenzy;
 
 import android.graphics.Color;
 
+import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -79,6 +80,10 @@ public class TapeMeasureV4 {
     private static double dLeftPrevTime  = 0;
     private static double dRightPrevTime = 0;
 
+    NanoClock localClock = NanoClock.system();
+    double now = localClock.seconds();
+    double safeLockout = 0;
+
     /* Constructor */
     public TapeMeasureV4() {
     }
@@ -96,6 +101,7 @@ public class TapeMeasureV4 {
         targTapeRotation=posTargets[position][ROT];
         tapeRotation.setPosition(targTapeRotation);
         tapeHeight.setPosition(targTapeHeight);
+        safeLockout = localClock.seconds() + 2.0;
     }
 
     public void init(LinearOpMode i_lOpMode, RRMechBot i_robot, Gamepad i_gamepad, boolean i_red) {
@@ -116,6 +122,26 @@ public class TapeMeasureV4 {
         }
     }
 
+    public boolean SafePosition( ) {
+        // Check if height and rotation are within reasonable distances of the DRIVE position
+        // Check for a time-based lock-out
+        double deltaH = Math.abs(tapeHeight.getPosition() - posTargets[TAPE_DRIVE][HGT]);
+        double deltaR = Math.abs(tapeRotation.getPosition() - posTargets[TAPE_DRIVE][ROT]);
+
+        if(safeLockout > localClock.seconds()) {
+            return(false);
+        }
+
+        if( deltaH > 0.03) {
+            return(false);
+        }
+
+        if(deltaR > 0.03) {
+            return(false);
+        }
+        return(true);
+    }
+
     private void TapeSpecialReqCheck() {
         if ( (gamepad.left_stick_x > 0.025) ||
              (gamepad.left_stick_y > 0.025) ||
@@ -127,9 +153,10 @@ public class TapeMeasureV4 {
         }
     }
 
-    public void ManageTape( double now ) {
+    public void ManageTape( ) {
         // TODO: Add check for unreasonable tape positions in certain drive positions
         if(tapeLength_motor != null) {
+            now  = localClock.seconds();
             // Buttons first as these may setup certain states for motion
             ManageButtons(now);
             ManageMotion(now);

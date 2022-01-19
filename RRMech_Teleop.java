@@ -101,6 +101,7 @@ public class RRMech_Teleop extends LinearOpMode {
     private static Servo bucket, duckL, duckR;
     private String className = this.getClass().getSimpleName().toLowerCase();
     public boolean RedAlliance = true;
+    private boolean intakeAssist = true;
 
     double MAX_INTAKE_POWER = 0.6;
 
@@ -386,29 +387,31 @@ public class RRMech_Teleop extends LinearOpMode {
                     bucketRequest[padIdx] = robot.bucketDrive;
                 }
 
-                // If the intake is running in forward and we're at intake level
-                if((currIntakePower > 0.0) && (slideLevel == SlideHeightTeleOp.Intake)) {
-                    // Check for an element in the bucket
-                    colorDist = robot.color.getDistance(DistanceUnit.CM);
-                    if (colorDist > 2.0) {
-                        bucketFull = false;
-                    } else {
-                        if (bucketFull == false) {
-                            bucketFullTime = runtime.seconds();
-                            bucketFull = true;
+                if(intakeAssist) {
+                    // If the intake is running in forward and we're at intake level
+                    if ((currIntakePower > 0.0) && (slideLevel == SlideHeightTeleOp.Intake)) {
+                        // Check for an element in the bucket
+                        colorDist = robot.color.getDistance(DistanceUnit.CM);
+                        if (colorDist > 2.0) {
+                            bucketFull = false;
                         } else {
-                            // If we've been full for > 0.5 seconds
-                            if ((runtime.seconds() - bucketFullTime) > 0.25) {
-                                // And we're not holding the button down
-                                if (!gamepad.right_bumper) {
-                                    // Turn the intake off
-                                    intake_motor.setPower(-intakeSet[1]);
-                                    sleep(100);
-                                    intakeIdx = 0;
-                                    intake_motor.setPower(intakeSet[intakeIdx]);
-                                    currIntakePower = intakeSet[intakeIdx];
-                                    if (robot.color.getDistance(DistanceUnit.CM) < 2.0) {
-                                        slideLevel = SlideHeightTeleOp.Drive;
+                            if (bucketFull == false) {
+                                bucketFullTime = runtime.seconds();
+                                bucketFull = true;
+                            } else {
+                                // If we've been full for > 0.25 seconds
+                                if ((runtime.seconds() - bucketFullTime) > 0.25) {
+                                    // And we're not holding the button down
+                                    if (!gamepad.right_bumper) {
+                                        // Turn the intake off
+                                        intake_motor.setPower(-intakeSet[1]);
+                                        sleep(100);
+                                        intakeIdx = 0;
+                                        intake_motor.setPower(intakeSet[intakeIdx]);
+                                        currIntakePower = intakeSet[intakeIdx];
+                                        if (robot.color.getDistance(DistanceUnit.CM) < 2.0) {
+                                            slideLevel = SlideHeightTeleOp.Drive;
+                                        }
                                     }
                                 }
                             }
@@ -461,10 +464,22 @@ public class RRMech_Teleop extends LinearOpMode {
                     backPrev[padIdx] = false;
                 }
 
-                // 'back': Toggle FOD mode
+                // 'guide' button controls Alliance and intake assist
                 if (gamepad.guide) {
                     if (!guidePrev[padIdx]) {
-                        RedAlliance = !RedAlliance;
+                        if(RedAlliance && intakeAssist) {
+                            RedAlliance = true;
+                            intakeAssist = false;
+                        } else if (RedAlliance && !intakeAssist) {
+                            RedAlliance = false;
+                            intakeAssist = true;
+                        } else if (!RedAlliance && intakeAssist) {
+                            RedAlliance = false;
+                            intakeAssist = false;
+                        } else if (!RedAlliance && !intakeAssist) {
+                            RedAlliance = true;
+                            intakeAssist = true;
+                        }
                         guidePrev[padIdx] = true;
                     }
                 } else {
@@ -556,6 +571,13 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // 'dpad left' = slow turn code below
                 // 'dpad right' = slow turn code below
+            }
+
+            // If teh tape is not in a safe position, then lock the slide to DRIVE or INTAKE
+            if(!tape.SafePosition()) {
+                if(( slideLevel != SlideHeightTeleOp.Drive) && (slideLevel != SlideHeightTeleOp.Intake)) {
+                    slideLevel = SlideHeightTeleOp.Drive;
+                }
             }
 
             // Only do this after someone has actually pressed a button.
@@ -766,7 +788,7 @@ public class RRMech_Teleop extends LinearOpMode {
             // control to the automatic mode
             drive.setMotorPowers(l_f_motor_power, l_b_motor_power, r_b_motor_power, r_f_motor_power);
 
-            tape.ManageTape( runtime.seconds() );
+            tape.ManageTape( );
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
@@ -777,10 +799,11 @@ public class RRMech_Teleop extends LinearOpMode {
             //telemetry.addData("Bucket POS: ", bucketAllowed);
             //telemetry.addData("Heading", "%.1f", Math.toDegrees(drive.getRawExternalHeading()));
             //telemetry.addData("Stick Buttons: ", "%s, %s", gamepad1.left_stick_button, gamepad1.right_stick_button);
-            telemetry.addData("Lower Intake Assist:", "D:%.2f, T:%.1f", colorDist, (bucketFull ? (runtime.seconds()-bucketFullTime) : (0.0)));
-            colorUpperDist = robot.colorUpper.getDistance(DistanceUnit.CM);
-            telemetry.addData("Side Assist:", "D:%.2f", colorUpperDist );
+            //telemetry.addData("Lower Intake Assist:", "D:%.2f, T:%.1f", colorDist, (bucketFull ? (runtime.seconds()-bucketFullTime) : (0.0)));
+            //colorUpperDist = robot.colorUpper.getDistance(DistanceUnit.CM);
+            //telemetry.addData("Side Assist:", "D:%.2f", colorUpperDist );
             telemetry.addData("Alliance:", "%s", RedAlliance ? "RED" : "BLUE" );
+            telemetry.addData("Intake Assist:", "%s", intakeAssist ? "Enabled" : "Disabled" );
             tape.telemetry( telemetry );
             telemetry.update();
         }
