@@ -209,6 +209,9 @@ public class RRMech_Teleop extends LinearOpMode {
         //final int SLIDE_INTAKE_IDX = 0, SLIDE_DRIVE_IDX = 1, SLIDE_HIGH_IDX = slideSet.length-1;
         SlideHeightTeleOp slideLevel = SlideHeightTeleOp.Drive;
         //double slideRequest=robot.slideTargetsTeleOp[slideLevel];
+        SlideHeightTeleOp prevSlideLevel = slideLevel;
+        double futureSlideTime=0;
+        double futureBucketTime=0;
 
         double prevLTrigVal=0.0;
         double prevRTrigVal=0.0;
@@ -558,25 +561,39 @@ public class RRMech_Teleop extends LinearOpMode {
             // Only do this after someone has actually pressed a button.
             if (slidePressed) {
                 // Manage the allowed and requested bucket positions.
-                // 1:1 slide
-                // if (slideRequest < SLIDE_DRIVE) {
-                // 2:1 slide
                 if (slideLevel.ordinal() > SlideHeightTeleOp.Drive.ordinal()) {
                     // We're above the drive position, pretty much anything goes here
-                    bucketAllowed = Math.min(bucketRequest[pad1], bucketRequest[pad2]);
+                    bucketAllowed = bucketRequest[pad1];
                 } else if (slideLevel == SlideHeightTeleOp.Drive) {
                     bucketAllowed = robot.bucketDrive;
                 } else {
                     bucketAllowed = robot.bucketIntake;
                 }
 
+                // DRIVE to INTAKE --> Bucket first, then slide in .1s
+                if ((prevSlideLevel == SlideHeightTeleOp.Drive) && (slideLevel == SlideHeightTeleOp.Intake)) {
+                    futureSlideTime = runtime.seconds() + .1;
+                }
+                // INTAKE to HIGHER --> Slide first, then bucket in .25s
+                if ((prevSlideLevel == SlideHeightTeleOp.Intake)) {
+                    futureBucketTime = runtime.seconds() + .25;
+                }
+
                 if (slideLevel == SlideHeightTeleOp.HighDrop) {
+                    // If we move to the HIGH Position, go fast because its a long ways away
                     robot.setSlidePositionTeleOp(slideLevel, 0.95);
                 } else {
-                    robot.setSlidePositionTeleOp(slideLevel);
+                    // If we're not waiting, move there
+                    if (futureSlideTime < runtime.seconds()) {
+                        robot.setSlidePositionTeleOp(slideLevel);
+                    }
                 }
-                bucket.setPosition(bucketAllowed);
+                // If we're not waiting, move there
+                if (futureBucketTime < runtime.seconds()) {
+                    bucket.setPosition(bucketAllowed);
+                }
             }
+            prevSlideLevel = slideLevel ;
 
             // Manage combined duck wheel on 'b' buttons
             now = runtime.seconds();
