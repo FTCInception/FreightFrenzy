@@ -89,8 +89,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
  * Reverse shooter on trigger?
  */
 
-@TeleOp(name="RedRRMech", group="Linear Opmode")
-public class RRMech_Teleop extends LinearOpMode {
+@TeleOp(name="BlueRRMech", group="Linear Opmode")
+public class BlueRRMech_Teleop extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
