@@ -34,6 +34,7 @@ import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import Inception.FreightFrenzy.RRMechBot.SlideHeight;
@@ -61,6 +62,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
  */
+@Disabled
 @Autonomous(name="Red_MultiblockTAS_Auto", group="RRMechBot")
 public class Red_MultiblockTAS_Auto extends LinearOpMode {
 

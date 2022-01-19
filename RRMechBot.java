@@ -97,7 +97,7 @@ public class RRMechBot {
             (int)(0.13 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.2 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.27*SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
-            (int)(0.5 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
+            (int)(0.53 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(1.0 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV) };
 
     public enum SlideHeightTeleOp {
@@ -115,9 +115,9 @@ public class RRMechBot {
             (int)(0.42 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(1.0 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV) };
 
-    final double bucketDump = 0.38;
-    final double bucketDrive = 0.6;
-    final double bucketIntake = 0.80;
+    final double bucketDump = 0.41;
+    final double bucketDrive = 0.64;
+    final double bucketIntake = 0.83;
 
     public BotLog logger = new BotLog();
 

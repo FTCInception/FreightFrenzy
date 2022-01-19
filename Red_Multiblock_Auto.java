@@ -390,12 +390,12 @@ public class Red_Multiblock_Auto extends LinearOpMode {
                 .addDisplacementMarker(10, () -> {
                     robot.setSlidePosition(SlideHeight.Drive);}) //Slide to drive
 
-                .addDisplacementMarker(40, () -> {
+                .addDisplacementMarker(35, () -> {
                     robot.bucket.setPosition(robot.bucketIntake); //Bucket intake
                     robot.setSlidePosition(SlideHeight.Intake); //Bucket to intake position
                 }) //Slide to drive
 
-                .addDisplacementMarker(50, () -> {
+                .addDisplacementMarker(40, () -> {
                     robot.intake_motor.setPower(.4);}) //Slide to drive
                 .build();
 
@@ -449,7 +449,7 @@ public class Red_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
                 )
-                .splineToConstantHeading(new Vector2d(56, -70), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(54, -70), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.1)
                 )
@@ -458,12 +458,12 @@ public class Red_Multiblock_Auto extends LinearOpMode {
                 .addDisplacementMarker(10, () -> {
                     robot.setSlidePosition(SlideHeight.Drive);}) //Slide to drive
 
-                .addDisplacementMarker(40, () -> {
+                .addDisplacementMarker(35, () -> {
                     robot.bucket.setPosition(robot.bucketIntake); //Bucket intake
                     robot.setSlidePosition(SlideHeight.Intake); //Bucket to intake position
                 }) //Slide to drive
 
-                .addDisplacementMarker(50, () -> {
+                .addDisplacementMarker(40, () -> {
                     robot.intake_motor.setPower(.4);}) //Slide to drive
                 .build();
 
@@ -513,11 +513,11 @@ public class Red_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
                 )
-                .splineToConstantHeading(new Vector2d(52, -71), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(50, -71), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
                 )
-                .splineToConstantHeading(new Vector2d(60, -71), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(56, -71), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.1)
                 )
@@ -525,12 +525,12 @@ public class Red_Multiblock_Auto extends LinearOpMode {
                 .addDisplacementMarker(10, () -> {
                     robot.setSlidePosition(SlideHeight.Drive);}) //Slide to drive
 
-                .addDisplacementMarker(40, () -> {
+                .addDisplacementMarker(35, () -> {
                     robot.bucket.setPosition(robot.bucketIntake); //Bucket intake
                     robot.setSlidePosition(SlideHeight.Intake); //Bucket to intake position
                 }) //Slide to drive
 
-                .addDisplacementMarker(50, () -> {
+                .addDisplacementMarker(40, () -> {
                     robot.intake_motor.setPower(.4);}) //Slide to drive
                 .build();
 
@@ -691,4 +691,3 @@ public class Red_Multiblock_Auto extends LinearOpMode {
         }
     }
 }
-

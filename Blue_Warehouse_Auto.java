@@ -315,78 +315,22 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
 
         // Drive to hub (Trucking through team market to not hit other bots)
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), true)
-                .lineToConstantHeading(new Vector2d(12,15))
-                .build();
-
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToLinearHeading(new Pose2d(12, 30, Math.toRadians(0)))
-                .build();
-
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(6,24.5))
+                .lineToLinearHeading(new Pose2d(-7,42, Math.toRadians(80)))
                 .build();
 
         //Drop Block Sequence
 
-        if(secondBlock){
-            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(5, 66, Math.toRadians(0)))
-                    .build();
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                .lineToLinearHeading(new Pose2d(5, 66, Math.toRadians(0)))
+                .build();
 
-            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(35, 70, Math.toRadians(0)))
-                    .build();
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                .lineToLinearHeading(new Pose2d(38, 74, Math.toRadians(0)))
+                .build();
 
-            //turn on intake, drive slow
-
-            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(52, 70, Math.toRadians(0)))
-                    .build();
-
-            //turn off intake, raise
-
-            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                    .lineToLinearHeading(new Pose2d(5, 70, Math.toRadians(0)))
-                    .build();
-
-            traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(0,66))
-                    .lineToLinearHeading(new Pose2d(12, 30, Math.toRadians(0)))
-                    .build();
-
-            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToConstantHeading(new Vector2d(5,26))
-                    .build();
-
-            //Drop Block Sequence
-
-            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(12, 45, Math.toRadians(0)))
-                    .build();
-
-            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(65, 45, Math.toRadians(0)))
-                    .build();
-
-        } else {
-            if (parkThroughOpening) {
-                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToLinearHeading(new Pose2d(5, 66, Math.toRadians(0)))
-                        .build();
-
-                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToLinearHeading(new Pose2d(45, 74, Math.toRadians(0)))
-                        .build();
-
-            } else {
-                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToLinearHeading(new Pose2d(0, 45 + Dy, Math.toRadians(0)))
-                        .build();
-
-                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToLinearHeading(new Pose2d(55 + Dx, 45 + Dy, Math.toRadians(0)))
-                        .build();
-            }
-        }
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                .lineToLinearHeading(new Pose2d(38, 64, Math.toRadians(0)))
+                .build();
 
         showTrajPoses( "LEVEL3", TIdx, traj ) ;
     }
@@ -394,103 +338,48 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
     private void runTrajs(Trajectory[] traj, SlideHeight level) {
         int TIdx = 0;
 
-
         robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
         CheckWait(true, 500, 0);
         robot.bucket.setPosition(robot.bucketDrive); //Reset Bucket to drive position
         CheckWait(true, 200, 0);
 
         //Pick Level based on detected team marker placement
-        robot.setSlidePosition(level, 0.6);
+        robot.setSlidePosition(level);
 
         //Drive to Hub around team marker
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
-
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
 
         //Arrive at Hub
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
 
-        robot.bucket.setPosition(.35); //Drop freight
-        CheckWait(true, 2000, 0);
-        robot.bucket.setPosition(.6); //Bucket Up
-        CheckWait(true, 0, 0);
+        robot.bucket.setPosition(robot.bucketDump); //Drop freight
+        CheckWait(true, 1000, 0);
+        robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
+        CheckWait(true, 200, 0);
 
         //Drive to park
 
-        if(secondBlock){
-            robot.drive.followTrajectoryAsync(traj[TIdx++]);
-            CheckWait(true, 0, 0);
-            if(!opModeIsActive()){ return; }
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
 
-            robot.setSlidePosition(SlideHeight.Drive); //Bucket to drive position
-            CheckWait(true, 200, 0);
+        robot.setSlidePosition(SlideHeight.Drive); //Bucket to drive position
+        CheckWait(true, 200, 0);
 
-            robot.drive.followTrajectoryAsync(traj[TIdx++]);
-            CheckWait(true, 0, 0);
-            if(!opModeIsActive()){ return; }
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
 
-            robot.bucket.setPosition(robot.bucketIntake); //Bucket intake
-            robot.setSlidePosition(SlideHeight.Intake); //Bucket to intake position
-            CheckWait(true, 500, 0);
-            robot.intake_motor.setPower(.4);
 
-            robot.drive.followTrajectoryAsync(traj[TIdx++]);
-            CheckWait(true, 0, 0);
-            if(!opModeIsActive()){ return; }
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
 
-            robot.intake_motor.setPower(-.8);
-            CheckWait(true, 100, 0);
-            robot.intake_motor.setPower(0);
-            robot.setSlidePosition(SlideHeight.HighDrop, 0.7); //Bucket to high position
-            CheckWait(true, 250, 0);
-            robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
+        robot.drive.turnAsync(Math.toRadians(180) - robot.drive.getRawExternalHeading());
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
 
-            robot.drive.followTrajectoryAsync(traj[TIdx++]);
-            CheckWait(true, 0, 0);
-            if(!opModeIsActive()){ return; }
-
-            robot.drive.followTrajectoryAsync(traj[TIdx++]);
-            CheckWait(true, 0, 0);
-            if(!opModeIsActive()){ return; }
-
-            robot.drive.followTrajectoryAsync(traj[TIdx++]);
-            CheckWait(true, 0, 0);
-            if(!opModeIsActive()){ return; }
-
-            robot.bucket.setPosition(robot.bucketDump); //Drop freight
-            CheckWait(true, 1000, 0);
-            robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
-            CheckWait(true, 200, 0);
-            robot.setSlidePosition(SlideHeight.LowDrop); //Bucket to drive position
-            CheckWait(true, 200, 0);
-
-            robot.drive.followTrajectoryAsync(traj[TIdx++]);
-            CheckWait(true, 0, 0);
-            if(!opModeIsActive()){ return; }
-
-            robot.drive.followTrajectoryAsync(traj[TIdx++]);
-            CheckWait(true, 0, 0);
-            if(!opModeIsActive()){ return; }
-
-        } else {
-            robot.drive.followTrajectoryAsync(traj[TIdx++]);
-            CheckWait(true, 0, 0);
-            if(!opModeIsActive()){ return; }
-
-            robot.setSlidePosition(SlideHeight.Drive); //Bucket to drive position
-            CheckWait(true, 200, 0);
-
-            robot.drive.followTrajectoryAsync(traj[TIdx++]);
-            CheckWait(true, 0, 0);
-            if(!opModeIsActive()){ return; }
-        }
 
     }
 }

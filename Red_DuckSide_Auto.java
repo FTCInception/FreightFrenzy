@@ -81,7 +81,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         //robot.logger.LOGLEVEL = robot.logger.LOGDEBUG ;
 
         // Init the robot and subsystems.  Set Roadrunner timeout to 0.25s to save some time.
-        robot.init(hardwareMap,0.5);
+        robot.init(hardwareMap,0.2);
         robot.initAutonomous(this);
         tape.init(this, robot, gamepad2, true);
         tape.setPosition(tape.TAPE_AUTO);
@@ -326,7 +326,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(-27.5,-22))
+                .lineToConstantHeading(new Vector2d(-29,-21))
                 .build();
 
         //Drop Block Sequence
@@ -350,30 +350,9 @@ public class Red_DuckSide_Auto extends LinearOpMode {
                 .lineToConstantHeading(new Vector2d(-60,-50))
                 .build();
 
-        if(warehousePark){
-
-            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(-30,-50+Dy, Math.toRadians(0)))
-                    .build();
-
-            if(parkThroughOpening){
-                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .splineToConstantHeading(new Vector2d(0,-70), Math.toRadians(0))
-                        .splineToConstantHeading(new Vector2d(45,-76), Math.toRadians(0))
-                        .build();
-
-            } else {
-                traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                        .lineToLinearHeading(new Pose2d(64+Dx,-46.5+Dy, Math.toRadians(0)))
-                        .build();
-            }
-        } else {
-
-            traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                    .lineToLinearHeading(new Pose2d(-63,-36, Math.toRadians(0)))
-                    .build();
-
-        }
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                .lineToLinearHeading(new Pose2d(-63,-38, Math.toRadians(270)))
+                .build();
 
         showTrajPoses( "LEVEL3", TIdx, traj ) ;
     }
@@ -428,7 +407,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         //Turn on reverse intake in case we hit the duck after we finish
 
         robot.duckR.setPosition(0.1);
-        CheckWait(true, 3000, 0);
+        CheckWait(true, 3300, 0);
         robot.duckR.setPosition(.5);
         CheckWait(true, 200, 0);
         robot.intake_motor.setPower(-.8);
@@ -442,16 +421,11 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
 
-        if(warehousePark) {
-
-            robot.drive.followTrajectoryAsync(traj[TIdx++]);
-            CheckWait(true, 0, 0);
-            if (!opModeIsActive()) {
-                return;
-            }
-        }
-
         //Turn off intake, should be parked
         robot.intake_motor.setPower(0);
+
+        robot.drive.turnAsync(Math.toRadians(180) - robot.drive.getRawExternalHeading());
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
     }
 }
