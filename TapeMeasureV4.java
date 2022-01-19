@@ -43,7 +43,7 @@ public class TapeMeasureV4 {
     static final int TAPE_ENDGAME_BLUE = 4;
     static final int TAPE_SCORE_RED = 5;
     static final int TAPE_SCORE_BLUE = 6;
-    private static int specialTapeRequest = NONE;
+    //private static int specialTapeRequest = NONE;
     private static Gamepad gamepad;
     private static boolean RedAlliance = true;
 
@@ -82,7 +82,7 @@ public class TapeMeasureV4 {
 
     NanoClock localClock = NanoClock.system();
     double now = localClock.seconds();
-    double safeLockout = 0;
+    double slideLockoutTime = 0;
 
     /* Constructor */
     public TapeMeasureV4() {
@@ -101,7 +101,11 @@ public class TapeMeasureV4 {
         targTapeRotation=posTargets[position][ROT];
         tapeRotation.setPosition(targTapeRotation);
         tapeHeight.setPosition(targTapeHeight);
-        safeLockout = localClock.seconds() + 2.0;
+        // Now prevent any slide motion out of Drive/Intake if the robot was in those positions
+        // If we lockout the slide in a higher position, it will immediately drop to Drive.
+        if((robot.slideHeight == RRMechBot.SlideHeightTeleOp.Drive) || (robot.slideHeight == RRMechBot.SlideHeightTeleOp.Intake)) {
+            slideLockoutTime = localClock.seconds() + 2.0;
+        }
     }
 
     public void init(LinearOpMode i_lOpMode, RRMechBot i_robot, Gamepad i_gamepad, boolean i_red) {
@@ -128,20 +132,21 @@ public class TapeMeasureV4 {
         double deltaH = Math.abs(tapeHeight.getPosition() - posTargets[TAPE_DRIVE][HGT]);
         double deltaR = Math.abs(tapeRotation.getPosition() - posTargets[TAPE_DRIVE][ROT]);
 
-        if(safeLockout > localClock.seconds()) {
+        if(slideLockoutTime > localClock.seconds()) {
             return(false);
         }
 
-        if( deltaH > 0.03) {
+        if( deltaH >= 0.03) {
             return(false);
         }
 
-        if(deltaR > 0.03) {
+        if(deltaR >= 0.03) {
             return(false);
         }
         return(true);
     }
 
+    /*
     private void TapeSpecialReqCheck() {
         if ( (gamepad.left_stick_x > 0.025) ||
              (gamepad.left_stick_y > 0.025) ||
@@ -152,18 +157,24 @@ public class TapeMeasureV4 {
             specialTapeRequest = NONE;
         }
     }
+    */
 
     public void ManageTape( ) {
         // TODO: Add check for unreasonable tape positions in certain drive positions
         if(tapeLength_motor != null) {
             now  = localClock.seconds();
-            // Buttons first as these may setup certain states for motion
-            ManageButtons(now);
-            ManageMotion(now);
+            if((robot.slideHeight == RRMechBot.SlideHeightTeleOp.Drive) || (robot.slideHeight == RRMechBot.SlideHeightTeleOp.Intake)) {
+                // Buttons first as these may setup certain states for motion
+                ManageButtons(now, false);
+                ManageMotion(now, false);
+            } else {
+                ManageButtons(now, true);
+                ManageMotion(now, true);
+            }
         }
     }
 
-    private void ManageButtons( double now ) {
+    private void ManageButtons( double now, boolean tapeLockOut ) {
 
         // Just for debug
         boolean debug = false;
@@ -190,7 +201,7 @@ public class TapeMeasureV4 {
         }
 
         // TODO: Choose the right presets for SCORING and make these alliance dependent
-        if (gamepad.x) {
+        if (gamepad.x && !tapeLockOut) {
             if (!xPrev) {
                 xPrev = true;
                 if( RedAlliance ) {
@@ -203,6 +214,7 @@ public class TapeMeasureV4 {
             xPrev = false;
         }
 
+        // Allow this motion in tapeLockOut to be able to get back to a safe place.
         if (gamepad.b) {
             if (!bPrev) {
                 bPrev = true;
@@ -214,80 +226,72 @@ public class TapeMeasureV4 {
             bPrev = false;
         }
 
-        double rAmount = 0.004;
-        double hAmount = 0.0025;
-        double repeat = 0.1;
-        // Use dpad and bumpers to nudge the tape a teeny little bit
-        // Add continuous hold mode?
-        if (tapeLength_motor.getCurrentPosition() > 4500) {
-            rAmount *= 0.3;
-            hAmount *= 0.6;
-        }
-        if (gamepad.dpad_up) {
-            if (!dUpPrev) {
-                targTapeHeight -= hAmount ;
-                dUpPrev = true;
-                dUpPrevTime = now;
+        if (!tapeLockOut) {
+            double rAmount = 0.004;
+            double hAmount = 0.0025;
+            double repeat = 0.1;
+            // Use dpad and bumpers to nudge the tape a teeny little bit
+            // Add continuous hold mode?
+            if (tapeLength_motor.getCurrentPosition() > 4500) {
+                rAmount *= 0.3;
+                hAmount *= 0.6;
             }
-            else if ((now - dUpPrevTime) > repeat) {
-                targTapeHeight -= hAmount ;
-                dUpPrevTime = now;
+            if (gamepad.dpad_up) {
+                if (!dUpPrev) {
+                    targTapeHeight -= hAmount;
+                    dUpPrev = true;
+                    dUpPrevTime = now;
+                } else if ((now - dUpPrevTime) > repeat) {
+                    targTapeHeight -= hAmount;
+                    dUpPrevTime = now;
+                }
+            } else {
+                dUpPrev = false;
+                dUpPrevTime = 0;
             }
-        } else {
-            dUpPrev = false;
-            dUpPrevTime = 0;
-        }
 
-        if (gamepad.dpad_down) {
-            if (!dDownPrev) {
-                targTapeHeight += hAmount ;
-                dDownPrev = true;
-                dDownPrevTime = now;
+            if (gamepad.dpad_down) {
+                if (!dDownPrev) {
+                    targTapeHeight += hAmount;
+                    dDownPrev = true;
+                    dDownPrevTime = now;
+                } else if ((now - dDownPrevTime) > repeat) {
+                    targTapeHeight += hAmount;
+                    dDownPrevTime = now;
+                }
+            } else {
+                dDownPrev = false;
+                dDownPrevTime = 0;
             }
-            else if ((now - dDownPrevTime) > repeat) {
-                targTapeHeight += hAmount ;
-                dDownPrevTime = now;
-            }
-        } else {
-            dDownPrev = false;
-            dDownPrevTime = 0;
-        }
 
-        if (gamepad.dpad_right) {
-            if (!dRightPrev) {
-                targTapeRotation -= rAmount ;
-                dRightPrev = true;
-                dRightPrevTime = now;
+            if (gamepad.dpad_right) {
+                if (!dRightPrev) {
+                    targTapeRotation -= rAmount;
+                    dRightPrev = true;
+                    dRightPrevTime = now;
+                } else if ((now - dRightPrevTime) > repeat) {
+                    targTapeRotation -= rAmount;
+                    dRightPrevTime = now;
+                }
+            } else {
+                dRightPrev = false;
+                dRightPrevTime = 0;
             }
-            else if ((now - dRightPrevTime) > repeat) {
-                targTapeRotation -= rAmount ;
-                dRightPrevTime = now;
-            }
-        } else {
-            dRightPrev = false;
-            dRightPrevTime = 0;
-        }
 
-        if (gamepad.dpad_left) {
-            if (!dLeftPrev) {
-                targTapeRotation += rAmount ;
-                dLeftPrev = true;
-                dLeftPrevTime = now;
+            if (gamepad.dpad_left) {
+                if (!dLeftPrev) {
+                    targTapeRotation += rAmount;
+                    dLeftPrev = true;
+                    dLeftPrevTime = now;
+                } else if ((now - dLeftPrevTime) > repeat) {
+                    targTapeRotation += rAmount;
+                    dLeftPrevTime = now;
+                }
+            } else {
+                dLeftPrev = false;
+                dLeftPrevTime = 0;
             }
-            else if ((now - dLeftPrevTime) > repeat) {
-                targTapeRotation += rAmount ;
-                dLeftPrevTime = now;
-            }
-        } else {
-            dLeftPrev = false;
-            dLeftPrevTime = 0;
         }
-
-        /*
-        if(isAutoOpMode()) {
-            specialTapeRequest = TAPE_AUTO;
-        }
-        */
     }
 
     private void NormalMotion() {
@@ -325,7 +329,7 @@ public class TapeMeasureV4 {
         }
     }
 
-    public void ManageMotion( double now ) {
+    public void ManageMotion( double now, boolean tapeLockOut ) {
         double currPos;
         // Make sure we start at rest
         tapeLengthReq = 0;
@@ -333,48 +337,53 @@ public class TapeMeasureV4 {
         tapeHeightReq = 0;
 
         // Check if we're trying to move manually
-        TapeSpecialReqCheck();
+        //TapeSpecialReqCheck();
+        //if (specialTapeRequest == NONE) {
+        //    NormalMotion();
+        //} else {
+        //    RequestTapePosition(specialTapeRequest);
+        //}
 
-        if (specialTapeRequest == NONE) {
-            NormalMotion();
-        } else {
-            RequestTapePosition(specialTapeRequest);
-        }
+        NormalMotion();
 
         deltaT = now - prevTime;
         prevTime = now;
 
         currPos = Math.max(0.0,(double)(tapeLength_motor.getCurrentPosition()));
-
-        //1500 is close bar code, 3000 is far
-        // Points for divisor
-        // 6.5 near TSE @ 2000
-        // 11 at wobble @ 4000
-        // 13 far TSE @ 5200 (button at 60% here)
-        tapeHeightReq *= deltaT / (divisor + Math.max(0.0,((currPos-1400)/400.0)));
-        tapeHeightReq += targTapeHeight;
-        tapeHeightReq = Math.max(0.0, Math.min(tapeHeightReq, 1.0));
-        targTapeHeight = tapeHeightReq;
-
-        // Points for divisor
-        // 8 near TSE @ 2000
-        // 15 at the wobble @ 4000
-        // 18 far TSE @ 5200 (button at 60% here)
-        tapeRotationReq *= -(deltaT / (divisor + Math.max(0.0,((currPos-1250)/325.0))));
-        tapeRotationReq += targTapeRotation;
-        tapeRotationReq = Math.max(0.00, Math.min(tapeRotationReq, 1.0));
-        targTapeRotation = tapeRotationReq;
-
         // Half power when we're close
         if ((tapeLength_motor.getCurrentPosition() < 1000.0) && (tapeLengthReq < 0.0)  ) {
             tapeLengthReq *= 0.25;
         }
-        // Now apply the power:
+        // Now apply the power.  Allow this in tapeLockOut mode to support 'b' button.
         tapeLength_motor.setPower(tapeLengthReq);
-        tapeRotation.setPosition(tapeRotationReq);
-        tapeHeight.setPosition(tapeHeightReq);
+
+        // But no manual motion
+        if(!tapeLockOut) {
+            //1500 is close bar code, 3000 is far
+            // Points for divisor
+            // 6.5 near TSE @ 2000
+            // 11 at wobble @ 4000
+            // 13 far TSE @ 5200 (button at 60% here)
+            tapeHeightReq *= deltaT / (divisor + Math.max(0.0, ((currPos - 1400) / 400.0)));
+            tapeHeightReq += targTapeHeight;
+            tapeHeightReq = Math.max(0.0, Math.min(tapeHeightReq, 1.0));
+            targTapeHeight = tapeHeightReq;
+
+            // Points for divisor
+            // 8 near TSE @ 2000
+            // 15 at the wobble @ 4000
+            // 18 far TSE @ 5200 (button at 60% here)
+            tapeRotationReq *= -(deltaT / (divisor + Math.max(0.0, ((currPos - 1250) / 325.0))));
+            tapeRotationReq += targTapeRotation;
+            tapeRotationReq = Math.max(0.00, Math.min(tapeRotationReq, 1.0));
+            targTapeRotation = tapeRotationReq;
+
+            tapeRotation.setPosition(tapeRotationReq);
+            tapeHeight.setPosition(tapeHeightReq);
+        }
     }
 
+    /*
     public void RequestTapePosition(int pos) {
         double targRot = posTargets[pos][ROT] ;
         double targHgt = posTargets[pos][HGT] ;
@@ -410,6 +419,7 @@ public class TapeMeasureV4 {
             specialTapeRequest = NONE;
         }
     }
+    */
 
     public void telemetry( Telemetry telem ) {
         if( tapeLength_motor != null ) {

@@ -119,6 +119,13 @@ public class RRMechBot {
     final double bucketDrive = 0.64;
     final double bucketIntake = 0.83;
 
+    // Old Torque servo
+    //final double bucketDump = 0.38;
+    //final double bucketDrive = 0.6;
+    //final double bucketIntake = 0.80;
+
+    public SlideHeightTeleOp slideHeight = SlideHeightTeleOp.Drive;
+
     public BotLog logger = new BotLog();
 
     /* local OpMode members. */
@@ -272,12 +279,14 @@ public class RRMechBot {
         slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         slide_motor.setPower(power);
         slide_motor.setTargetPosition(slideTargetsTeleOp[slidePos.ordinal()]);
+        slideHeight = slidePos;
     }
 
     public void setSlidePositionTeleOp(SlideHeightTeleOp slidePos){
         slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         slide_motor.setPower(SLIDE_PWR);
         slide_motor.setTargetPosition(slideTargetsTeleOp[slidePos.ordinal()]);
+        slideHeight = slidePos;
     }
 
     public void intakeStop(){
