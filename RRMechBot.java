@@ -257,21 +257,27 @@ public class RRMechBot {
     }
 
     public void setSlidePosition(SlideHeight slidePos, double power){
-        slide_motor.setTargetPosition(slideTargets[slidePos.ordinal()]);
         slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         slide_motor.setPower(power);
+        slide_motor.setTargetPosition(slideTargets[slidePos.ordinal()]);
     }
 
     public void setSlidePosition(SlideHeight slidePos){
-        slide_motor.setTargetPosition(slideTargets[slidePos.ordinal()]);
         slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         slide_motor.setPower(SLIDE_PWR);
+        slide_motor.setTargetPosition(slideTargets[slidePos.ordinal()]);
+    }
+
+    public void setSlidePositionTeleOp(SlideHeightTeleOp slidePos, double power){
+        slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        slide_motor.setPower(power);
+        slide_motor.setTargetPosition(slideTargetsTeleOp[slidePos.ordinal()]);
     }
 
     public void setSlidePositionTeleOp(SlideHeightTeleOp slidePos){
-        slide_motor.setTargetPosition(slideTargetsTeleOp[slidePos.ordinal()]);
         slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         slide_motor.setPower(SLIDE_PWR);
+        slide_motor.setTargetPosition(slideTargetsTeleOp[slidePos.ordinal()]);
     }
 
     public void intakeStop(){

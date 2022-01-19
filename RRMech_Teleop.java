@@ -570,7 +570,11 @@ public class RRMech_Teleop extends LinearOpMode {
                     bucketAllowed = robot.bucketIntake;
                 }
 
-                robot.setSlidePositionTeleOp(slideLevel);
+                if (slideLevel == SlideHeightTeleOp.HighDrop) {
+                    robot.setSlidePositionTeleOp(slideLevel, 0.95);
+                } else {
+                    robot.setSlidePositionTeleOp(slideLevel);
+                }
                 bucket.setPosition(bucketAllowed);
             }
 
