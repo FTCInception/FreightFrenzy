@@ -594,11 +594,11 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // DRIVE to INTAKE --> Bucket first, then slide in .1s
                 if ((prevSlideLevel == SlideHeightTeleOp.Drive) && (slideLevel == SlideHeightTeleOp.Intake)) {
-                    futureSlideTime = runtime.seconds() + .1;
+                    futureSlideTime = runtime.seconds() + 0.1;
                 }
                 // INTAKE to HIGHER --> Slide first, then bucket in .25s
                 if ((prevSlideLevel == SlideHeightTeleOp.Intake)) {
-                    futureBucketTime = runtime.seconds() + .25;
+                    futureBucketTime = runtime.seconds() + 0.0;
                 }
 
                 if (slideLevel == SlideHeightTeleOp.HighDrop) {
