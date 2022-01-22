@@ -132,6 +132,8 @@ public class RRMech_Teleop extends LinearOpMode {
     double bucketFullTime = 0;
     boolean bucketFull=false,prevBucketFull=false;
 
+    double aTime = 0;
+
     // Declare other variables
     public BNO055IMU initIMU(String imuName) {
 
@@ -495,7 +497,55 @@ public class RRMech_Teleop extends LinearOpMode {
                     if (!aPrev[padIdx]) {
                         slideLevel = SlideHeightTeleOp.Drive;
                         //slideRequest = slideSet[slideLevel];
+
                         aPrev[padIdx] = true;
+                        aTime = runtime.seconds();
+                    } else {
+                        double aElapsed = (runtime.seconds() - aTime);
+                        // You've been holding the 'a' button for 1 seconds, go to intake height
+                        if((aTime != 0) && (aElapsed > 1.0)) {
+
+                            slideLevel = SlideHeightTeleOp.Intake;
+                            intakeIdx = 0;
+                            intake_motor.setPower(intakeSet[intakeIdx]);
+                            currIntakePower = intakeSet[intakeIdx];
+
+                            // Now loop here until releasing 'a' button
+                            while( gamepad.a ) {
+                                aElapsed = (runtime.seconds() - aTime);
+                                // Now you've been holding for 2 seconds, try to zero out
+                                if ((aTime != 0) && (aElapsed > 2.0)) {
+
+                                    // You've been holding the 'a' button for 2 seconds
+                                    // Try to zero the lift
+                                    // Stop and switch to ENCODER mode
+                                    slide_motor.setPower(0.0);
+                                    slide_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+                                    slide_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+                                    slide_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                                    slide_motor.setPower(-0.2);
+
+                                    while (gamepad.a) {
+                                        sleep(10);
+                                    }
+
+                                    // Once the button is released, change back to position mode and set to drive
+                                    slide_motor.setPower(0.0);
+                                    slide_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                                    slide_motor.setDirection(DcMotorSimple.Direction.REVERSE);
+                                    slide_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                                    slide_motor.setTargetPosition(0);
+                                    slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                                    slide_motor.setPositionPIDFCoefficients(4.0);
+                                    slide_motor.setVelocityPIDFCoefficients(4.0, 3.5, 2.0, 12.0);
+                                }
+                            }
+
+                            slideLevel = SlideHeightTeleOp.Drive;
+
+                            aPrev[padIdx] = false;
+                            aTime = 0;
+                        }
                     }
                 } else {
                     aPrev[padIdx] = false;
@@ -555,6 +605,8 @@ public class RRMech_Teleop extends LinearOpMode {
                         if (!dDownPrev[padIdx]) {
                             slideLevel = SlideHeightTeleOp.values()[
                                     Math.max((slideLevel.ordinal() - 1), 0)];
+
+                            // Turn off Intake if you are going into intake position to avoid hooking the bucket
                             if (slideLevel == SlideHeightTeleOp.Intake ){
                                 intakeIdx = 0;
                                 intake_motor.setPower(intakeSet[intakeIdx]);
@@ -804,6 +856,7 @@ public class RRMech_Teleop extends LinearOpMode {
             //telemetry.addData("Side Assist:", "D:%.2f", colorUpperDist );
             telemetry.addData("Alliance:", "%s", RedAlliance ? "RED" : "BLUE" );
             telemetry.addData("Intake Assist:", "%s", intakeAssist ? "Enabled" : "Disabled" );
+            telemetry.addData("Drive Mode:", "%s", FOD[pad1] ? "FOD" : "Regular" );
             tape.telemetry( telemetry );
             telemetry.update();
         }
