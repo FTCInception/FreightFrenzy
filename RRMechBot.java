@@ -289,6 +289,16 @@ public class RRMechBot {
         slideHeight = slidePos;
     }
 
+    public void nudgeSlidePositionTeleOp( int amount ) {
+        if((slideHeight != SlideHeightTeleOp.Drive ) && (slideHeight != SlideHeightTeleOp.Intake )) {
+            slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            slide_motor.setPower(SLIDE_PWR);
+            slide_motor.getCurrentPosition();
+            int tgtPos = Math.min(slideTargetsTeleOp[SlideHeightTeleOp.HighDrop.ordinal()],Math.max(slideTargetsTeleOp[SlideHeightTeleOp.Drive.ordinal()],(slide_motor.getCurrentPosition() + amount)));
+            slide_motor.setTargetPosition(tgtPos);
+        }
+    }
+
     public void intakeStop(){
         intake_motor.setPower(0.0);
         intake_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);

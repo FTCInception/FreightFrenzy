@@ -89,8 +89,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
  * Reverse shooter on trigger?
  */
 
-@TeleOp(name="BlueRRMech", group="Linear Opmode")
-public class BlueRRMech_Teleop extends LinearOpMode {
+@TeleOp(name="RedRRMech_MJ", group="Linear Opmode")
+public class RRMech_Teleop_MJ extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -101,7 +101,7 @@ public class BlueRRMech_Teleop extends LinearOpMode {
     private static Servo bucket, duckL, duckR;
     private String className = this.getClass().getSimpleName().toLowerCase();
     public boolean RedAlliance = true;
-    private boolean intakeAssist = true;
+    private boolean intakeAssist = false;
     double intakeWait = 0.25;
 
     // Now in the intakeSet array
@@ -202,7 +202,7 @@ public class BlueRRMech_Teleop extends LinearOpMode {
         double[] bucketRequest = {robot.bucketDrive, robot.bucketDrive};
         double bucketAllowed = robot.bucketDrive;
 
-        double[] intakeSet = {0.0, 0.6};
+        double[] intakeSet = {0.0, 0.75};
         int intakeIdx=0;
         double currIntakePower = 0.0;
 

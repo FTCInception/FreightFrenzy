@@ -102,8 +102,10 @@ public class RRMech_Teleop extends LinearOpMode {
     private String className = this.getClass().getSimpleName().toLowerCase();
     public boolean RedAlliance = true;
     private boolean intakeAssist = true;
+    double intakeWait = 0.25;
 
-    double MAX_INTAKE_POWER = 0.6;
+    // Now in the intakeSet array
+    //double MAX_INTAKE_POWER = 0.6;
 
     //private BotLog logger = new BotLog();
     private boolean enableCSVLogging = false;
@@ -200,7 +202,7 @@ public class RRMech_Teleop extends LinearOpMode {
         double[] bucketRequest = {robot.bucketDrive, robot.bucketDrive};
         double bucketAllowed = robot.bucketDrive;
 
-        double[] intakeSet = {0.0, MAX_INTAKE_POWER};
+        double[] intakeSet = {0.0, 0.6};
         int intakeIdx=0;
         double currIntakePower = 0.0;
 
@@ -401,8 +403,8 @@ public class RRMech_Teleop extends LinearOpMode {
                                 bucketFullTime = runtime.seconds();
                                 bucketFull = true;
                             } else {
-                                // If we've been full for > 0.25 seconds
-                                if ((runtime.seconds() - bucketFullTime) > 0.25) {
+                                // If we've been full for > intakeWait seconds
+                                if ((runtime.seconds() - bucketFullTime) > intakeWait) {
                                     // And we're not holding the button down
                                     if (!gamepad.right_bumper) {
                                         // Turn the intake off
@@ -553,10 +555,23 @@ public class RRMech_Teleop extends LinearOpMode {
 
                 // gamped 'b' is combined duck wheel managed below
 
-                // 'x': Speed toggle
+                // 'x': Speed intake toggle
                 if (gamepad.x) {
                     if (!xPrev[padIdx]) {
-                        speedIdx[padIdx] = (int)( (speedIdx[padIdx] + 1) % speedModifier.length);
+                        //speedIdx[padIdx] = (int)( (speedIdx[padIdx] + 1) % speedModifier.length);
+                        if (( intakeSet[1] == 0.6) && (intakeWait == 0.25)) {
+                            intakeSet[1] = 0.75;
+                            intakeWait = 0.5;
+                        } else if (( intakeSet[1] == 0.75) && (intakeWait == 0.5)) {
+                            intakeSet[1] =  0.75;
+                            intakeWait = 0.25;
+                        } else if (( intakeSet[1] == 0.75) && (intakeWait == 0.25)) {
+                            intakeSet[1] =  0.6;
+                            intakeWait = 0.25;
+                        } else if (( intakeSet[1] == 0.6) && (intakeWait == 0.25)) {
+                            intakeSet[1] =  0.75;
+                            intakeWait = 0.5;
+                        }
                         xPrev[padIdx] = true;
                     }
                 } else {
@@ -854,10 +869,14 @@ public class RRMech_Teleop extends LinearOpMode {
             //telemetry.addData("Lower Intake Assist:", "D:%.2f, T:%.1f", colorDist, (bucketFull ? (runtime.seconds()-bucketFullTime) : (0.0)));
             //colorUpperDist = robot.colorUpper.getDistance(DistanceUnit.CM);
             //telemetry.addData("Side Assist:", "D:%.2f", colorUpperDist );
+            tape.telemetry( telemetry );
             telemetry.addData("Alliance:", "%s", RedAlliance ? "RED" : "BLUE" );
             telemetry.addData("Intake Assist:", "%s", intakeAssist ? "Enabled" : "Disabled" );
+            if( intakeAssist ) {
+                telemetry.addData("Intake Delay:", "%s", (intakeWait == 0.25) ? "Fast" : "Slow");
+            }
+            telemetry.addData("Intake Power:", "%s", (intakeSet[1] > 0.7) ? "High" : "Low" );
             telemetry.addData("Drive Mode:", "%s", FOD[pad1] ? "FOD" : "Regular" );
-            tape.telemetry( telemetry );
             telemetry.update();
         }
 
