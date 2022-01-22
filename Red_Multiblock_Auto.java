@@ -35,9 +35,9 @@ import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.sun.tools.javac.comp.Check;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 import Inception.FreightFrenzy.RRMechBot.SlideHeight;
 
@@ -91,6 +91,8 @@ public class Red_Multiblock_Auto extends LinearOpMode {
 
     double bucketFullTime = 0;
     boolean bucketFull = false;
+
+    double maxAngleDelta = 10.0, imu_RR_offset = Math.toRadians(90.0), abortTurn = 180.0;
 
     @Override
     public void runOpMode() {
@@ -322,9 +324,10 @@ public class Red_Multiblock_Auto extends LinearOpMode {
                         // If we've been full for > 0.25 seconds
                         if ((localClock.seconds() - bucketFullTime) > 0.25) {
                             // Turn the intake off, raise the bucket
-                            robot.intake_motor.setPower(0);
                             robot.bucket.setPosition(robot.bucketDrive);
-                            robot.setSlidePosition(SlideHeight.Drive);
+                            robot.setSlidePosition(SlideHeight.MidDrop);
+                            sleep(100);
+                            robot.intake_motor.setPower(0);
                         }
                     }
                 }
@@ -350,13 +353,15 @@ public class Red_Multiblock_Auto extends LinearOpMode {
 
     private void buildTrajs(Trajectory[] traj) {
         int TIdx = 0;
+        double scale_2Block = 0.7;
         // Starting X,Y = 4,-63
 
         // Drive to hub (Trucking through team market to not hit other bots)
+        // First trip to Hub
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), true)
                 .lineToLinearHeading(new Pose2d(-7,-42, Math.toRadians(280)),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*2.5)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*2.5*scale_2Block)
                 )
 
                 .addDisplacementMarker(.90,0,() -> {
@@ -365,68 +370,64 @@ public class Red_Multiblock_Auto extends LinearOpMode {
 
                 .build();
 
-        //Drop Block Sequence
-
+        // First trip to warehouse
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
                 .splineToSplineHeading(new Pose2d(0, -65, Math.toRadians(0)), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scale_2Block)
                 )
                 .splineToConstantHeading(new Vector2d(8, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scale_2Block)
                 )
 
                 .splineToConstantHeading(new Vector2d(46, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scale_2Block)
                 )
 
-                .splineToConstantHeading(new Vector2d(52, -69), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(54, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.1)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.1*scale_2Block)
                 )
 
                 .addDisplacementMarker(10, () -> {
                     robot.setSlidePosition(SlideHeight.Drive);}) //Slide to drive
 
                 .addDisplacementMarker(35, () -> {
-                    robot.bucket.setPosition(robot.bucketIntake); //Bucket intake
-                    robot.setSlidePosition(SlideHeight.Intake); //Bucket to intake position
-                }) //Slide to drive
+                    robot.bucket.setPosition(robot.bucketIntake); // Bucket to intake position
+                    robot.setSlidePosition(SlideHeight.Intake);   // Slide to intake
+                })
 
                 .addDisplacementMarker(40, () -> {
-                    robot.intake_motor.setPower(.4);}) //Slide to drive
+                    robot.intake_motor.setPower(0.6);}) // Turn on intake
                 .build();
 
-        //turn on intake, drive slow
-
-        //turn off intake, go to drive
-
+        // Second trip to Hub
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
                 .splineToConstantHeading(new Vector2d(12, -69), Math.toRadians(180),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scale_2Block)
                 )
                 .splineToConstantHeading(new Vector2d(0, -65), Math.toRadians(180),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scale_2Block)
                 )
-                .splineToSplineHeading(new Pose2d(-6,-43, Math.toRadians(280)), Math.toRadians(100),
+                .splineToSplineHeading(new Pose2d(-5,-43, Math.toRadians(280)), Math.toRadians(100),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scale_2Block)
                 )
 
                 .addDisplacementMarker(20, () -> {
                     robot.setSlidePosition(SlideHeight.HighDrop);}) //Slide to high drop
 
-                .addDisplacementMarker(.05,0,() -> {
-                    robot.intake_motor.setPower(-0.6); //Drop freight
+                .addDisplacementMarker(0.05,0,() -> {
+                    robot.intake_motor.setPower(-0.6); // Reverse intake
                 })
 
-                .addDisplacementMarker(.1,0,() -> {
-                    robot.intake_motor.setPower(0); //Drop freight
-                })
+                //.addDisplacementMarker(0.5,0,() -> {
+                //    robot.intake_motor.setPower(0); // Stop Intake
+                //})
 
                 .addDisplacementMarker(.95,0,() -> {
                     robot.bucket.setPosition(robot.bucketDump); //Drop freight
@@ -434,24 +435,23 @@ public class Red_Multiblock_Auto extends LinearOpMode {
 
                 .build();
 
-        //Drop Block Sequence
-
+        // Second trip to warehouse
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
                 .splineToSplineHeading(new Pose2d(0, -66, Math.toRadians(0)), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scale_2Block)
                 )
                 .splineToConstantHeading(new Vector2d(10, -70), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scale_2Block)
                 )
                 .splineToConstantHeading(new Vector2d(48, -70), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scale_2Block)
                 )
-                .splineToConstantHeading(new Vector2d(54, -70), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(56, -70), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.1)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.1*scale_2Block)
                 )
 
 
@@ -459,42 +459,39 @@ public class Red_Multiblock_Auto extends LinearOpMode {
                     robot.setSlidePosition(SlideHeight.Drive);}) //Slide to drive
 
                 .addDisplacementMarker(35, () -> {
-                    robot.bucket.setPosition(robot.bucketIntake); //Bucket intake
-                    robot.setSlidePosition(SlideHeight.Intake); //Bucket to intake position
-                }) //Slide to drive
+                    robot.bucket.setPosition(robot.bucketIntake); // Bucket to intake position
+                    robot.setSlidePosition(SlideHeight.Intake);   // Slide to intake
+                })
 
                 .addDisplacementMarker(40, () -> {
-                    robot.intake_motor.setPower(.4);}) //Slide to drive
+                    robot.intake_motor.setPower(0.6);}) // Turn on intake
                 .build();
 
-        //turn on intake, drive slow
-
-        //turn off intake, go to drive
-
+        // Third trip to Hub
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
                 .splineToConstantHeading(new Vector2d(8, -70), Math.toRadians(180),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scale_2Block)
                 )
                 .splineToConstantHeading(new Vector2d(0, -65), Math.toRadians(180),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scale_2Block)
                 )
-                .splineToSplineHeading(new Pose2d(-4,-44, Math.toRadians(280)), Math.toRadians(100),
+                .splineToSplineHeading(new Pose2d(-3,-44, Math.toRadians(280)), Math.toRadians(100),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scale_2Block)
                 )
 
                 .addDisplacementMarker(20, () -> {
                     robot.setSlidePosition(SlideHeight.HighDrop);}) //Slide to high drop
 
-                .addDisplacementMarker(.05,0,() -> {
-                    robot.intake_motor.setPower(-0.6); //Drop freight
+                .addDisplacementMarker(0.05,0,() -> {
+                    robot.intake_motor.setPower(-0.6); // Reverse intake
                 })
 
-                .addDisplacementMarker(.1,0,() -> {
-                    robot.intake_motor.setPower(0); //Drop freight
-                })
+                //.addDisplacementMarker(0.5,0,() -> {
+                //    robot.intake_motor.setPower(0); // Stop Intake
+                //})
 
                 .addDisplacementMarker(.95,0,() -> {
                     robot.bucket.setPosition(robot.bucketDump); //Drop freight
@@ -502,81 +499,19 @@ public class Red_Multiblock_Auto extends LinearOpMode {
 
                 .build();
 
-        //Drop Block Sequence
-
+        // Parking trip
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .splineToSplineHeading(new Pose2d(0, -66, Math.toRadians(0)), Math.toRadians(0),
+                .splineToSplineHeading(new Pose2d(0, -67, Math.toRadians(0)), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scale_2Block)
                 )
-                .splineToConstantHeading(new Vector2d(10, -71), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(12, -71), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
-                )
-                .splineToConstantHeading(new Vector2d(50, -71), Math.toRadians(0),
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.6*scale_2Block)
                 )
                 .splineToConstantHeading(new Vector2d(56, -71), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.1)
-                )
-
-                .addDisplacementMarker(10, () -> {
-                    robot.setSlidePosition(SlideHeight.Drive);}) //Slide to drive
-
-                .addDisplacementMarker(35, () -> {
-                    robot.bucket.setPosition(robot.bucketIntake); //Bucket intake
-                    robot.setSlidePosition(SlideHeight.Intake); //Bucket to intake position
-                }) //Slide to drive
-
-                .addDisplacementMarker(40, () -> {
-                    robot.intake_motor.setPower(.4);}) //Slide to drive
-                .build();
-
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .splineToConstantHeading(new Vector2d(8, -71), Math.toRadians(180),
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
-                )
-                .splineToConstantHeading(new Vector2d(0, -66), Math.toRadians(180),
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
-                )
-                .splineToSplineHeading(new Pose2d(-2,-44, Math.toRadians(275)), Math.toRadians(95),
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
-                )
-
-                .addDisplacementMarker(20, () -> {
-                    robot.setSlidePosition(SlideHeight.HighDrop);}) //Slide to high drop
-
-                .addDisplacementMarker(.05,0,() -> {
-                    robot.intake_motor.setPower(-0.6); //Drop freight
-                })
-
-                .addDisplacementMarker(.1,0,() -> {
-                    robot.intake_motor.setPower(0); //Drop freight
-                })
-
-                .addDisplacementMarker(.95,0,() -> {
-                    robot.bucket.setPosition(robot.bucketDump); //Drop freight
-                })
-
-                .build();
-
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .splineToSplineHeading(new Pose2d(0, -66, Math.toRadians(0)), Math.toRadians(0),
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
-                )
-                .splineToConstantHeading(new Vector2d(10, -72), Math.toRadians(0),
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.6)
-                )
-                .splineToConstantHeading(new Vector2d(54, -72), Math.toRadians(0),
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*2)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*2*scale_2Block)
                 )
 
                 .addDisplacementMarker(10, () -> {
@@ -601,16 +536,16 @@ public class Red_Multiblock_Auto extends LinearOpMode {
         Pose2d foo = robot.drive.getPoseEstimate();
         robot.logger.logD("foo:",String.format("%s, Idx:%d, X: %.2f, Y:%.2f, H:%.2f", foo, -1, foo.getX(), foo.getY(), Math.toDegrees(foo.getHeading())));
 
-
-        //Arrive at Hub
+        // First trip to hub
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
 
-        CheckWait(true, 50, 0);
+        CheckWait(true, 300, 0);
         robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
         CheckWait(true, 0, 0);
 
+        // First trip to warehouse
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
         if (!opModeIsActive()) {
@@ -618,24 +553,35 @@ public class Red_Multiblock_Auto extends LinearOpMode {
         }
         //Slide is set to drive during above motion
 
-        if (robot.color.getDistance(DistanceUnit.CM) > 2.0) {
-            CheckWait(true, 700, 0);
-            robot.intake_motor.setPower(0);
-            robot.bucket.setPosition(robot.bucketDrive);
-            robot.setSlidePosition(SlideHeight.Drive);
+        // If something bad happened and we are really twisted, stop
+        if(tooTwisted(traj[TIdx-1], imu_RR_offset, maxAngleDelta)){
+            return;
         }
 
+        if (robot.color.getDistance(DistanceUnit.CM) > 2.0) {
+            CheckWait(true, 800, 0);
+            robot.intake_motor.setPower(0);
+            robot.bucket.setPosition(robot.bucketDrive);
+            robot.setSlidePosition(SlideHeight.MidDrop);
+        }
+
+        // Check if we have 2 elements
+        if(doubleElement(abortTurn)) {
+            return;
+        }
+
+        // Second trip to hub
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
         if (!opModeIsActive()) {
             return;
         }
 
-        CheckWait(true, 50, 0);
+        CheckWait(true, 300, 0);
         robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
         CheckWait(true, 0, 0);
 
-
+        // Second trip to warehouse
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
         if (!opModeIsActive()) {
@@ -643,51 +589,76 @@ public class Red_Multiblock_Auto extends LinearOpMode {
         }
         //Slide is set to drive during above motion
 
-
-        if (robot.color.getDistance(DistanceUnit.CM) > 2.0) {
-            CheckWait(true, 700, 0);
-            robot.intake_motor.setPower(0);
-            robot.bucket.setPosition(robot.bucketDrive);
-            robot.setSlidePosition(SlideHeight.Drive);
-        }
-
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if (!opModeIsActive()) {
-            return;
-        }
-
-        CheckWait(true, 50, 0);
-        robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
-        CheckWait(true, 0, 0);
-
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if (!opModeIsActive()) {
+        // If something bad happened and we are really twisted, stop
+        if(tooTwisted(traj[TIdx-1], imu_RR_offset, maxAngleDelta)){
             return;
         }
 
         if (robot.color.getDistance(DistanceUnit.CM) > 2.0) {
-            CheckWait(true, 900, 0);
+            CheckWait(true, 800, 0);
             robot.intake_motor.setPower(0);
             robot.bucket.setPosition(robot.bucketDrive);
-            robot.setSlidePosition(SlideHeight.Drive);
+            robot.setSlidePosition(SlideHeight.MidDrop);
         }
 
+        // Check if we have 2 elements
+        if(doubleElement(abortTurn)) {
+            return;
+        }
+
+        // Third trip to hub
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
         if (!opModeIsActive()) {
             return;
         }
 
-        CheckWait(true, 50, 0);
+        CheckWait(true, 300, 0);
         robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
         CheckWait(true, 0, 0);
 
+        // Parking trip
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
         if (!opModeIsActive()) {
             return;
         }
+    }
+
+    private boolean doubleElement(double degrees) {
+        // We picked up two elements, better stop and drop
+        if (robot.colorUpper.getDistance(DistanceUnit.CM) < 2.0) {
+            robot.intake_motor.setPower(0);
+            CheckWait(true, 250, 0);
+            robot.bucket.setPosition(robot.bucketDrive);
+            robot.setSlidePosition(SlideHeight.Drive);
+            CheckWait(true, 500, 0);
+            robot.drive.turnAsync(Math.toRadians(degrees));
+            CheckWait(true, 0, 0);
+            robot.setSlidePosition(SlideHeight.LowDrop);
+            CheckWait(true, 500, 0);
+            robot.bucket.setPosition(robot.bucketDump);
+            CheckWait(true, 1000, 0);
+            robot.bucket.setPosition(robot.bucketDrive);
+            CheckWait(true, 500, 0);
+            robot.setSlidePosition(SlideHeight.Drive);
+            CheckWait(true, 500, 0);
+            return(true);
+        }
+        return(false);
+    }
+
+    private boolean tooTwisted(Trajectory traj, double imu_offset, double limit) {
+        double angleDelta=0;
+
+        // If something bad happened and we are really twisted, stop
+        angleDelta = Math.abs(Math.toDegrees(AngleUnit.normalizeRadians((robot.drive.getRawExternalHeading()-imu_offset) - traj.end().getHeading())));
+        if(angleDelta > limit) {
+            robot.intake_motor.setPower(0);
+            robot.bucket.setPosition(robot.bucketDrive);
+            robot.setSlidePosition(SlideHeight.Drive);
+            return (true);
+        }
+        return(false);
     }
 }
