@@ -60,7 +60,7 @@ import static Inception.FreightFrenzy.drive.DriveConstants.TRACK_WIDTH;
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
  */
-@Autonomous(name="Red_Multiblock_Auto", group="RRMechBot")
+@Autonomous(name="Red_2x_Auto", group="RRMechBot")
 public class Red_Multiblock_Auto extends LinearOpMode {
 
     public SlideHeight targetLevel = SlideHeight.HighDrop;
