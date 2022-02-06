@@ -115,9 +115,9 @@ public class RRMechBot {
             (int)(0.42 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(1.0 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV) };
 
-    final double bucketDump = 0.41;
-    final double bucketDrive = 0.64;
-    final double bucketIntake = 0.83;
+    final double bucketDump = 0.395;
+    final double bucketDrive = 0.625;
+    final double bucketIntake = 0.825;
 
     // Old Torque servo
     //final double bucketDump = 0.38;
