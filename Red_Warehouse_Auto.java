@@ -65,7 +65,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
     private TapeMeasureV4 tape = new TapeMeasureV4();
 
     // This is the starting position of the center of the robot.
-    private static final double startingX = 4.0;
+    private static final double startingX = 3.5;
     private static final double startingY = -65.0;
 
     private static boolean parkThroughOpening = true;
@@ -318,7 +318,7 @@ public class Red_Warehouse_Auto extends LinearOpMode {
 
         // Drive to hub (Trucking through team market to not hit other bots)
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), true)
-                .lineToLinearHeading(new Pose2d(-7,-42, Math.toRadians(280)))
+                .lineToLinearHeading(new Pose2d(-7,-41.25, Math.toRadians(280)))
                 .build();
 
         //Drop Block Sequence

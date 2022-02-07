@@ -71,7 +71,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
     private static final double intake_pickup_ring = 1.0;
 
     // This is the starting position of the center of the robot.
-    private static final double startingX = 13.0;
+    private static final double startingX = 13;
     private static final double startingY = 65.0;
 
     // 1:1 slide
@@ -359,7 +359,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
         // Drive to hub (Trucking through team market to not hit other bots)
         // First trip to Hub
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), true)
-                .lineToLinearHeading(new Pose2d(-7,42, Math.toRadians(80)),
+                .lineToLinearHeading(new Pose2d(-7,41.25, Math.toRadians(80)),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*2.5*scale_2Block)
                 )
@@ -421,7 +421,13 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
                 .addDisplacementMarker(20, () -> {
                     robot.setSlidePosition(SlideHeight.HighDrop);}) //Slide to high drop
 
-                .addDisplacementMarker(0.05,0,() -> {
+                .addDisplacementMarker(0.12,0,() -> {
+                    robot.intake_motor.setPower(0);
+                    robot.bucket.setPosition(robot.bucketDrive);
+                    robot.setSlidePosition(SlideHeight.MidDrop);
+                })
+
+                .addDisplacementMarker(0.15,0,() -> {
                     robot.intake_motor.setPower(-0.6); // Reverse intake
                 })
 
@@ -485,7 +491,13 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
                 .addDisplacementMarker(20, () -> {
                     robot.setSlidePosition(SlideHeight.HighDrop);}) //Slide to high drop
 
-                .addDisplacementMarker(0.05,0,() -> {
+                .addDisplacementMarker(0.12,0,() -> {
+                    robot.intake_motor.setPower(0);
+                    robot.bucket.setPosition(robot.bucketDrive);
+                    robot.setSlidePosition(SlideHeight.MidDrop);
+                })
+
+                .addDisplacementMarker(0.15,0,() -> {
                     robot.intake_motor.setPower(-0.6); // Reverse intake
                 })
 
@@ -560,9 +572,6 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
 
         if (robot.color.getDistance(DistanceUnit.CM) > 2.0) {
             CheckWait(true, 800, 0);
-            robot.intake_motor.setPower(0);
-            robot.bucket.setPosition(robot.bucketDrive);
-            robot.setSlidePosition(SlideHeight.MidDrop);
         }
 
         // Check if we have 2 elements
@@ -596,9 +605,6 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
 
         if (robot.color.getDistance(DistanceUnit.CM) > 2.0) {
             CheckWait(true, 800, 0);
-            robot.intake_motor.setPower(0);
-            robot.bucket.setPosition(robot.bucketDrive);
-            robot.setSlidePosition(SlideHeight.MidDrop);
         }
 
         // Check if we have 2 elements

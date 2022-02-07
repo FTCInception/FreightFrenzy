@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 FIRST. All rights reserved.
+ /* Copyright (c) 2017 FIRST. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted (subject to the limitations in the disclaimer below) provided that
@@ -61,7 +61,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
     private TapeMeasureV4 tape = new TapeMeasureV4();
 
     // This is the starting position of the center of the robot.
-    private static final double startingX = 13.0;
+    private static final double startingX = 13;
     private static final double startingY = 65.0;
 
     private static boolean parkThroughOpening = true;
@@ -315,7 +315,7 @@ public class Blue_Warehouse_Auto extends LinearOpMode {
 
         // Drive to hub (Trucking through team market to not hit other bots)
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), true)
-                .lineToLinearHeading(new Pose2d(-7,42, Math.toRadians(80)))
+                .lineToLinearHeading(new Pose2d(-7,41.25, Math.toRadians(80)))
                 .build();
 
         //Drop Block Sequence

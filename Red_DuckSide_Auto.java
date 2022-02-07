@@ -62,7 +62,7 @@ public class Red_DuckSide_Auto extends LinearOpMode {
     private TapeMeasureV4 tape = new TapeMeasureV4();
 
     // This is the starting position of the center of the robot.
-    private static final double startingX = -44.0;
+    private static final double startingX = -44.5;
     private static final double startingY = -65.0;
 
     private static boolean parkThroughOpening = true;
