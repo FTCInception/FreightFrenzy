@@ -518,6 +518,11 @@ public class BlueRRMech_Teleop extends LinearOpMode {
                                 // Now you've been holding for 2 seconds, try to zero out
                                 if ((aTime != 0) && (aElapsed > 2.0)) {
 
+                                    // Go to bucketZero intake position to prevent interference with
+                                    // intake but avoid a straight down bucket
+                                    bucket.setPosition(robot.bucketZero);
+                                    sleep(250);
+
                                     // You've been holding the 'a' button for 2 seconds
                                     // Try to zero the lift
                                     // Stop and switch to ENCODER mode
@@ -525,8 +530,9 @@ public class BlueRRMech_Teleop extends LinearOpMode {
                                     slide_motor.setDirection(DcMotorSimple.Direction.REVERSE);
                                     slide_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
                                     slide_motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-                                    slide_motor.setPower(-0.2);
+                                    slide_motor.setPower(-0.25);
 
+                                    // Wait while the button is held
                                     while (gamepad.a) {
                                         sleep(10);
                                     }

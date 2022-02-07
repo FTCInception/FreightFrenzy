@@ -117,6 +117,7 @@ public class RRMechBot {
 
     final double bucketDump = 0.395;
     final double bucketDrive = 0.625;
+    final double bucketZero = 0.750;
     final double bucketIntake = 0.825;
 
     // Old Torque servo
