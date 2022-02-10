@@ -88,6 +88,10 @@ public class Red_Multiblock_Auto extends LinearOpMode {
     private IncepVision vision = new IncepVision();
     private IncepVision.MarkerPos grnLocation = IncepVision.MarkerPos.Unseen;
     private Trajectory[] trajs = new Trajectory[25];
+    Trajectory ohShootItMissedInOutOnWarehouseOneMotionPartOne = null;
+    Trajectory ohShootItMissedInOutOnWarehouseOneMotionPartTwo = null;
+    Trajectory ohShootItMissedInOutOnWarehouseTwoMotionPartOne = null;
+    Trajectory ohShootItMissedInOutOnWarehouseTwoMotionPartTwo = null;
 
     double bucketFullTime = 0;
     boolean bucketFull = false;
@@ -353,7 +357,7 @@ public class Red_Multiblock_Auto extends LinearOpMode {
 
     private void buildTrajs(Trajectory[] traj) {
         int TIdx = 0;
-        double scale_2Block = 0.7;
+        double scale_2Block = 0.77;
         // Starting X,Y = 4,-63
 
         // Drive to hub (Trucking through team market to not hit other bots)
@@ -405,7 +409,7 @@ public class Red_Multiblock_Auto extends LinearOpMode {
 
         // Second trip to Hub
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .splineToConstantHeading(new Vector2d(12, -69), Math.toRadians(180),
+                .splineToConstantHeading(new Vector2d(12, -70), Math.toRadians(180),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scale_2Block)
                 )
@@ -483,7 +487,7 @@ public class Red_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scale_2Block)
                 )
-                .splineToSplineHeading(new Pose2d(-3,-44, Math.toRadians(280)), Math.toRadians(100),
+                .splineToSplineHeading(new Pose2d(-2,-44, Math.toRadians(280)), Math.toRadians(100),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scale_2Block)
                 )
@@ -531,11 +535,28 @@ public class Red_Multiblock_Auto extends LinearOpMode {
 
                 .build();
 
+        ohShootItMissedInOutOnWarehouseOneMotionPartOne = robot.drive.trajectoryBuilder(traj[1].end())
+                .back(12)
+                .build();
+
+        ohShootItMissedInOutOnWarehouseOneMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseOneMotionPartOne.end())
+                .forward(12)
+                .build();
+
+        ohShootItMissedInOutOnWarehouseTwoMotionPartOne = robot.drive.trajectoryBuilder(traj[3].end())
+                .back(12)
+                .build();
+
+        ohShootItMissedInOutOnWarehouseTwoMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseTwoMotionPartOne.end())
+                .forward(12)
+                .build();
+
         showTrajPoses( "LEVEL3", TIdx, traj ) ;
     }
 
     private void runTrajs(Trajectory[] traj, SlideHeight level) {
         int TIdx = 0;
+        double credits = 30;
 
         robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
         CheckWait(true, 50, 0);
@@ -571,11 +592,46 @@ public class Red_Multiblock_Auto extends LinearOpMode {
         }
 
         if (robot.color.getDistance(DistanceUnit.CM) > 2.0) {
-            CheckWait(true, 800, 0);
+            CheckWait(true, 400, 0);
         }
 
-        // Check if we have 2 elements
+        CheckWait(true, 300, 0);
+
+        credits -= 7;
+
+        while (robot.intake_motor.getPower() > .3 && credits > 0) {
+
+            robot.drive.followTrajectoryAsync(ohShootItMissedInOutOnWarehouseOneMotionPartOne);
+            CheckWait(true, 10, 0);
+            if (!opModeIsActive()) {
+                return;
+            }
+
+            if(robot.intake_motor.getPower() > 0.3) {
+                robot.intake_motor.setPower(-0.8);
+                CheckWait(true, 200, 0);
+                robot.intake_motor.setPower(0.6);
+            }
+
+            robot.drive.followTrajectoryAsync(ohShootItMissedInOutOnWarehouseOneMotionPartTwo);
+            CheckWait(true, 10, 0);
+            if (!opModeIsActive()) {
+                return;
+            }
+
+            if (robot.color.getDistance(DistanceUnit.CM) > 2.0) {
+                CheckWait(true, 400, 0);
+            }
+
+            credits -= 2;
+
+        }
+
         if(doubleElement(abortTurn)) {
+            return;
+        }
+
+        if(credits < 10){
             return;
         }
 
@@ -604,11 +660,46 @@ public class Red_Multiblock_Auto extends LinearOpMode {
         }
 
         if (robot.color.getDistance(DistanceUnit.CM) > 2.0) {
-            CheckWait(true, 800, 0);
+            CheckWait(true, 400, 0);
         }
 
-        // Check if we have 2 elements
+        credits -= 9;
+
+        CheckWait(true, 300, 0);
+
+        while (robot.intake_motor.getPower() > .3 && credits > 0) {
+
+            robot.drive.followTrajectoryAsync(ohShootItMissedInOutOnWarehouseTwoMotionPartOne);
+            CheckWait(true, 10, 0);
+            if (!opModeIsActive()) {
+                return;
+            }
+
+            if(robot.intake_motor.getPower() > 0.3) {
+                robot.intake_motor.setPower(-0.8);
+                CheckWait(true, 200, 0);
+                robot.intake_motor.setPower(0.6);
+            }
+
+            robot.drive.followTrajectoryAsync(ohShootItMissedInOutOnWarehouseTwoMotionPartTwo);
+            CheckWait(true, 10, 0);
+            if (!opModeIsActive()) {
+                return;
+            }
+
+            if (robot.color.getDistance(DistanceUnit.CM) > 2.0) {
+                CheckWait(true, 400, 0);
+            }
+
+            credits -= 2;
+
+        }
+
         if(doubleElement(abortTurn)) {
+            return;
+        }
+
+        if(credits <= 10){
             return;
         }
 
