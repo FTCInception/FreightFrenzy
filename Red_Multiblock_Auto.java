@@ -91,10 +91,12 @@ public class Red_Multiblock_Auto extends LinearOpMode {
     private IncepVision vision = new IncepVision();
     private IncepVision.MarkerPos grnLocation = IncepVision.MarkerPos.Unseen;
     private Trajectory[] trajs = new Trajectory[25];
-    Trajectory ohShootItMissedInOutOnWarehouseOneMotionPartOne = null;
-    Trajectory ohShootItMissedInOutOnWarehouseOneMotionPartTwo = null;
-    Trajectory ohShootItMissedInOutOnWarehouseTwoMotionPartOne = null;
-    Trajectory ohShootItMissedInOutOnWarehouseTwoMotionPartTwo = null;
+    private Trajectory ohShootItMissedInOutOnWarehouseOneMotionPartOne = null;
+    private Trajectory ohShootItMissedInOutOnWarehouseOneMotionPartTwo = null;
+    private Trajectory ohShootItMissedInOutOnWarehouseTwoMotionPartOne = null;
+    private Trajectory ohShootItMissedInOutOnWarehouseTwoMotionPartTwo = null;
+
+
 
     double bucketFullTime = 0;
     boolean bucketFull = false;
@@ -361,10 +363,10 @@ public class Red_Multiblock_Auto extends LinearOpMode {
 
     private void buildTrajs(Trajectory[] traj) {
         int TIdx = 0;
-        double scale_2Block = 0.77;
+        double scale_2Block = 0.79;
+        double bfDistance = 8.0;
         // Starting X,Y = 4,-63
 
-        // Drive to hub (Trucking through team market to not hit other bots)
         // First trip to Hub
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), true)
                 .lineToLinearHeading(new Pose2d(-7,-41.25, Math.toRadians(280)),
@@ -540,19 +542,31 @@ public class Red_Multiblock_Auto extends LinearOpMode {
                 .build();
 
         ohShootItMissedInOutOnWarehouseOneMotionPartOne = robot.drive.trajectoryBuilder(traj[1].end())
-                .back(12)
+                .back(bfDistance,
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scale_2Block)
+                )
                 .build();
 
         ohShootItMissedInOutOnWarehouseOneMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseOneMotionPartOne.end())
-                .forward(12)
+                .forward(bfDistance,
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scale_2Block)
+                )
                 .build();
 
         ohShootItMissedInOutOnWarehouseTwoMotionPartOne = robot.drive.trajectoryBuilder(traj[3].end())
-                .back(12)
+                .back(bfDistance,
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scale_2Block)
+                )
                 .build();
 
         ohShootItMissedInOutOnWarehouseTwoMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseTwoMotionPartOne.end())
-                .forward(12)
+                .forward(bfDistance,
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scale_2Block)
+                )
                 .build();
 
         showTrajPoses( "LEVEL3", TIdx, traj ) ;
@@ -574,11 +588,13 @@ public class Red_Multiblock_Auto extends LinearOpMode {
         credits = credits - runtime.seconds();
         robot.logger.logD("Credits           :",String.format("Current: %2.2f, Elapsed: %2.2f, Credits: %2.2f", runtime.seconds(), 0.0, credits));
 
-        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], null, null, credits, 7) ;
+        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], null, null, credits, 6.1) ;
 
-        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseOneMotionPartOne, ohShootItMissedInOutOnWarehouseOneMotionPartTwo, credits, 9) ;
+        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseOneMotionPartOne, ohShootItMissedInOutOnWarehouseOneMotionPartTwo, credits, 8.0) ;
 
-        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseTwoMotionPartOne, ohShootItMissedInOutOnWarehouseTwoMotionPartTwo, credits, 9) ;
+        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseTwoMotionPartOne, ohShootItMissedInOutOnWarehouseTwoMotionPartTwo, credits, 8.0) ;
+
+        robot.logger.logD("Credits Done     :",String.format("Current: %2.2f, Elapsed: %2.2f, Credits: %2.2f", runtime.seconds(), 0.0, credits));
     }
 
     private boolean doubleElement(double degrees) {
@@ -621,7 +637,7 @@ public class Red_Multiblock_Auto extends LinearOpMode {
     private double backAndForth(Trajectory back, Trajectory forth, double credits) {
 
         double start1 = runtime.seconds();
-        double creditsNeeded = 2.0;
+        double creditsNeeded = 2.5;
 
         // Handle the simple case quickly
         if ((back == null) || (forth == null)) {
@@ -705,7 +721,7 @@ public class Red_Multiblock_Auto extends LinearOpMode {
             //Slide is set to drive during above motion
 
             // Subtract some credits
-            credits -= 8.5;
+            credits -= (runtime.seconds() - start2);
 
             // If something bad happened and we are really twisted, stop
             if(tooTwisted(warehouse, imu_RR_offset, maxAngleDelta)) {
