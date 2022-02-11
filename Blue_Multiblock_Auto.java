@@ -100,8 +100,9 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
 
     double bucketFullTime = 0;
     boolean bucketFull = false;
+    private boolean abortAuto = false;
 
-    double maxAngleDelta = 10.0, imu_RR_offset = Math.toRadians(-90.0), abortTurn = -180.0;
+    double maxAngleDelta = 10.0, imu_RR_offset = Math.toRadians(-90.0), abortTurn = 0.0;
 
     @Override
     public void runOpMode() {
@@ -237,6 +238,12 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
 
             runTrajs(trajs ,targetLevel);
 
+            if (abortAuto) {
+                robot.bucket.setPosition(robot.bucketDrive);
+                CheckWait(true, 500, 0);
+                robot.setSlidePosition(SlideHeight.Drive);
+                CheckWait(true, 500, 0);
+            }
         }
     }
 
@@ -341,7 +348,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
                 )
 
                 .addDisplacementMarker(.90,0,() -> {
-                    robot.bucket.setPosition(robot.bucketDump); //Drop freight
+                    safeBucketDump(); //Drop freight
                 })
 
                 .build();
@@ -389,6 +396,9 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
                 )
 
+                .addDisplacementMarker(10, () -> {
+                    doubleElementFollowing(abortTurn,false);}) // Emergency stop
+
                 .addDisplacementMarker(20, () -> {
                     robot.setSlidePosition(SlideHeight.HighDrop);}) //Slide to high drop
 
@@ -407,7 +417,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
                 //})
 
                 .addDisplacementMarker(.95,0,() -> {
-                    robot.bucket.setPosition(robot.bucketDump); //Drop freight
+                    safeBucketDump(); //Drop freight
                 })
 
                 .build();
@@ -455,6 +465,9 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
                 )
 
+                .addDisplacementMarker(10, () -> {
+                    doubleElementFollowing(abortTurn,false);}) // Emergency stop
+
                 .addDisplacementMarker(20, () -> {
                     robot.setSlidePosition(SlideHeight.HighDrop);}) //Slide to high drop
 
@@ -473,7 +486,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
                 //})
 
                 .addDisplacementMarker(.95,0,() -> {
-                    robot.bucket.setPosition(robot.bucketDump); //Drop freight
+                    safeBucketDump(); //Drop freight
                 })
 
                 .build();
@@ -554,20 +567,52 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
         robot.logger.logD("Credits Done     :",String.format("Current: %2.2f, Elapsed: %2.2f, Credits: %2.2f", runtime.seconds(), 0.0, credits));
     }
 
-    private boolean doubleElement(double degrees) {
+    private boolean doubleElement(double degrees, boolean test) {
+        double aVel = Math.toRadians(288*0.85);
+        double aAccel = Math.toRadians(200.0);
+
         // We picked up two elements, better stop and drop
-        if (robot.colorUpper.getDistance(DistanceUnit.CM) < 2.0) {
+        if ((robot.colorUpper.getDistance(DistanceUnit.CM) < 2.0) || test) {
             robot.intake_motor.setPower(0);
-            CheckWait(true, 250, 0);
             robot.bucket.setPosition(robot.bucketDrive);
             robot.setSlidePosition(SlideHeight.Drive);
             CheckWait(true, 500, 0);
-            robot.drive.turnAsync(Math.toRadians(degrees));
+            //robot.drive.turnAsync(Math.toRadians(degrees));
+            robot.drive.turnAsync(Math.toRadians(degrees)-robot.drive.getRawExternalHeading(), aVel, aAccel);
             CheckWait(true, 0, 0);
             robot.setSlidePosition(SlideHeight.LowDrop);
-            CheckWait(true, 500, 0);
+            CheckWait(true, 250, 0);
             robot.bucket.setPosition(robot.bucketDump);
-            CheckWait(true, 1000, 0);
+            CheckWait(true, 1500, 0);
+            robot.bucket.setPosition(robot.bucketDrive);
+            CheckWait(true, 500, 0);
+            robot.setSlidePosition(SlideHeight.Drive);
+            CheckWait(true, 500, 0);
+            return(true);
+        }
+        return(false);
+    }
+
+    private boolean doubleElementFollowing(double degrees, boolean test) {
+        double aVel = Math.toRadians(288*0.85);
+        double aAccel = Math.toRadians(200.0);
+
+        // We picked up two elements, better stop and drop
+        if ((robot.colorUpper.getDistance(DistanceUnit.CM) < 2.0) || test) {
+            abortAuto=true;
+            robot.drive.breakFollowing();
+            robot.drive.setMotorPowers(0,0,0,0);
+            robot.intake_motor.setPower(0);
+            robot.bucket.setPosition(robot.bucketDrive);
+            robot.setSlidePosition(SlideHeight.Drive);
+            CheckWait(true, 500, 0);
+            //robot.drive.turnAsync(Math.toRadians(degrees));
+            robot.drive.turnAsync(Math.toRadians(degrees)-robot.drive.getRawExternalHeading(), aVel, aAccel);
+            CheckWait(true, 0, 0);
+            robot.setSlidePosition(SlideHeight.LowDrop);
+            CheckWait(true, 250, 0);
+            robot.bucket.setPosition(robot.bucketDump);
+            CheckWait(true, 1500, 0);
             robot.bucket.setPosition(robot.bucketDrive);
             CheckWait(true, 500, 0);
             robot.setSlidePosition(SlideHeight.Drive);
@@ -596,6 +641,8 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
         double start1 = runtime.seconds();
         double creditsNeeded = 2.5;
 
+        if (!opModeIsActive() || abortAuto) { return(0); }
+
         // Handle the simple case quickly
         if ((back == null) || (forth == null)) {
             return(credits);
@@ -610,7 +657,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
             // First motion
             robot.drive.followTrajectoryAsync(back);
             CheckWait(true, 0, 0);
-            if (!opModeIsActive()) { return(0); }
+            if (!opModeIsActive() || abortAuto) { return(0); }
 
             // If we still don't have an element, try to unjam
             if(isIntaking()) {
@@ -622,7 +669,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
             // Second motion
             robot.drive.followTrajectoryAsync(forth);
             CheckWait(true, 0, 0);
-            if (!opModeIsActive()) { return(0); }
+            if (!opModeIsActive() || abortAuto) { return(0); }
 
             // TODO Do we need this?
             // If we still don't have an element, wait a little bit
@@ -645,6 +692,8 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
 
         double start1 = runtime.seconds();
 
+        if (!opModeIsActive() || abortAuto) { return(0); }
+
         // Handle simple case quickly
         if( credits < creditsNeeded ) { return(credits); }
 
@@ -653,7 +702,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
         credits = creditsNeeded + backAndForth(back, forth, (credits - creditsNeeded));
 
         // Protect against danger
-        if(doubleElement(abortTurn)) {
+        if(doubleElement(abortTurn, false)) {
             return (0);
         }
 
@@ -665,7 +714,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
             // Go to hub
             robot.drive.followTrajectoryAsync(hub);
             CheckWait(true, 0, 0);
-            if (!opModeIsActive()) { return(0); }
+            if (!opModeIsActive() || abortAuto) { return(0); }
 
             // Dump element, reset bucket
             CheckWait(true, 300, 0);
@@ -674,7 +723,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
             // Back to warehouse
             robot.drive.followTrajectoryAsync(warehouse);
             CheckWait(true, 0, 0);
-            if (!opModeIsActive()) { return(0); }
+            if (!opModeIsActive() || abortAuto) { return(0); }
             //Slide is set to drive during above motion
 
             // Subtract some credits
@@ -708,6 +757,13 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
         } else {
             return ( false ) ;
         }
+    }
 
+    private void safeBucketDump() {
+
+        if (robot.colorUpper.getDistance(DistanceUnit.CM) < 2.0) {
+            return;
+        }
+        robot.bucket.setPosition(robot.bucketDump);
     }
 }
