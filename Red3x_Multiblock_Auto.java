@@ -114,40 +114,6 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
         tape.setPosition(tape.TAPE_AUTO);
         robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
-        // We must initialize the slide position to make sure it hasn't skipped any gears
-        /* TODO
-        do {
-            if ( gamepad1.y || gamepad2.y ) {
-                // Run slide to the top
-                robot.setSlidePosition(robot.SLIDE_HIGH_IDX, robot.SLIDE_PWR);
-                sleep(3000);
-
-                //Reset Bucket to drive position
-                robot.bucket.setPosition(robot.bucketDrive);
-                sleep(1000);
-
-                // Run slide to the bottom
-                robot.setSlidePosition(robot.SLIDE_INTAKE_IDX, robot.SLIDE_PWR);
-                sleep(3000);
-                break;
-            }
-
-            if ( gamepad1.x || gamepad2.x ) {
-                break;
-            }
-
-            telemetry.addData("","");
-            telemetry.addData("Press 'Y' to init the slide limits","");
-            telemetry.addData("","");
-            telemetry.addData("DO NOT SKIP THS STEP!!","");
-            telemetry.addData("Press 'X' to skip.","");
-            telemetry.addData("DO NOT SKIP THS STEP!!","");
-            telemetry.update();
-
-        } while (!isStarted() && (!isStopRequested())) ;
-        */
-
-
         parkThroughOpening = true;
         secondBlock = false;
         option3 = true;
@@ -363,15 +329,15 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
 
     private void buildTrajs(Trajectory[] traj) {
         int TIdx = 0;
+        double scaleSpeed = 0.90;
         double bfDistance = 8.0;
-
         // Starting X,Y = 4,-63
 
         // First trip to Hub
         traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), true)
-                .lineToLinearHeading(new Pose2d(-7,-41.25, Math.toRadians(280)),
+                .lineToLinearHeading(new Pose2d(-7,-42, Math.toRadians(280)),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*2.5)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*2.5*scaleSpeed)
                 )
 
                 .addDisplacementMarker(.90,0,() -> {
@@ -382,23 +348,18 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
 
         // First trip to warehouse
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .splineToSplineHeading(new Pose2d(0, -65, Math.toRadians(0)), Math.toRadians(0),
+                .splineToSplineHeading(new Pose2d(4, -67, Math.toRadians(0)), Math.toRadians(340.0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
                 )
-                .splineToConstantHeading(new Vector2d(8, -69), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(13, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
-                )
-
-                .splineToConstantHeading(new Vector2d(46, -69), Math.toRadians(0),
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
 
-                .splineToConstantHeading(new Vector2d(54, -69), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(53, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.1)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
 
                 .addDisplacementMarker(10, () -> {
@@ -415,17 +376,17 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
 
         // Second trip to Hub
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .splineToConstantHeading(new Vector2d(12, -70), Math.toRadians(180),
+                .splineToConstantHeading(new Vector2d(13, -69), Math.toRadians(180),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
-                .splineToConstantHeading(new Vector2d(0, -65), Math.toRadians(180),
+                .splineToConstantHeading(new Vector2d(4, -67), Math.toRadians(160),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
-                .splineToSplineHeading(new Pose2d(-5,-43, Math.toRadians(280)), Math.toRadians(100),
+                .splineToSplineHeading(new Pose2d(-7,-42.5, Math.toRadians(280)), Math.toRadians(100),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
                 )
 
                 .addDisplacementMarker(20, () -> {
@@ -453,23 +414,19 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
 
         // Second trip to warehouse
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .splineToSplineHeading(new Pose2d(0, -66, Math.toRadians(0)), Math.toRadians(0),
+                .splineToSplineHeading(new Pose2d(4, -67, Math.toRadians(0)), Math.toRadians(340.0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
                 )
-                .splineToConstantHeading(new Vector2d(10, -70), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(13, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
-                )
-                .splineToConstantHeading(new Vector2d(48, -70), Math.toRadians(0),
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
-                )
-                .splineToConstantHeading(new Vector2d(56, -70), Math.toRadians(0),
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.1)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
 
+                .splineToConstantHeading(new Vector2d(55, -69), Math.toRadians(0),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
 
                 .addDisplacementMarker(10, () -> {
                     robot.setSlidePosition(SlideHeight.Drive);}) //Slide to drive
@@ -485,17 +442,17 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
 
         // Third trip to Hub
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .splineToConstantHeading(new Vector2d(8, -70), Math.toRadians(180),
+                .splineToConstantHeading(new Vector2d(13, -69), Math.toRadians(180),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
-                .splineToConstantHeading(new Vector2d(0, -65), Math.toRadians(180),
+                .splineToConstantHeading(new Vector2d(4, -67), Math.toRadians(160),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
-                .splineToSplineHeading(new Pose2d(-2,-44, Math.toRadians(280)), Math.toRadians(100),
+                .splineToSplineHeading(new Pose2d(-7,-42.5, Math.toRadians(280)), Math.toRadians(100),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
                 )
 
                 .addDisplacementMarker(20, () -> {
@@ -523,21 +480,18 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
 
         // Third trip to warehouse
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .splineToSplineHeading(new Pose2d(0, -66, Math.toRadians(0)), Math.toRadians(0),
+                .splineToSplineHeading(new Pose2d(4, -67, Math.toRadians(0)), Math.toRadians(340.0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
                 )
-                .splineToConstantHeading(new Vector2d(10, -71), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(13, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
-                .splineToConstantHeading(new Vector2d(50, -71), Math.toRadians(0),
+
+                .splineToConstantHeading(new Vector2d(57, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
-                )
-                .splineToConstantHeading(new Vector2d(58, -71), Math.toRadians(0),
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.1)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
 
                 .addDisplacementMarker(10, () -> {
@@ -552,19 +506,19 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
                     robot.intake_motor.setPower(0.6);}) // Turn on intake
                 .build();
 
-        // Fourth trip to Hub
+        // Fourth trip to the Hub
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .splineToConstantHeading(new Vector2d(8, -71), Math.toRadians(180),
+                .splineToConstantHeading(new Vector2d(13, -69), Math.toRadians(180),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
-                .splineToConstantHeading(new Vector2d(0, -66), Math.toRadians(180),
+                .splineToConstantHeading(new Vector2d(4, -67), Math.toRadians(160),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
-                .splineToSplineHeading(new Pose2d(-1,-44, Math.toRadians(275)), Math.toRadians(95),
+                .splineToSplineHeading(new Pose2d(-7,-42.5, Math.toRadians(280)), Math.toRadians(100),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
                 )
 
                 .addDisplacementMarker(20, () -> {
@@ -592,19 +546,19 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
 
         // Parking trip
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .splineToSplineHeading(new Pose2d(0, -66, Math.toRadians(0)), Math.toRadians(0),
+                .splineToSplineHeading(new Pose2d(4, -67, Math.toRadians(0)), Math.toRadians(340.0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
                 )
-                .splineToConstantHeading(new Vector2d(10, -72), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(13, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.6)
-                )
-                .splineToConstantHeading(new Vector2d(56, -72), Math.toRadians(0),
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*2)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
 
+                .splineToConstantHeading(new Vector2d(45, -69), Math.toRadians(0),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*2.0*scaleSpeed)
+                )
                 .addDisplacementMarker(10, () -> {
                     robot.setSlidePosition(SlideHeight.Drive);}) //Slide to drive
 
@@ -613,42 +567,42 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
         ohShootItMissedInOutOnWarehouseOneMotionPartOne = robot.drive.trajectoryBuilder(traj[1].end())
                 .back(bfDistance,
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
                 .build();
 
         ohShootItMissedInOutOnWarehouseOneMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseOneMotionPartOne.end())
                 .forward(bfDistance,
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
                 .build();
 
         ohShootItMissedInOutOnWarehouseTwoMotionPartOne = robot.drive.trajectoryBuilder(traj[3].end())
                 .back(bfDistance,
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
                 .build();
 
         ohShootItMissedInOutOnWarehouseTwoMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseTwoMotionPartOne.end())
                 .forward(bfDistance,
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
                 .build();
 
         ohShootItMissedInOutOnWarehouseThreeMotionPartOne = robot.drive.trajectoryBuilder(traj[5].end())
                 .back(bfDistance,
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
                 .build();
 
-        ohShootItMissedInOutOnWarehouseThreeMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseTwoMotionPartOne.end())
+        ohShootItMissedInOutOnWarehouseThreeMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseThreeMotionPartOne.end())
                 .forward(bfDistance,
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75)
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
                 .build();
 
@@ -671,13 +625,13 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
         credits = credits - runtime.seconds();
         robot.logger.logD("Credits           :",String.format("Current: %2.2f, Elapsed: %2.2f, Credits: %2.2f", runtime.seconds(), 0.0, credits));
 
-        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], null, null, credits, 5) ;
+        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], null, null, credits, 5.5) ;
 
-        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseOneMotionPartOne, ohShootItMissedInOutOnWarehouseOneMotionPartTwo, credits, 7) ;
+        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseOneMotionPartOne, ohShootItMissedInOutOnWarehouseOneMotionPartTwo, credits, 7.5) ;
 
-        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseTwoMotionPartOne, ohShootItMissedInOutOnWarehouseTwoMotionPartTwo, credits, 7) ;
+        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseTwoMotionPartOne, ohShootItMissedInOutOnWarehouseTwoMotionPartTwo, credits, 7.5) ;
 
-        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseThreeMotionPartOne, ohShootItMissedInOutOnWarehouseThreeMotionPartTwo, credits, 7) ;
+        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseThreeMotionPartOne, ohShootItMissedInOutOnWarehouseThreeMotionPartTwo, credits, 6.75) ;
 
         robot.logger.logD("Credits Done     :",String.format("Current: %2.2f, Elapsed: %2.2f, Credits: %2.2f", runtime.seconds(), 0.0, credits));
     }
@@ -722,7 +676,7 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
     private double backAndForth(Trajectory back, Trajectory forth, double credits) {
 
         double start1 = runtime.seconds();
-        double creditsNeeded = 2.0;
+        double creditsNeeded = 2.5;
 
         // Handle the simple case quickly
         if ((back == null) || (forth == null)) {
