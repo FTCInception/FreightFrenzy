@@ -35,6 +35,7 @@ import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -63,6 +64,8 @@ import static Inception.FreightFrenzy.drive.DriveConstants.TRACK_WIDTH;
 @Autonomous(name="Blue_2x_Auto", group="RRMechBot")
 public class Blue_Multiblock_Auto extends LinearOpMode {
 
+    ElapsedTime runtime = new ElapsedTime();
+
     public SlideHeight targetLevel = SlideHeight.HighDrop;
 
     private RRMechBot robot = new RRMechBot(true);
@@ -88,6 +91,10 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
     private IncepVision vision = new IncepVision();
     private IncepVision.MarkerPos grnLocation = IncepVision.MarkerPos.Unseen;
     private Trajectory[] trajs = new Trajectory[25];
+    Trajectory ohShootItMissedInOutOnWarehouseOneMotionPartOne = null;
+    Trajectory ohShootItMissedInOutOnWarehouseOneMotionPartTwo = null;
+    Trajectory ohShootItMissedInOutOnWarehouseTwoMotionPartOne = null;
+    Trajectory ohShootItMissedInOutOnWarehouseTwoMotionPartTwo = null;
 
     double bucketFullTime = 0;
     boolean bucketFull = false;
@@ -243,6 +250,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
             grnLocation = vision.getGrnLocation();
             vision.manageVisionBox(gamepad1, gamepad2);
         } while (!isStarted() && (!isStopRequested()));
+        runtime.reset();
         vision.shutdown();
 
         // TODO: Make sure the LEFT/RIGHT/UNSEEN mapping here is correct for every auto.
@@ -311,7 +319,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
             if( checkDrive ) { robot.drive.update(); }
 
             // If the intake is running in forward
-            if(robot.intake_motor.getPower() > 0.3) {
+            if(isIntaking()) {
                 // Check for an element in the bucket
                 colorDist = robot.color.getDistance(DistanceUnit.CM);
                 if (colorDist > 2.0) {
@@ -353,7 +361,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
 
     private void buildTrajs(Trajectory[] traj) {
         int TIdx = 0;
-        double scale_2Block = 0.7;
+        double scale_2Block = 0.77;
         // Starting X,Y = 4,-63
 
         // Drive to hub (Trucking through team market to not hit other bots)
@@ -405,7 +413,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
 
         // Second trip to Hub
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .splineToConstantHeading(new Vector2d(12, 69), Math.toRadians(180),
+                .splineToConstantHeading(new Vector2d(12, 70), Math.toRadians(180),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scale_2Block)
                 )
@@ -483,7 +491,7 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scale_2Block)
                 )
-                .splineToSplineHeading(new Pose2d(-3,44, Math.toRadians(80)), Math.toRadians(260),
+                .splineToSplineHeading(new Pose2d(-2,44, Math.toRadians(80)), Math.toRadians(260),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scale_2Block)
                 )
@@ -531,11 +539,28 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
 
                 .build();
 
+        ohShootItMissedInOutOnWarehouseOneMotionPartOne = robot.drive.trajectoryBuilder(traj[1].end())
+                .back(12)
+                .build();
+
+        ohShootItMissedInOutOnWarehouseOneMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseOneMotionPartOne.end())
+                .forward(12)
+                .build();
+
+        ohShootItMissedInOutOnWarehouseTwoMotionPartOne = robot.drive.trajectoryBuilder(traj[3].end())
+                .back(12)
+                .build();
+
+        ohShootItMissedInOutOnWarehouseTwoMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseTwoMotionPartOne.end())
+                .forward(12)
+                .build();
+
         showTrajPoses( "LEVEL3", TIdx, traj ) ;
     }
 
     private void runTrajs(Trajectory[] traj, SlideHeight level) {
         int TIdx = 0;
+        double credits = 30;
 
         robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
         CheckWait(true, 50, 0);
@@ -545,90 +570,15 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
         //Pick Level based on detected team marker placement
         robot.setSlidePosition(level);
 
-        Pose2d foo = robot.drive.getPoseEstimate();
-        robot.logger.logD("foo:",String.format("%s, Idx:%d, X: %.2f, Y:%.2f, H:%.2f", foo, -1, foo.getX(), foo.getY(), Math.toDegrees(foo.getHeading())));
+        // Update credits to start.  Time is reset at the very start after pressing 'play'
+        credits = credits - runtime.seconds();
+        robot.logger.logD("Credits           :",String.format("Current: %2.2f, Elapsed: %2.2f, Credits: %2.2f", runtime.seconds(), 0.0, credits));
 
-        // First trip to hub
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
+        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], null, null, credits, 7) ;
 
-        CheckWait(true, 300, 0);
-        robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
-        CheckWait(true, 0, 0);
+        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseOneMotionPartOne, ohShootItMissedInOutOnWarehouseOneMotionPartTwo, credits, 9) ;
 
-        // First trip to warehouse
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if (!opModeIsActive()) {
-            return;
-        }
-        //Slide is set to drive during above motion
-
-        // If something bad happened and we are really twisted, stop
-        if(tooTwisted(traj[TIdx-1], imu_RR_offset, maxAngleDelta)){
-            return;
-        }
-
-        if (robot.color.getDistance(DistanceUnit.CM) > 2.0) {
-            CheckWait(true, 800, 0);
-        }
-
-        // Check if we have 2 elements
-        if(doubleElement(abortTurn)) {
-            return;
-        }
-
-        // Second trip to hub
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if (!opModeIsActive()) {
-            return;
-        }
-
-        CheckWait(true, 300, 0);
-        robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
-        CheckWait(true, 0, 0);
-
-        // Second trip to warehouse
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if (!opModeIsActive()) {
-            return;
-        }
-        //Slide is set to drive during above motion
-
-        // If something bad happened and we are really twisted, stop
-        if(tooTwisted(traj[TIdx-1], imu_RR_offset, maxAngleDelta)){
-            return;
-        }
-
-        if (robot.color.getDistance(DistanceUnit.CM) > 2.0) {
-            CheckWait(true, 800, 0);
-        }
-
-        // Check if we have 2 elements
-        if(doubleElement(abortTurn)) {
-            return;
-        }
-
-        // Third trip to hub
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if (!opModeIsActive()) {
-            return;
-        }
-
-        CheckWait(true, 300, 0);
-        robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
-        CheckWait(true, 0, 0);
-
-        // Parking trip
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if (!opModeIsActive()) {
-            return;
-        }
+        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseTwoMotionPartOne, ohShootItMissedInOutOnWarehouseTwoMotionPartTwo, credits, 9) ;
     }
 
     private boolean doubleElement(double degrees) {
@@ -666,5 +616,125 @@ public class Blue_Multiblock_Auto extends LinearOpMode {
             return (true);
         }
         return(false);
+    }
+
+    private double backAndForth(Trajectory back, Trajectory forth, double credits) {
+
+        double start1 = runtime.seconds();
+        double creditsNeeded = 2.0;
+
+        // Handle the simple case quickly
+        if ((back == null) || (forth == null)) {
+            return(credits);
+        }
+
+        // Keep trying until we have an element or run out of credits
+        while (isIntaking() && (credits > creditsNeeded)) {
+
+            // Keep a timer
+            double start2 = runtime.seconds();
+
+            // First motion
+            robot.drive.followTrajectoryAsync(back);
+            CheckWait(true, 0, 0);
+            if (!opModeIsActive()) { return(0); }
+
+            // If we still don't have an element, try to unjam
+            if(isIntaking()) {
+                robot.intake_motor.setPower(-0.8);
+                CheckWait(true, 500, 0);
+                robot.intake_motor.setPower(0.6);
+            }
+
+            // Second motion
+            robot.drive.followTrajectoryAsync(forth);
+            CheckWait(true, 0, 0);
+            if (!opModeIsActive()) { return(0); }
+
+            // TODO Do we need this?
+            // If we still don't have an element, wait a little bit
+            if (isIntaking()) {
+                CheckWait(true, 300, 0);
+            }
+
+            // Update credits (based on time?)
+            // credits -= creditsNeeded;
+            credits -= runtime.seconds() - start2 ;
+        }
+
+        // Print out for debug
+        robot.logger.logD("Credits B&F       :",String.format("Current: %2.2f, Elapsed: %2.2f, Credits: %2.2f", runtime.seconds(), runtime.seconds()-start1, credits));
+
+        return(credits);
+    }
+
+    private double hubAndWarehouse(Trajectory hub, Trajectory warehouse, Trajectory back, Trajectory forth, double credits, double creditsNeeded) {
+
+        double start1 = runtime.seconds();
+
+        // Handle simple case quickly
+        if( credits < creditsNeeded ) { return(credits); }
+
+        // Save the credits we'll need to deliver, no need to back and forth if we can't make it to hub.
+        // Then add back whatever we didn't use during back and forth
+        credits = creditsNeeded + backAndForth(back, forth, (credits - creditsNeeded));
+
+        // Protect against danger
+        if(doubleElement(abortTurn)) {
+            return (0);
+        }
+
+        // If we have enough credits and we might have an element
+        if((credits > creditsNeeded) && !isIntaking()) {
+
+            double start2 = runtime.seconds();
+
+            // Go to hub
+            robot.drive.followTrajectoryAsync(hub);
+            CheckWait(true, 0, 0);
+            if (!opModeIsActive()) { return(0); }
+
+            // Dump element, reset bucket
+            CheckWait(true, 300, 0);
+            robot.bucket.setPosition(robot.bucketDrive);
+
+            // Back to warehouse
+            robot.drive.followTrajectoryAsync(warehouse);
+            CheckWait(true, 0, 0);
+            if (!opModeIsActive()) { return(0); }
+            //Slide is set to drive during above motion
+
+            // Subtract some credits
+            credits -= 8.5;
+
+            // If something bad happened and we are really twisted, stop
+            if(tooTwisted(warehouse, imu_RR_offset, maxAngleDelta)) {
+                return(0);
+            }
+
+            // Some telemetry
+            robot.logger.logD("Credits H&W Motion:",String.format("Current: %2.2f, Elapsed: %2.2f, Credits: %2.2f", runtime.seconds(), runtime.seconds()-start2, credits));
+
+            // TODO Do we need this?  Remove to save time?
+            if (isIntaking()) {
+                CheckWait(true, 400, 0);
+                // Subtract some more credits
+                credits -= 0.4;
+            }
+        }
+
+        // Some telemetry
+        robot.logger.logD("Credits H&W Total :",String.format("Current: %2.2f, Elapsed: %2.2f, Credits %2.2f", runtime.seconds(), runtime.seconds()-start1, credits));
+        return(credits);
+    }
+
+    private boolean isIntaking() {
+
+        if (robot.intake_motor.getPower() > 0.3) {
+            return ( true ) ;
+        } else {
+            return ( false ) ;
+        }
+
     }
 }
