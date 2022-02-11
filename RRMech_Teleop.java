@@ -289,7 +289,6 @@ public class RRMech_Teleop extends LinearOpMode {
 
         // Setup tapeMeasure object
         tape.init(this, robot, gamepad2, RedAlliance);
-        tape.setPosition(tape.TAPE_DRIVE);
 
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Alliance:", "%s", RedAlliance ? "RED" : "BLUE" );
@@ -303,6 +302,7 @@ public class RRMech_Teleop extends LinearOpMode {
         /*************************************************************/
 
         waitForStart();
+        tape.setPosition(tape.TAPE_DRIVE);
         runtime.reset();
         iter = 0.0;
         prt = rt = maxLag = 0.0;
