@@ -113,7 +113,7 @@ public class Red_Multiblock_Auto extends LinearOpMode {
         robot.initAutonomous(this);
         tape.init(this, robot, gamepad2, true);
         tape.setPosition(tape.TAPE_AUTO);
-        robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
+        //robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
         parkThroughOpening = true;
         secondBlock = false;
@@ -364,7 +364,7 @@ public class Red_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
 
-                .splineToConstantHeading(new Vector2d(53, -69), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(51, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
@@ -580,10 +580,12 @@ public class Red_Multiblock_Auto extends LinearOpMode {
             //robot.drive.turnAsync(Math.toRadians(degrees));
             robot.drive.turnAsync(Math.toRadians(degrees)-robot.drive.getRawExternalHeading(), aVel, aAccel);
             CheckWait(true, 0, 0);
-            robot.setSlidePosition(SlideHeight.LowDrop);
-            CheckWait(true, 250, 0);
+            robot.intake_motor.setPower(0.5);
+            robot.setSlidePosition(SlideHeight.MidDrop);
+            CheckWait(true, 500, 0);
             robot.bucket.setPosition(robot.bucketDump);
             CheckWait(true, 1500, 0);
+            robot.intake_motor.setPower(0);
             robot.bucket.setPosition(robot.bucketDrive);
             CheckWait(true, 500, 0);
             robot.setSlidePosition(SlideHeight.Drive);
@@ -609,10 +611,12 @@ public class Red_Multiblock_Auto extends LinearOpMode {
             //robot.drive.turnAsync(Math.toRadians(degrees));
             robot.drive.turnAsync(Math.toRadians(degrees)-robot.drive.getRawExternalHeading(), aVel, aAccel);
             CheckWait(true, 0, 0);
-            robot.setSlidePosition(SlideHeight.LowDrop);
-            CheckWait(true, 250, 0);
+            robot.intake_motor.setPower(0.5);
+            robot.setSlidePosition(SlideHeight.MidDrop);
+            CheckWait(true, 500, 0);
             robot.bucket.setPosition(robot.bucketDump);
             CheckWait(true, 1500, 0);
+            robot.intake_motor.setPower(0);
             robot.bucket.setPosition(robot.bucketDrive);
             CheckWait(true, 500, 0);
             robot.setSlidePosition(SlideHeight.Drive);
@@ -752,7 +756,7 @@ public class Red_Multiblock_Auto extends LinearOpMode {
 
     private boolean isIntaking() {
 
-        if (robot.intake_motor.getPower() > 0.3) {
+        if (robot.intake_motor.getPower() > 0.5) {
             return ( true ) ;
         } else {
             return ( false ) ;
