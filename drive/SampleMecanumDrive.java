@@ -78,11 +78,25 @@ public class SampleMecanumDrive extends MecanumDrive {
     private static BNO055IMU imu = null;
     private VoltageSensor batteryVoltageSensor;
 
+    public void initIMU(HardwareMap hardwareMap) {
+        // TODO: adjust the names of the following hardware devices to match your configuration
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+        imu.initialize(parameters);
+
+        // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
+        // upward (normal to the floor) using a command like the following:
+        BNO055IMUUtil.remapAxes(imu, AxesOrder.YXZ, AxesSigns.NPN);
+    }
+
     public SampleMecanumDrive(HardwareMap hardwareMap) {
         this(hardwareMap, 0.5);
     }
 
-    public SampleMecanumDrive(HardwareMap hardwareMap, double timeout) {
+    public SampleMecanumDrive(HardwareMap hardwareMap, double timeout) { this(hardwareMap,  timeout, true); }
+
+    public SampleMecanumDrive(HardwareMap hardwareMap, double timeout, boolean forceIMUInit) {
         super(kV, kA, kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
 
         follower = new HolonomicPIDVAFollower(TRANSLATIONAL_PID, TRANSLATIONAL_PID, HEADING_PID,
@@ -96,19 +110,11 @@ public class SampleMecanumDrive extends MecanumDrive {
             module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         }
 
-        imu = null;
-        if (imu == null) {
-            // TODO: adjust the names of the following hardware devices to match your configuration
-            imu = hardwareMap.get(BNO055IMU.class, "imu");
-            BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-            parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
-            imu.initialize(parameters);
-
-            // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
-            // upward (normal to the floor) using a command like the following:
-            BNO055IMUUtil.remapAxes(imu, AxesOrder.YXZ, AxesSigns.NPN);
+        if ((imu == null) || (forceIMUInit)) {
+            initIMU(hardwareMap);
         }
 
+        // TODO: adjust the names of the following hardware devices to match your configuration
         leftFront = hardwareMap.get(DcMotorEx.class, "left_front");
         leftRear = hardwareMap.get(DcMotorEx.class, "left_back");
         rightRear = hardwareMap.get(DcMotorEx.class, "right_back");

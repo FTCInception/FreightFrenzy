@@ -190,15 +190,17 @@ public class RRMechBot {
         acquireHW(ahwMap, 0.5);
     }
 
-        /* Initialize standard Hardware interfaces */
-    public void acquireHW(HardwareMap ahwMap, double driveTimeout) {
+    public void acquireHW(HardwareMap ahwMap, double driveTimeout) { acquireHW(ahwMap, driveTimeout, true); }
+
+    /* Initialize standard Hardware interfaces */
+    public void acquireHW(HardwareMap ahwMap, double driveTimeout, boolean forceIMUInit) {
         // Save reference to Hardware map
         hardwareMap = ahwMap;
 
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
-        drive = new SampleMecanumDrive(hardwareMap, driveTimeout);
+        drive = new SampleMecanumDrive(hardwareMap, driveTimeout, forceIMUInit);
 
         // TODO: Finish getting all the device mapped
         intake_motor = hardwareMap.dcMotor.get("intake_motor");
@@ -239,10 +241,14 @@ public class RRMechBot {
         init( ahwMap, 0.5);
     }
 
-    /* Initialize standard Hardware interfaces */
     public void init(HardwareMap ahwMap, double driveTimeout) {
+        init( ahwMap, driveTimeout, true);
+    }
 
-        acquireHW(ahwMap, driveTimeout);
+    /* Initialize standard Hardware interfaces */
+    public void init(HardwareMap ahwMap, double driveTimeout, boolean forceIMUInit) {
+
+        acquireHW(ahwMap, driveTimeout, forceIMUInit);
 
         // Common init for for auto and non-auto cases
         intake_motor.setPower(0.0);

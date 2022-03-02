@@ -115,7 +115,7 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
     // Mech drive related variables
     int[] speedIdx = new int[] {0, 0};
     double[] speedModifier = new double[] {0.75, 0.90};
-    boolean[] FOD = new boolean[] {false, false};
+    boolean[] FOD = new boolean[] {true, true};
     double[] forward = new double[2], strafe = new double[2], rotate = new double[2];
     double[] prevForward = new double[2], prevStrafe = new double[2], prevRotate = new double[2];
     double[] prevTime = new double[2];
@@ -129,7 +129,7 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
     double r_b_motor_power;
 
     double theta, r_speed, new_x, new_y, degrees;
-    double[] adjustAngle = {0,0};
+    double[] adjustAngle = {180.0,180.0};
 
     double bucketFullTime = 0;
     boolean bucketFull=false,prevBucketFull=false;
@@ -244,7 +244,7 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
         telemetry.update();
 
         //robot.acquireHW(hardwareMap);
-        robot.init(hardwareMap);
+        robot.init(hardwareMap, 0.5, false);
         //robot.initAutonomous(this);  // Temporary for test only
 
 
@@ -646,7 +646,7 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
                 // 'dpad right' = slow turn code below
             }
 
-            // If teh tape is not in a safe position, then lock the slide to DRIVE or INTAKE
+            // If the tape is not in a safe position, then lock the slide to DRIVE or INTAKE
             if(!tape.SafePosition()) {
                 if(( slideLevel != SlideHeightTeleOp.Drive) && (slideLevel != SlideHeightTeleOp.Intake)) {
                     slideLevel = SlideHeightTeleOp.Drive;
