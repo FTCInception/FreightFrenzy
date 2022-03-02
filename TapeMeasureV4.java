@@ -83,6 +83,7 @@ public class TapeMeasureV4 {
     NanoClock localClock = NanoClock.system();
     double now = localClock.seconds();
     double slideLockoutTime = 0;
+    double bTime = 0;
 
     /* Constructor */
     public TapeMeasureV4() {
@@ -99,13 +100,21 @@ public class TapeMeasureV4 {
     public void setPosition(int position) {
         targTapeHeight=posTargets[position][HGT];
         targTapeRotation=posTargets[position][ROT];
+
+        // If we're going to the TAPE_DRIVE position, and the tape isn't already in position
+        if ((position == TAPE_DRIVE) && ((tapeRotation.getPosition() != targTapeRotation) || (tapeHeight.getPosition() != targTapeHeight))) {
+            // Prevent any slide motion out of Drive/Intake if the robot was in those positions
+            // If we lockout the slide in a higher position, it will immediately drop to Drive
+            // We don't want to force the robot to Drive position if at a higher position somehow
+            // as it might damage...
+            if ((robot.slideHeight == RRMechBot.SlideHeightTeleOp.Drive) || (robot.slideHeight == RRMechBot.SlideHeightTeleOp.Intake)) {
+                slideLockoutTime = localClock.seconds() + 2.0;
+            }
+        }
+
+        // Move the tape
         tapeRotation.setPosition(targTapeRotation);
         tapeHeight.setPosition(targTapeHeight);
-        // Now prevent any slide motion out of Drive/Intake if the robot was in those positions
-        // If we lockout the slide in a higher position, it will immediately drop to Drive.
-        if((robot.slideHeight == RRMechBot.SlideHeightTeleOp.Drive) || (robot.slideHeight == RRMechBot.SlideHeightTeleOp.Intake)) {
-            slideLockoutTime = localClock.seconds() + 2.0;
-        }
     }
 
     public void init(LinearOpMode i_lOpMode, RRMechBot i_robot, Gamepad i_gamepad, boolean i_red) {
@@ -221,9 +230,26 @@ public class TapeMeasureV4 {
                 if (tapeLength_motor.getCurrentPosition() < 350) {
                     setPosition(TAPE_DRIVE);
                 }
+
+                // Set an 'alarm' for one second in the future.
+                // If we're still holding the button after one second, reset the tape length motor
+                // and go to safe position.
+                bTime = localClock.seconds() + 1.0;
+
+            } else if ((bTime > 0.0) && (bTime < localClock.seconds())) {
+
+                // Stop the length motor, reset the encoder
+                tapeLength_motor.setPower(0.0);
+                tapeLength_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                tapeLength_motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+                // Go to safe position
+                setPosition(TAPE_DRIVE);
+                bTime = 0;
             }
         } else {
             bPrev = false;
+            bTime = 0;
         }
 
         if (!tapeLockOut) {
