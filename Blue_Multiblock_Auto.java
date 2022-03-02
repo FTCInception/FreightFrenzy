@@ -34,6 +34,7 @@ import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -61,6 +62,7 @@ import static Inception.FreightFrenzy.drive.DriveConstants.TRACK_WIDTH;
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
  */
+@Disabled
 @Autonomous(name="Blue_2x_Auto", group="RRMechBot")
 public class Blue_Multiblock_Auto extends LinearOpMode {
 
