@@ -91,12 +91,25 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
     private IncepVision vision = new IncepVision();
     private IncepVision.MarkerPos grnLocation = IncepVision.MarkerPos.Unseen;
     private Trajectory[] trajs = new Trajectory[25];
-    private Trajectory ohShootItMissedInOutOnWarehouseOneMotionPartOne = null;
-    private Trajectory ohShootItMissedInOutOnWarehouseOneMotionPartTwo = null;
-    private Trajectory ohShootItMissedInOutOnWarehouseTwoMotionPartOne = null;
-    private Trajectory ohShootItMissedInOutOnWarehouseTwoMotionPartTwo = null;
-    private Trajectory ohShootItMissedInOutOnWarehouseThreeMotionPartOne = null;
-    private Trajectory ohShootItMissedInOutOnWarehouseThreeMotionPartTwo = null;
+    private boolean useLongPath = true;
+
+    private final int HUB_PATH1=0;
+    private final int WH_PATH1=1;
+    private final int BACK_PATH1=2;
+    private final int FWD_PATH1=3;
+    private final int HUB_PATH2_SHORT=4;
+    private final int HUB_PATH2_LONG=5;
+    private final int WH_PATH2=6;
+    private final int BACK_PATH2=7;
+    private final int FWD_PATH2=8;
+    private final int HUB_PATH3_SHORT=9;
+    private final int HUB_PATH3_LONG=10;
+    private final int WH_PATH3=11;
+    private final int BACK_PATH3=12;
+    private final int FWD_PATH3=13;
+    private final int HUB_PATH4_SHORT=14;
+    private final int HUB_PATH4_LONG=15;
+    private final int PARK_PATH=16;
 
     double bucketFullTime = 0;
     boolean bucketFull = false;
@@ -341,7 +354,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
         // Starting X,Y = 4,-63
 
         // First trip to Hub
-        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), true)
+        traj[HUB_PATH1] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), true)
                 .lineToLinearHeading(new Pose2d(-7, 42, Math.toRadians(80)),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*2.5*scaleSpeed)
@@ -354,7 +367,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                 .build();
 
         // First trip to warehouse
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+        traj[WH_PATH1] = robot.drive.trajectoryBuilder(traj[HUB_PATH1].end())
                 .splineToSplineHeading(new Pose2d(4, 67, Math.toRadians(0)), Math.toRadians(20.0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
@@ -381,8 +394,22 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                     robot.intake_motor.setPower(0.6);}) // Turn on intake
                 .build();
 
+        traj[BACK_PATH1] = robot.drive.trajectoryBuilder(traj[WH_PATH1].end())
+                .back(bfDistance,
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
+                .build();
+
+        traj[FWD_PATH1] = robot.drive.trajectoryBuilder(traj[BACK_PATH1].end())
+                .forward(bfDistance,
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
+                .build();
+
         // Second trip to Hub
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
+        traj[HUB_PATH2_LONG] = robot.drive.trajectoryBuilder(traj[WH_PATH1].end(), true)
                 .splineToConstantHeading(new Vector2d(13, 69), Math.toRadians(180),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
@@ -412,18 +439,50 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                     robot.intake_motor.setPower(-0.6); // Reverse intake
                 })
 
-                //.addDisplacementMarker(0.5,0,() -> {
-                //    robot.intake_motor.setPower(0); // Stop Intake
-                //})
-
                 .addDisplacementMarker(.95,0,() -> {
                     safeBucketDump(); //Drop freight
                 })
 
                 .build();
 
+        traj[HUB_PATH2_SHORT] = robot.drive.trajectoryBuilder(traj[BACK_PATH1].end(), true)
+                .splineToConstantHeading(new Vector2d(13, 69), Math.toRadians(180),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
+                .splineToConstantHeading(new Vector2d(4, 67), Math.toRadians(200),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
+                .splineToSplineHeading(new Pose2d(-7,42.5, Math.toRadians(80)), Math.toRadians(260),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
+                )
+
+                .addDisplacementMarker(8, () -> {
+                    doubleElementFollowing(abortTurn,false);}) // Emergency stop
+
+                .addDisplacementMarker(12, () -> {
+                    robot.setSlidePosition(SlideHeight.HighDrop);}) //Slide to high drop
+
+                .addDisplacementMarker(0.10,0,() -> {
+                    robot.intake_motor.setPower(0);
+                    robot.bucket.setPosition(robot.bucketDrive);
+                    robot.setSlidePosition(SlideHeight.MidDrop);
+                })
+
+                .addDisplacementMarker(0.12,0,() -> {
+                    robot.intake_motor.setPower(-0.6); // Reverse intake
+                })
+
+                .addDisplacementMarker(.93,0,() -> {
+                    safeBucketDump(); //Drop freight
+                })
+
+                .build();
+
         // Second trip to warehouse
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+        traj[WH_PATH2] = robot.drive.trajectoryBuilder(traj[HUB_PATH2_LONG].end())
                 .splineToSplineHeading(new Pose2d(4, 67, Math.toRadians(0)), Math.toRadians(20.0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
@@ -450,8 +509,22 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                     robot.intake_motor.setPower(0.6);}) // Turn on intake
                 .build();
 
+        traj[BACK_PATH2] = robot.drive.trajectoryBuilder(traj[WH_PATH2].end())
+                .back(bfDistance,
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
+                .build();
+
+        traj[FWD_PATH2] = robot.drive.trajectoryBuilder(traj[BACK_PATH2].end())
+                .forward(bfDistance,
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
+                .build();
+
         // Third trip to Hub
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
+        traj[HUB_PATH3_LONG] = robot.drive.trajectoryBuilder(traj[WH_PATH2].end(), true)
                 .splineToConstantHeading(new Vector2d(13, 69), Math.toRadians(180),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
@@ -481,18 +554,50 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                     robot.intake_motor.setPower(-0.6); // Reverse intake
                 })
 
-                //.addDisplacementMarker(0.5,0,() -> {
-                //    robot.intake_motor.setPower(0); // Stop Intake
-                //})
-
                 .addDisplacementMarker(.95,0,() -> {
                     safeBucketDump(); //Drop freight
                 })
 
                 .build();
 
+        traj[HUB_PATH3_SHORT] = robot.drive.trajectoryBuilder(traj[BACK_PATH2].end(), true)
+                .splineToConstantHeading(new Vector2d(13, 69), Math.toRadians(180),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
+                .splineToConstantHeading(new Vector2d(4, 67), Math.toRadians(200),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
+                .splineToSplineHeading(new Pose2d(-7,42.5, Math.toRadians(80)), Math.toRadians(260),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
+                )
+
+                .addDisplacementMarker(2, () -> {
+                    doubleElementFollowing(abortTurn,false);}) // Emergency stop
+
+                .addDisplacementMarker(12, () -> {
+                    robot.setSlidePosition(SlideHeight.HighDrop);}) //Slide to high drop
+
+                .addDisplacementMarker(0.10,0,() -> {
+                    robot.intake_motor.setPower(0);
+                    robot.bucket.setPosition(robot.bucketDrive);
+                    robot.setSlidePosition(SlideHeight.MidDrop);
+                })
+
+                .addDisplacementMarker(0.13,0,() -> {
+                    robot.intake_motor.setPower(-0.6); // Reverse intake
+                })
+
+                .addDisplacementMarker(.93,0,() -> {
+                    safeBucketDump(); //Drop freight
+                })
+
+                .build();
+
         // Third trip to warehouse
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+        traj[WH_PATH3] = robot.drive.trajectoryBuilder(traj[HUB_PATH3_LONG].end())
                 .splineToSplineHeading(new Pose2d(4, 67, Math.toRadians(0)), Math.toRadians(20.0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
@@ -519,8 +624,22 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                     robot.intake_motor.setPower(0.6);}) // Turn on intake
                 .build();
 
+        traj[BACK_PATH3] = robot.drive.trajectoryBuilder(traj[WH_PATH3].end())
+                .back(bfDistance,
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
+                .build();
+
+        traj[FWD_PATH3] = robot.drive.trajectoryBuilder(traj[BACK_PATH3].end())
+                .forward(bfDistance,
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
+                .build();
+
         // Fourth trip to the Hub
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
+        traj[HUB_PATH4_LONG] = robot.drive.trajectoryBuilder(traj[WH_PATH3].end(), true)
                 .splineToConstantHeading(new Vector2d(13, 69), Math.toRadians(180),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
@@ -550,18 +669,50 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                     robot.intake_motor.setPower(-0.6); // Reverse intake
                 })
 
-                //.addDisplacementMarker(0.5,0,() -> {
-                //    robot.intake_motor.setPower(0); // Stop Intake
-                //})
-
                 .addDisplacementMarker(.95,0,() -> {
                     safeBucketDump(); //Drop freight
                 })
 
                 .build();
 
+        traj[HUB_PATH4_SHORT] = robot.drive.trajectoryBuilder(traj[BACK_PATH3].end(), true)
+                .splineToConstantHeading(new Vector2d(13, 69), Math.toRadians(180),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
+                .splineToConstantHeading(new Vector2d(4, 67), Math.toRadians(200),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
+                )
+                .splineToSplineHeading(new Pose2d(-7,42.5, Math.toRadians(80)), Math.toRadians(260),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
+                )
+
+                .addDisplacementMarker(2, () -> {
+                    doubleElementFollowing(abortTurn,false);}) // Emergency stop
+
+                .addDisplacementMarker(12, () -> {
+                    robot.setSlidePosition(SlideHeight.HighDrop);}) //Slide to high drop
+
+                .addDisplacementMarker(0.10,0,() -> {
+                    robot.intake_motor.setPower(0);
+                    robot.bucket.setPosition(robot.bucketDrive);
+                    robot.setSlidePosition(SlideHeight.MidDrop);
+                })
+
+                .addDisplacementMarker(0.13,0,() -> {
+                    robot.intake_motor.setPower(-0.6); // Reverse intake
+                })
+
+                .addDisplacementMarker(.93,0,() -> {
+                    safeBucketDump(); //Drop freight
+                })
+
+                .build();
+
         // Parking trip
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+        traj[PARK_PATH] = robot.drive.trajectoryBuilder(traj[HUB_PATH4_LONG].end())
                 .splineToSplineHeading(new Pose2d(4, 67, Math.toRadians(0)), Math.toRadians(20.0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.35*scaleSpeed)
@@ -578,48 +729,6 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                 .addDisplacementMarker(10, () -> {
                     robot.setSlidePosition(SlideHeight.Drive);}) //Slide to drive
 
-                .build();
-
-        ohShootItMissedInOutOnWarehouseOneMotionPartOne = robot.drive.trajectoryBuilder(traj[1].end())
-                .back(bfDistance,
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
-                )
-                .build();
-
-        ohShootItMissedInOutOnWarehouseOneMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseOneMotionPartOne.end())
-                .forward(bfDistance,
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
-                )
-                .build();
-
-        ohShootItMissedInOutOnWarehouseTwoMotionPartOne = robot.drive.trajectoryBuilder(traj[3].end())
-                .back(bfDistance,
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
-                )
-                .build();
-
-        ohShootItMissedInOutOnWarehouseTwoMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseTwoMotionPartOne.end())
-                .forward(bfDistance,
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
-                )
-                .build();
-
-        ohShootItMissedInOutOnWarehouseThreeMotionPartOne = robot.drive.trajectoryBuilder(traj[5].end())
-                .back(bfDistance,
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
-                )
-                .build();
-
-        ohShootItMissedInOutOnWarehouseThreeMotionPartTwo = robot.drive.trajectoryBuilder(ohShootItMissedInOutOnWarehouseThreeMotionPartOne.end())
-                .forward(bfDistance,
-                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
-                        robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
-                )
                 .build();
 
         showTrajPoses( "LEVEL3", TIdx, traj ) ;
@@ -641,13 +750,13 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
         credits = credits - runtime.seconds();
         robot.logger.logD("Credits           :",String.format("Current: %2.2f, Elapsed: %2.2f, Credits: %2.2f", runtime.seconds(), 0.0, credits));
 
-        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], null, null, credits, 5.5) ;
+        credits = hubAndWarehouse(traj[HUB_PATH1], null, traj[WH_PATH1], null, null, credits, 5.5) ;
 
-        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseOneMotionPartOne, ohShootItMissedInOutOnWarehouseOneMotionPartTwo, credits, 7.5) ;
+        credits = hubAndWarehouse(traj[HUB_PATH2_LONG], traj[HUB_PATH2_SHORT], traj[WH_PATH2], traj[BACK_PATH1], traj[FWD_PATH1], credits, 7.5) ;
 
-        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseTwoMotionPartOne, ohShootItMissedInOutOnWarehouseTwoMotionPartTwo, credits, 7.5) ;
+        credits = hubAndWarehouse(traj[HUB_PATH3_LONG], traj[HUB_PATH3_SHORT], traj[WH_PATH3], traj[BACK_PATH2], traj[FWD_PATH2], credits, 7.5) ;
 
-        credits = hubAndWarehouse(traj[TIdx++], traj[TIdx++], ohShootItMissedInOutOnWarehouseThreeMotionPartOne, ohShootItMissedInOutOnWarehouseThreeMotionPartTwo, credits, 6.0) ;
+        credits = hubAndWarehouse(traj[HUB_PATH4_LONG], traj[HUB_PATH4_SHORT], traj[PARK_PATH], traj[BACK_PATH3], traj[FWD_PATH3], credits, 6.0);
 
         robot.logger.logD("Credits Done     :",String.format("Current: %2.2f, Elapsed: %2.2f, Credits: %2.2f", runtime.seconds(), 0.0, credits));
     }
@@ -728,7 +837,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
     private double backAndForth(Trajectory back, Trajectory forth, double credits) {
 
         double start1 = runtime.seconds();
-        double creditsNeeded = 2.5;
+        double creditsNeeded = 1.25;
 
         if (!opModeIsActive() || abortAuto) { return(0); }
 
@@ -738,14 +847,12 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
         }
 
         // Keep trying until we have an element or run out of credits
-        while (isIntaking() && (credits > creditsNeeded)) {
-
-            // Keep a timer
-            double start2 = runtime.seconds();
+        while (isIntaking() && ((credits-(runtime.seconds() - start1)) > creditsNeeded)) {
 
             // First motion
             robot.drive.followTrajectoryAsync(back);
             CheckWait(true, 0, 0);
+            useLongPath=false;
             if (!opModeIsActive() || abortAuto) { return(0); }
 
             // If we still don't have an element, try to unjam
@@ -753,23 +860,24 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                 robot.intake_motor.setPower(-0.8);
                 CheckWait(true, 500, 0);
                 robot.intake_motor.setPower(0.6);
+            } else {
+                break;
             }
 
             // Second motion
             robot.drive.followTrajectoryAsync(forth);
             CheckWait(true, 0, 0);
+            useLongPath=true;
             if (!opModeIsActive() || abortAuto) { return(0); }
 
-            // TODO Do we need this?
             // If we still don't have an element, wait a little bit
             if (isIntaking()) {
                 CheckWait(true, 300, 0);
             }
-
-            // Update credits (based on time?)
-            // credits -= creditsNeeded;
-            credits -= runtime.seconds() - start2 ;
         }
+
+        // Update credits (based on time?)
+        credits -= runtime.seconds() - start1 ;
 
         // Print out for debug
         robot.logger.logD("Credits B&F       :",String.format("Current: %2.2f, Elapsed: %2.2f, Credits: %2.2f", runtime.seconds(), runtime.seconds()-start1, credits));
@@ -777,9 +885,10 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
         return(credits);
     }
 
-    private double hubAndWarehouse(Trajectory hub, Trajectory warehouse, Trajectory back, Trajectory forth, double credits, double creditsNeeded) {
+    private double hubAndWarehouse(Trajectory hubLong, Trajectory hubShort, Trajectory warehouse, Trajectory back, Trajectory forth, double credits, double creditsNeeded) {
 
         double start1 = runtime.seconds();
+        useLongPath = true;
 
         if (!opModeIsActive() || abortAuto) { return(0); }
 
@@ -801,7 +910,11 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
             double start2 = runtime.seconds();
 
             // Go to hub
-            robot.drive.followTrajectoryAsync(hub);
+            if(useLongPath) {
+                robot.drive.followTrajectoryAsync(hubLong);
+            } else {
+                robot.drive.followTrajectoryAsync(hubShort);
+            }
             CheckWait(true, 0, 0);
             if (!opModeIsActive() || abortAuto) { return(0); }
 
