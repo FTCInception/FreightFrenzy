@@ -449,11 +449,12 @@ public class TapeMeasureV4 {
 
     public void telemetry( Telemetry telem ) {
         if( tapeLength_motor != null ) {
-            double currPos = Math.max(0.0,(double)(tapeLength_motor.getCurrentPosition()));
-            double dH = (divisor + Math.max(0.0,((currPos-1700)/450.0)));
-            double dR = (divisor + Math.max(0.0,((currPos-1250)/325.0)));
+            //double currPos = Math.max(0.0,(double)(tapeLength_motor.getCurrentPosition()));
+            //double dH = (divisor + Math.max(0.0,((currPos-1700)/450.0)));
+            //double dR = (divisor + Math.max(0.0,((currPos-1250)/325.0)));
 
-            telem.addData("Tape: ", "L:%.2f, H:%.2f, R:%.2f, P:%.0f, dH:%.1f, dR:%.1f", tapeLengthReq, tapeHeight.getPosition(), tapeRotation.getPosition(), currPos, dH, dR);
+            telem.addData("Tape1: ", "L:%.2f, H:%.2f, R:%.2f", tapeLengthReq, tapeHeight.getPosition(), tapeRotation.getPosition());
+            telem.addData("Tape2: ", "P:%d, ", tapeLength_motor.getCurrentPosition());
         } else {
             telem.addData("Tape: ", "Not installed");
         }
