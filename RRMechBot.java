@@ -113,9 +113,10 @@ public class RRMechBot {
             (int)(0.13 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.27*SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.42 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
-            (int)(1.0 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV) };
+            (int)(1.02 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV) };
 
     final double bucketDump = 0.395;
+    final double bucketDumpTeleOp = 0.385;
     final double bucketDrive = 0.625;
     final double bucketZero = 0.750;
     final double bucketIntake = 0.825;
@@ -284,16 +285,20 @@ public class RRMechBot {
 
     public void setSlidePositionTeleOp(SlideHeightTeleOp slidePos, double power){
         slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        if(slidePos == SlideHeightTeleOp.HighDrop) {
+            slide_motor.setPositionPIDFCoefficients(8.0);
+            slide_motor.setVelocityPIDFCoefficients(8.0, 3.5, 2.0, 12.0);
+        } else {
+            slide_motor.setPositionPIDFCoefficients(5.0);
+            slide_motor.setVelocityPIDFCoefficients(5.0, 3.5, 2.0, 12.0);
+        }
         slide_motor.setPower(power);
         slide_motor.setTargetPosition(slideTargetsTeleOp[slidePos.ordinal()]);
         slideHeight = slidePos;
     }
 
     public void setSlidePositionTeleOp(SlideHeightTeleOp slidePos){
-        slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        slide_motor.setPower(SLIDE_PWR);
-        slide_motor.setTargetPosition(slideTargetsTeleOp[slidePos.ordinal()]);
-        slideHeight = slidePos;
+        setSlidePositionTeleOp(slidePos, SLIDE_PWR);
     }
 
     public void nudgeSlidePositionTeleOp( int amount ) {

@@ -383,7 +383,7 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
                     // Give some slop of 10% depression to avoid accidental presses
                     // 10% press is really '0' so subtract 0.1 but don't let it go negative
                     // Then scale back to 100%
-                    final double travelDistance = (robot.bucketDrive - robot.bucketDump) * (1.1 * Math.max(0,  (gamepad.right_trigger - 0.1)));
+                    final double travelDistance = (robot.bucketDrive - robot.bucketDumpTeleOp) * (1.1 * Math.max(0,  (gamepad.right_trigger - 0.1)));
 
                     bucketRequest[padIdx] = robot.bucketDrive - travelDistance;
                     //bucket.setPosition(bucketIntake - travelDistance);
@@ -544,8 +544,8 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
                                     slide_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
                                     slide_motor.setTargetPosition(0);
                                     slide_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                                    slide_motor.setPositionPIDFCoefficients(4.0);
-                                    slide_motor.setVelocityPIDFCoefficients(4.0, 3.5, 2.0, 12.0);
+                                    slide_motor.setPositionPIDFCoefficients(5.0);
+                                    slide_motor.setVelocityPIDFCoefficients(5.0, 3.5, 2.0, 12.0);
                                 }
                             }
 
