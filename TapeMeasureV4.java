@@ -97,6 +97,12 @@ public class TapeMeasureV4 {
     }
     */
 
+    public void blueLineup() {
+        // Move the tape
+        tapeRotation.setPosition(0.71);
+        tapeHeight.setPosition(0.78);
+    }
+
     public void setPosition(int position) {
         targTapeHeight=posTargets[position][HGT];
         targTapeRotation=posTargets[position][ROT];

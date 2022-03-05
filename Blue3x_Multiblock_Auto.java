@@ -75,7 +75,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
 
     // This is the starting position of the center of the robot.
     private static final double startingX = 13;
-    private static final double startingY = 65.0;
+    private static final double startingY = 65.5;
 
     // 1:1 slide
     //final double SLIDE_INTAKE = 1.0, SLIDE_DRIVE = 0.9, SLIDE_LOW = 0.8, SLIDE_SHARED = 0.73, SLIDE_MED = 0.5, SLIDE_HIGH = 0.0;
@@ -125,7 +125,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
         robot.init(hardwareMap,0.1);
         robot.initAutonomous(this);
         tape.init(this, robot, gamepad2, true);
-        tape.setPosition(tape.TAPE_AUTO);
+        tape.blueLineup();
         //robot.logger.LOGLEVEL |= robot.logger.LOGDEBUG;
 
         parkThroughOpening = true;
@@ -139,6 +139,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
         // And controls some enable/disable options
         boolean leftOK = true, rightOK = true, upOK = true, downOK = true, bOK=true, xOK=true, yOK=true;
         do {
+            /*
             if ( gamepad1.dpad_left || gamepad2.dpad_left ) {
                 if (leftOK) {
                     Dx -= 1.0;
@@ -196,44 +197,55 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
             } else {
                 bOK = true;
             }
-            if ( gamepad1.a ||gamepad2.a ) {
-                break;
-            }
 
             telemetry.addData("Park Changes:", "x:%f, y:%f", Dx, Dy);
             telemetry.addData("Use dpad to adjust robot start position","");
             telemetry.addData("'Y' Park through opening?:","(%s)", parkThroughOpening?"true":"false");
             telemetry.addData("'X' Second Block Attempt?:","(%s)", secondBlock?"true":"false");
             telemetry.addData("'B' option3:","(%s)", option3?"true":"false");
+            telemetry.addData("'B' option3:","(%s)", option3?"true":"false");
+            */
+
+            telemetry.addData("Line up the robot now with tape measure.","");
+            telemetry.addData("Retract tape measure before pressing 'A'.","");
             telemetry.addData("'A' Proceed to Vision:","(%s)", "NA");
             telemetry.update();
 
+            if ( gamepad1.a ||gamepad2.a ) {
+                break;
+            }
+
         } while (!isStarted() && (!isStopRequested())) ;
 
-        // Robot center is 9" from each edge:
-        // Back against the -x wall, wheels aligned on first tile in -y
-        // THIS MUST BE DONE BEFORE BUILDING
-        // THIS MUST BE DONE AFTER THE ROBOT IS IN ITS FINAL POSITION
-        Pose2d startPose = new Pose2d(startingX, startingY, robot.drive.getRawExternalHeading()+Math.toRadians(90));
-        robot.drive.setPoseEstimate(startPose);
+        if(!isStopRequested()) {
+            tape.init(this, robot, gamepad2, true);
+            tape.setPosition(tape.TAPE_AUTO);
 
-        telemetry.addData("Computing paths","");
-        telemetry.update();
+            // Robot center is 9" from each edge:
+            // Back against the -x wall, wheels aligned on first tile in -y
+            // THIS MUST BE DONE BEFORE BUILDING
+            // THIS MUST BE DONE AFTER THE ROBOT IS IN ITS FINAL POSITION
+            Pose2d startPose = new Pose2d(startingX, startingY, robot.drive.getRawExternalHeading() + Math.toRadians(90));
+            robot.drive.setPoseEstimate(startPose);
 
-        buildTrajs(trajs);
+            telemetry.addData("Computing paths", "");
+            telemetry.update();
 
-        telemetry.addData("Starting vision", "");
-        telemetry.update();
-        // Stare at the rings really hard until its time to go or stop
-        vision.initAutonomous(this, "webcam", vision.BLUE_WAREHOUSE);
-        vision.clip = false;
-        boolean leftBOK = true, rightBOK = true;
-        do {
-            grnLocation = vision.getGrnLocation();
-            vision.manageVisionBox(gamepad1, gamepad2);
-        } while (!isStarted() && (!isStopRequested()));
-        runtime.reset();
-        vision.shutdown();
+            buildTrajs(trajs);
+
+            telemetry.addData("Starting vision", "");
+            telemetry.update();
+            // Stare at the rings really hard until its time to go or stop
+            vision.initAutonomous(this, "webcam", vision.BLUE_WAREHOUSE);
+            vision.clip = false;
+            boolean leftBOK = true, rightBOK = true;
+            do {
+                grnLocation = vision.getGrnLocation();
+                vision.manageVisionBox(gamepad1, gamepad2);
+            } while (!isStarted() && (!isStopRequested()));
+            runtime.reset();
+            vision.shutdown();
+        }
 
         // TODO: Make sure the LEFT/RIGHT/UNSEEN mapping here is correct for every auto.
         // FIXME: Test the stopping in auto here again.
