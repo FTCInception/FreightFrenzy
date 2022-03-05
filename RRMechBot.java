@@ -108,11 +108,13 @@ public class RRMechBot {
         HighDrop
     }
 
+    // Old height for 'FarSharedDrop' is 0.42
+    //             (int)(0.42 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
     final int slideTargetsTeleOp[] = {
             (int)(0.02*SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.13 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(0.27*SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
-            (int)(0.42 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
+            (int)(0.445 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV),
             (int)(1.02 *SLIDE_MAX_REV*SLIDE_TICKS_PER_REV) };
 
     final double bucketDump = 0.395;
