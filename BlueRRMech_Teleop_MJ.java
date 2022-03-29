@@ -114,7 +114,7 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
 
     // Mech drive related variables
     int[] speedIdx = new int[] {0, 0};
-    double[] speedModifier = new double[] {0.75, 0.90};
+    double[] speedModifier = new double[] {0.75, 0.80};
     boolean[] FOD = new boolean[] {true, true};
     double[] forward = new double[2], strafe = new double[2], rotate = new double[2];
     double[] prevForward = new double[2], prevStrafe = new double[2], prevRotate = new double[2];
@@ -289,7 +289,6 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
 
         // Setup tapeMeasure object
         tape.init(this, robot, gamepad2, RedAlliance);
-        tape.setPosition(tape.TAPE_DRIVE);
 
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Alliance:", "%s", RedAlliance ? "RED" : "BLUE" );
@@ -303,6 +302,7 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
         /*************************************************************/
 
         waitForStart();
+        tape.setPosition(tape.TAPE_DRIVE);
         runtime.reset();
         iter = 0.0;
         prt = rt = maxLag = 0.0;
@@ -561,10 +561,11 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
 
                 // gamped 'b' is combined duck wheel managed below
 
-                // 'x': Speed intake toggle
+                // 'x': Speed toggle
                 if (gamepad.x) {
                     if (!xPrev[padIdx]) {
-                        //speedIdx[padIdx] = (int)( (speedIdx[padIdx] + 1) % speedModifier.length);
+                        speedIdx[padIdx] = (int)( (speedIdx[padIdx] + 1) % speedModifier.length);
+                        /*
                         if (( intakeSet[1] == 0.6) && (intakeWait == 0.25)) {
                             intakeSet[1] = 0.75;
                             intakeWait = 0.5;
@@ -578,6 +579,7 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
                             intakeSet[1] =  0.75;
                             intakeWait = 0.5;
                         }
+                        */
                         xPrev[padIdx] = true;
                     }
                 } else {
@@ -711,9 +713,9 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
             gamepad = gamepad1;
             padIdx = pad1;
             // Read the controller 1 (driver) stick positions
-            strafe[padIdx] = gamepad.left_stick_x*1.25;
+            strafe[padIdx] = gamepad.left_stick_x;
             forward[padIdx] = -gamepad.left_stick_y;
-            rotate[padIdx] = gamepad.right_stick_x*1.5;
+            rotate[padIdx] = gamepad.right_stick_x;
 
             /* High Precision Mode is 25% power */
             if( gamepad.left_stick_button ) {
@@ -725,7 +727,35 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
                 rotate[padIdx] *= .25;
             }
 
+            // Convert to FOD as soon as possible so all the smooth drive code applies correctly
+            // This code is terrible.
+            // Beware the function calls that pass information in and out via global vars
+            if (FOD[pad1]) {
+                // Get the current robot heading
+                degrees = Math.toDegrees(drive.getRawExternalHeading());
+
+                if (FOD[pad1]) {
+                    // Convert the X/Y Cartesion for strafe and forward into Polar
+                    CarToPol(strafe[pad1], forward[pad1]);
+                    // Rotate the Polar coordinates by the robot's heading
+                    theta -= AngleUnit.DEGREES.normalize(degrees - adjustAngle[pad1]);
+                    // Convert the new Polar back into Cartesian
+                    PolToCar(r_speed);
+                    // Replace the strafe and forward power with translated values
+                    strafe[pad1] = new_x;
+                    forward[pad1] = new_y;
+                    // Now the robot moves in orientation of the field
+                }
+            }
+
+            // A little bump to make strafe/rotate feel more responsive
+            strafe[padIdx] *= 1.25;
+            rotate[padIdx] *= 1.5;
+
             if(smoothDrive) {
+                now = runtime.seconds();
+                deltaT = now - prevTime[padIdx];
+
                 if ((prevStrafe[padIdx] != 0) && (strafe[padIdx] != 0) && (Math.signum(prevStrafe[padIdx]) != Math.signum(strafe[padIdx]))) {
                     strafe[padIdx] = 0;
                 }
@@ -736,8 +766,6 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
                     rotate[padIdx] = 0;
                 }
 
-                now = runtime.seconds();
-                deltaT = now - prevTime[padIdx];
                 if (Math.abs(strafe[padIdx]) > 0.20) {
                     if (prevStrafe[padIdx] < strafe[padIdx]) {
                         strafe[padIdx] = Math.min(strafe[padIdx], prevStrafe[padIdx] + (maxStrafeChange * deltaT));
@@ -792,26 +820,6 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
             // Rotate a little right
             if (gamepad.dpad_right) {
                 rotate[padIdx] += 0.4;
-            }
-
-            // This code is terrible.
-            // Beware the function calls that pass information in and out via global vars
-            if (FOD[pad1]) {
-                // Get the current robot heading
-                degrees = Math.toDegrees(drive.getRawExternalHeading());
-
-                if (FOD[pad1]) {
-                    // Convert the X/Y Cartesion for strafe and forward into Polar
-                    CarToPol(strafe[pad1], forward[pad1]);
-                    // Rotate the Polar coordinates by the robot's heading
-                    theta -= AngleUnit.DEGREES.normalize(degrees - adjustAngle[pad1]);
-                    // Convert the new Polar back into Cartesian
-                    PolToCar(r_speed);
-                    // Replace the strafe and forward power with translated values
-                    strafe[pad1] = new_x;
-                    forward[pad1] = new_y;
-                    // Now the robot moves in orientation of the field
-                }
             }
 
             // This adds the powers from both controllers together scaled for each controller and FOD
@@ -883,6 +891,7 @@ public class BlueRRMech_Teleop_MJ extends LinearOpMode {
             }
             telemetry.addData("Intake Power:", "%s", (intakeSet[1] > 0.7) ? "High" : "Low" );
             telemetry.addData("Drive Mode:", "%s", FOD[pad1] ? "FOD" : "Regular" );
+            telemetry.addData("Motor Power:", "%d%%", (int)(speedModifier[speedIdx[pad1]]*100) );
             telemetry.update();
         }
 
