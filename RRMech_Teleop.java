@@ -414,7 +414,13 @@ public class RRMech_Teleop extends LinearOpMode {
                                         intake_motor.setPower(intakeSet[intakeIdx]);
                                         currIntakePower = intakeSet[intakeIdx];
                                         if (robot.color.getDistance(DistanceUnit.CM) < 2.0) {
+                                            // If the element is still in the bucket, raise it.
                                             slideLevel = SlideHeightTeleOp.Drive;
+                                        } else {
+                                            // If the element is not in the bucket, turn the intake back on.
+                                            intakeIdx = 1;
+                                            intake_motor.setPower(intakeSet[intakeIdx]);
+                                            currIntakePower = intakeSet[intakeIdx];
                                         }
                                     }
                                 }
