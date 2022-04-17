@@ -29,15 +29,19 @@
 
 package Inception.FreightFrenzy;
 
-import android.transition.Slide;
-
-import Inception.FreightFrenzy.RRMechBot.SlideHeight;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+
+import Inception.FreightFrenzy.RRMechBot.SlideHeight;
+
+import static Inception.FreightFrenzy.drive.DriveConstants.MAX_ACCEL;
+import static Inception.FreightFrenzy.drive.DriveConstants.MAX_ANG_VEL;
+import static Inception.FreightFrenzy.drive.DriveConstants.MAX_VEL;
+import static Inception.FreightFrenzy.drive.DriveConstants.TRACK_WIDTH;
 
 /**
  * This file houses Autonomous code
@@ -53,8 +57,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
  */
-@Autonomous(name="Red_DuckSide_Auto", group="RRMechBot")
-public class Red_DuckSide_Auto extends LinearOpMode {
+@Autonomous(name="Red_DuckSide_Auto_New", group="RRMechBot")
+public class Red_DuckSide_Auto_New extends LinearOpMode {
 
     public SlideHeight targetLevel = SlideHeight.HighDrop;
 
@@ -313,46 +317,120 @@ public class Red_DuckSide_Auto extends LinearOpMode {
 
     private void buildTrajs(Trajectory[] traj) {
 
+        double scaleSpeed = 1.25;
         int TIdx = 0;
         // Starting X,Y = -44,-63
 
         // Drive to hub while avoiding team marker
-        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate())
-                .lineToConstantHeading(new Vector2d(-63,-40))
-                .build();
+        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), Math.toRadians(130))
+                .splineToConstantHeading(new Vector2d(-63, -43), Math.toRadians(90),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
 
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToLinearHeading(new Pose2d(-38,-10, Math.toRadians(180)))
-                .build();
+                .splineToSplineHeading(new Pose2d(-30, -22, Math.toRadians(180)), Math.toRadians(0),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
 
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(-29.5,-21.5))
+                .addDisplacementMarker(.95, 0, () -> {
+                    robot.bucket.setPosition(robot.bucketDump);
+                })
+
                 .build();
 
         //Drop Block Sequence
 
         //Duck Wheel
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .lineToLinearHeading(new Pose2d(-38,-15, Math.toRadians(270)))
-                .build();
-
-        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .lineToConstantHeading(new Vector2d(-67,-30))
-                .build();
-
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .forward(29)
+                .splineToSplineHeading(new Pose2d(-64, -30, Math.toRadians(270)), Math.toRadians(270),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+
+                .splineToSplineHeading(new Pose2d(-57, -61,Math.toRadians(170)), Math.toRadians(270),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
                 .build();
 
         //Duck Wheel ends motion at new Pose2d(-66,-55,Math.toRadians(270))
-        //Driving to Park
-        traj[TIdx++] = robot.drive.trajectoryBuilder(new Pose2d(-66,-55,Math.toRadians(270)))
-                .lineToConstantHeading(new Vector2d(-60,-50))
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), Math.toRadians(90))
+                .splineToSplineHeading(new Pose2d(-54, -50, Math.toRadians(270)), Math.toRadians(90),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+                .addDisplacementMarker(.95, 0, () -> {
+                    robot.bucket.setPosition(robot.bucketIntake);
+                    robot.setSlidePosition(SlideHeight.Intake);
+                })
+
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToLinearHeading(new Pose2d(-63,-38, Math.toRadians(270)))
+                .splineToConstantHeading(new Vector2d(-54, -64), Math.toRadians(270),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+
                 .build();
+
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
+                .splineToConstantHeading(new Vector2d(-50, -50), Math.toRadians(90),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+                .build();
+
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                .splineToConstantHeading(new Vector2d(-50, -65), Math.toRadians(270),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+                .build();
+
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
+                .splineToConstantHeading(new Vector2d(-46, -50), Math.toRadians(90),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+                .build();
+
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                .splineToConstantHeading(new Vector2d(-46, -65), Math.toRadians(270),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+                .build();
+
+        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), Math.toRadians(130))
+                .splineToConstantHeading(new Vector2d(-63, -43), Math.toRadians(90),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+
+                .splineToSplineHeading(new Pose2d(-29, -22, Math.toRadians(180)), Math.toRadians(0),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+
+                .addDisplacementMarker(.95, 0, () -> {
+                    robot.bucket.setPosition(robot.bucketDump);
+                })
+
+                .build();
+
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                .splineToSplineHeading(new Pose2d(-60, -30, Math.toRadians(270)), Math.toRadians(270),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+
+                .splineToConstantHeading(new Vector2d(-58,-35), Math.toRadians(270),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+                        .build();
 
         showTrajPoses( "LEVEL3", TIdx, traj ) ;
     }
@@ -361,9 +439,9 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         int TIdx = 0;
 
         robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
-        CheckWait(true, 500, 0);
+        CheckWait(true, 50, 0);
         robot.bucket.setPosition(robot.bucketDrive); //Reset Bucket to drive position
-        CheckWait(true, 200, 0);
+        CheckWait(true, 50, 0);
 
         //Pick Level based on detected team marker placement
         robot.setSlidePosition(level);
@@ -373,58 +451,74 @@ public class Red_DuckSide_Auto extends LinearOpMode {
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
 
+        CheckWait(true, 600, 0);
+        robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
+        CheckWait(true, 200, 0);
+        robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
+        CheckWait(true, 50, 0);
+
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
 
-        //Arrive at Hub
+        robot.duckL.setPosition(0.1);
+        CheckWait(true, 3300, 0);
+        robot.duckL.setPosition(.5);
+        CheckWait(true, 200, 0);
+
+        //Sweep 1
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
+
+        CheckWait(true, 100, 0);
+        robot.intake_motor.setPower(.8);
+
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
+
+        //Sweep 2
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
+
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
+
+        //Sweep 3
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
+
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
+
+        //Dump Duck
+        robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
+        CheckWait(true, 50, 0);
+        robot.bucket.setPosition(robot.bucketDrive); //Reset Bucket to drive position
+        CheckWait(true, 50, 0);
+
+        //Pick Level based on detected team marker placement
+        robot.setSlidePosition(SlideHeight.HighDrop);
+
+        robot.intake_motor.setPower(0);
+
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
 
         robot.bucket.setPosition(robot.bucketDump); //Drop freight
-        CheckWait(true, 2000, 0);
+        CheckWait(true, 600, 0);
         robot.bucket.setPosition(robot.bucketDrive); //Bucket Up
         CheckWait(true, 200, 0);
-
-        //Drive to Duck Wheel
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
-
-        robot.setSlidePosition(RRMechBot.SlideHeight.Drive); //Bucket to drive position
-        CheckWait(true, 200, 0);
+        robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
+        CheckWait(true, 50, 0);
 
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
-
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
-
-        //Run Duck Wheel
-        //Turn on reverse intake in case we hit the duck after we finish
-
-        robot.duckR.setPosition(0.1);
-        CheckWait(true, 3300, 0);
-        robot.duckR.setPosition(.5);
-        CheckWait(true, 200, 0);
-        robot.intake_motor.setPower(-.8);
-
-        //Drive to park
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
-
-        robot.drive.followTrajectoryAsync(traj[TIdx++]);
-        CheckWait(true, 0, 0);
-        if(!opModeIsActive()){ return; }
-
-        //Turn off intake, should be parked
-        robot.intake_motor.setPower(0);
-
-        robot.drive.turnAsync(Math.toRadians(180) - robot.drive.getRawExternalHeading());
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
     }

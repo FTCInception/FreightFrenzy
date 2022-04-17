@@ -389,7 +389,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
 
-                .splineToConstantHeading(new Vector2d(51, 69), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(50, 69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
@@ -504,7 +504,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
 
-                .splineToConstantHeading(new Vector2d(55, 69), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(54, 69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
@@ -619,7 +619,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
 
-                .splineToConstantHeading(new Vector2d(57, 69), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(56.5, 69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
