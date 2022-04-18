@@ -231,7 +231,7 @@ public class IncepVision {
         // Accounts for camera angle not being perfect, etc.
         int tolerance = 50;
         // The minimum number of green pixels in an area for that area to actually have green
-        int thresholdGreen = 9000/(strideX * strideY);
+        int thresholdGreen = 4000/(strideX * strideY);
         int innerGreen = 0;
         int outerGreen = 0;
         int subLeft = Math.max(subMapLeft - tolerance, 0);
