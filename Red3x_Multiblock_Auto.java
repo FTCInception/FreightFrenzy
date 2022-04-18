@@ -139,7 +139,6 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
         // And controls some enable/disable options
         boolean leftOK = true, rightOK = true, upOK = true, downOK = true, bOK=true, xOK=true, yOK=true;
         do {
-            /*
             if ( gamepad1.dpad_left || gamepad2.dpad_left ) {
                 if (leftOK) {
                     Dx -= 1.0;
@@ -156,54 +155,8 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
             } else {
                 rightOK = true;
             }
-            if ( gamepad1.dpad_down || gamepad2.dpad_down ) {
-                if (downOK) {
-                    Dy -= 1.0;
-                    downOK = false;
-                }
-            } else {
-                downOK = true;
-            }
-            if ( gamepad1.dpad_up || gamepad2.dpad_up ) {
-                if (upOK) {
-                    Dy += 1.0;
-                    upOK = false;
-                }
-            } else {
-                upOK = true;
-            }
-            if ( gamepad1.y || gamepad2.y ) {
-                if (yOK) {
-                    parkThroughOpening = !parkThroughOpening;
-                    yOK = false;
-                }
-            } else {
-                yOK = true;
-            }
 
-            if ( gamepad1.x || gamepad2.x ) {
-                if (xOK) {
-                    secondBlock = !secondBlock;
-                    xOK = false;
-                }
-            } else {
-                xOK = true;
-            }
-            if ( gamepad1.b ||gamepad2.b ) {
-                if (bOK) {
-                    option3 = !option3;
-                    bOK = false;
-                }
-            } else {
-                bOK = true;
-            }
-
-            telemetry.addData("Park Changes:", "x:%f, y:%f", Dx, Dy);
-            telemetry.addData("Use dpad to adjust robot start position","");
-            telemetry.addData("'Y' Park through opening?:","(%s)", parkThroughOpening?"true":"false");
-            telemetry.addData("'X' Second Block Attempt?:","(%s)", secondBlock?"true":"false");
-            telemetry.addData("'B' option3:","(%s)", option3?"true":"false");
-            */
+            telemetry.addData("DPAD left/right for warehouse depth:","%d", (int)Dx);
             telemetry.addData("'A' Proceed to Vision:","(%s)", "NA");
             telemetry.update();
 
@@ -382,7 +335,7 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
 
-                .splineToConstantHeading(new Vector2d(51, -69), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(50+Dx, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
@@ -497,7 +450,7 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
 
-                .splineToConstantHeading(new Vector2d(55, -69), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(54, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
@@ -612,7 +565,7 @@ public class Red3x_Multiblock_Auto extends LinearOpMode {
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
 
-                .splineToConstantHeading(new Vector2d(57, -69), Math.toRadians(0),
+                .splineToConstantHeading(new Vector2d(56.5, -69), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*1.75*scaleSpeed)
                 )
