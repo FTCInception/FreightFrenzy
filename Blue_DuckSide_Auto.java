@@ -80,7 +80,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
         //robot.logger.LOGLEVEL = robot.logger.LOGDEBUG ;
 
         // Init the robot and subsystems.  Set Roadrunner timeout to 0.25s to save some time.
-        robot.init(hardwareMap,0.5);
+        robot.init(hardwareMap,0.2);
         robot.initAutonomous(this);
         tape.init(this, robot, gamepad2,false);
         tape.setPosition(tape.TAPE_AUTO);
@@ -242,6 +242,10 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
             runTrajs(trajs ,targetLevel);
 
         }
+
+        telemetry.addData("Final Heading", Math.toDegrees(robot.drive.getRawExternalHeading()));
+        telemetry.update();
+
     }
 
     private void showTrajPoses( String trajName, int TIdx, Trajectory[] traj ) {
@@ -321,7 +325,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .lineToConstantHeading(new Vector2d(-27.5,22))
+                .lineToConstantHeading(new Vector2d(-29.5,21.5))
                 .build();
 
         //Drop Block Sequence
@@ -356,7 +360,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
     private void runTrajs(Trajectory[] traj, SlideHeight level) {
         int TIdx = 0;
 
-        robot.setSlidePosition(RRMechBot.SlideHeight.Drive); //Reset Bucket to safe level
+        robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
         CheckWait(true, 500, 0);
         robot.bucket.setPosition(robot.bucketDrive); //Reset Bucket to drive position
         CheckWait(true, 200, 0);
@@ -407,7 +411,7 @@ public class Blue_DuckSide_Auto extends LinearOpMode {
         robot.duckL.setPosition(.5);
         CheckWait(true, 200, 0);
         robot.intake_motor.setPower(-.8);
-        
+
         //Drive to park
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
