@@ -85,7 +85,7 @@ public class Red_DuckSide_Auto_New extends LinearOpMode {
         //robot.logger.LOGLEVEL = robot.logger.LOGDEBUG ;
 
         // Init the robot and subsystems.  Set Roadrunner timeout to 0.25s to save some time.
-        robot.init(hardwareMap,0.2);
+        robot.init(hardwareMap,0.1);
         robot.initAutonomous(this);
         tape.init(this, robot, gamepad2, true);
         tape.setPosition(tape.TAPE_AUTO);
@@ -317,7 +317,7 @@ public class Red_DuckSide_Auto_New extends LinearOpMode {
 
     private void buildTrajs(Trajectory[] traj) {
 
-        double scaleSpeed = 1.25;
+        double scaleSpeed = 1.3;
         int TIdx = 0;
         // Starting X,Y = -44,-63
 
@@ -348,10 +348,13 @@ public class Red_DuckSide_Auto_New extends LinearOpMode {
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
                 )
 
-                .splineToSplineHeading(new Pose2d(-57, -61,Math.toRadians(170)), Math.toRadians(270),
+                .splineToSplineHeading(new Pose2d(-57, -61,Math.toRadians(180)), Math.toRadians(270),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
                 )
+                .addDisplacementMarker(.7, 0, () -> {
+                    robot.duckL.setPosition(0.25);
+                })
                 .build();
 
         //Duck Wheel ends motion at new Pose2d(-66,-55,Math.toRadians(270))
@@ -368,7 +371,7 @@ public class Red_DuckSide_Auto_New extends LinearOpMode {
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .splineToConstantHeading(new Vector2d(-54, -64), Math.toRadians(270),
+                .splineToSplineHeading(new Pose2d(-53.5, -64, Math.toRadians(250)), Math.toRadians(270),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
                 )
@@ -376,28 +379,42 @@ public class Red_DuckSide_Auto_New extends LinearOpMode {
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .splineToConstantHeading(new Vector2d(-50, -50), Math.toRadians(90),
+                .splineToSplineHeading(new Pose2d(-51, -50, Math.toRadians(270)), Math.toRadians(90),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
                 )
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .splineToConstantHeading(new Vector2d(-50, -65), Math.toRadians(270),
+                .splineToConstantHeading(new Vector2d(-51, -64), Math.toRadians(270),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
                 )
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
-                .splineToConstantHeading(new Vector2d(-46, -50), Math.toRadians(90),
+                .splineToConstantHeading(new Vector2d(-48, -55), Math.toRadians(90),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
                 )
                 .build();
 
         traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
-                .splineToConstantHeading(new Vector2d(-46, -65), Math.toRadians(270),
+                .splineToConstantHeading(new Vector2d(-48, -64), Math.toRadians(270),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+                .build();
+
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), true)
+                .splineToConstantHeading(new Vector2d(-45, -55), Math.toRadians(90),
+                        robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
+                        robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
+                )
+                .build();
+
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end())
+                .splineToConstantHeading(new Vector2d(-45, -65), Math.toRadians(270),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
                 )
@@ -409,7 +426,7 @@ public class Red_DuckSide_Auto_New extends LinearOpMode {
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
                 )
 
-                .splineToSplineHeading(new Pose2d(-29, -22, Math.toRadians(180)), Math.toRadians(0),
+                .splineToSplineHeading(new Pose2d(-29.5, -22, Math.toRadians(180)), Math.toRadians(0),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)
                 )
@@ -462,7 +479,7 @@ public class Red_DuckSide_Auto_New extends LinearOpMode {
         if(!opModeIsActive()){ return; }
 
         robot.duckL.setPosition(0.1);
-        CheckWait(true, 3300, 0);
+        CheckWait(true, 2600, 0);
         robot.duckL.setPosition(.5);
         CheckWait(true, 200, 0);
 
@@ -495,6 +512,18 @@ public class Red_DuckSide_Auto_New extends LinearOpMode {
         robot.drive.followTrajectoryAsync(traj[TIdx++]);
         CheckWait(true, 0, 0);
         if(!opModeIsActive()){ return; }
+
+        //Sweep 4
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
+
+        robot.drive.followTrajectoryAsync(traj[TIdx++]);
+        CheckWait(true, 0, 0);
+        if(!opModeIsActive()){ return; }
+
+        robot.bucket.setPosition(0.7727); //Reset Bucket to safe level
+        CheckWait(true, 200, 0);
 
         //Dump Duck
         robot.setSlidePosition(SlideHeight.Drive); //Reset Bucket to safe level
