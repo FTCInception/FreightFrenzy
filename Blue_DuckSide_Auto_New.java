@@ -66,7 +66,7 @@ public class Blue_DuckSide_Auto_New extends LinearOpMode {
     private TapeMeasureV4 tape = new TapeMeasureV4();
 
     // This is the starting position of the center of the robot.
-    private static final double startingX = -26.5;
+    private static final double startingX = -27.5;
     private static final double startingY = 65.0;
 
     private static boolean parkThroughOpening = true;
@@ -420,7 +420,7 @@ public class Blue_DuckSide_Auto_New extends LinearOpMode {
                 )
                 .build();
 
-        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), Math.toRadians(230))
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), Math.toRadians(230))
                 .splineToConstantHeading(new Vector2d(-63, 43), Math.toRadians(270),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)

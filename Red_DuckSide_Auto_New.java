@@ -420,7 +420,7 @@ public class Red_DuckSide_Auto_New extends LinearOpMode {
                 )
                 .build();
 
-        traj[TIdx++] = robot.drive.trajectoryBuilder(robot.drive.getPoseEstimate(), Math.toRadians(130))
+        traj[TIdx++] = robot.drive.trajectoryBuilder(traj[TIdx - 2].end(), Math.toRadians(130))
                 .splineToConstantHeading(new Vector2d(-63, -43), Math.toRadians(90),
                         robot.drive.getVelocityConstraint(MAX_VEL, MAX_ANG_VEL, TRACK_WIDTH),
                         robot.drive.getAccelerationConstraint(MAX_ACCEL*scaleSpeed)

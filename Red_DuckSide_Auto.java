@@ -29,8 +29,6 @@
 
 package Inception.FreightFrenzy;
 
-import android.transition.Slide;
-
 import Inception.FreightFrenzy.RRMechBot.SlideHeight;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
