@@ -115,7 +115,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
     boolean bucketFull = false;
     private boolean abortAuto = false;
 
-    double maxAngleDelta = 10.0, imu_RR_offset = Math.toRadians(-90.0), abortTurn = 0.0;
+    double maxAngleDelta = 10.0, imu_RR_offset = Math.toRadians(-90.0), abortTurn = 75.0;
 
     @Override
     public void runOpMode() {
@@ -154,6 +154,10 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
                 }
             } else {
                 rightOK = true;
+            }
+
+            if (Dx < -6.0) {
+                Dx = -6.0;
             }
 
             telemetry.addData("Line up the robot now with tape measure.","");
@@ -274,7 +278,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
             if(isIntaking()) {
                 // Check for an element in the bucket
                 colorDist = robot.color.getDistance(DistanceUnit.CM);
-                if (colorDist > 2.0) {
+                if (colorDist > robot.elementDetectDist) {
                     bucketFull = false;
                 } else {
                     if (bucketFull == false) {
@@ -730,7 +734,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
         double aAccel = Math.toRadians(200.0);
 
         // We picked up two elements, better stop and drop
-        if ((robot.colorUpper.getDistance(DistanceUnit.CM) < 2.0) || test) {
+        if ((robot.colorUpper.getDistance(DistanceUnit.CM) < robot.elementDetectDist) || test) {
             robot.intake_motor.setPower(0);
             robot.bucket.setPosition(robot.bucketDrive);
             robot.setSlidePosition(SlideHeight.Drive);
@@ -758,7 +762,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
         double aAccel = Math.toRadians(200.0);
 
         // We picked up two elements, better stop and drop
-        if ((robot.colorUpper.getDistance(DistanceUnit.CM) < 2.0) || test) {
+        if ((robot.colorUpper.getDistance(DistanceUnit.CM) < robot.elementDetectDist) || test) {
             abortAuto=true;
             robot.drive.breakFollowing();
             robot.drive.setMotorPowers(0,0,0,0);
@@ -927,7 +931,7 @@ public class Blue3x_Multiblock_Auto extends LinearOpMode {
 
     private void safeBucketDump() {
 
-        if (robot.colorUpper.getDistance(DistanceUnit.CM) < 2.0) {
+        if (robot.colorUpper.getDistance(DistanceUnit.CM) < robot.elementDetectDist) {
             return;
         }
         robot.bucket.setPosition(robot.bucketDump);

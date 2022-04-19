@@ -75,6 +75,7 @@ public class RRMechBot {
     public SampleMecanumDrive drive = null;
     public RevColorSensorV3 color = null;
     public RevColorSensorV3 colorUpper = null;
+    public double elementDetectDist = 2.5;
 
     private double SLIDE_PWR = 0.7;
 
