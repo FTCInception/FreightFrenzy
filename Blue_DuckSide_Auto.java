@@ -52,6 +52,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
  *  See the Refbot class for encode-based driving controls that perform the actual movement.
  *
  */
+@Disabled
 @Autonomous(name="Blue_DuckSide_Auto", group="RRMechBot")
 public class Blue_DuckSide_Auto extends LinearOpMode {
 
